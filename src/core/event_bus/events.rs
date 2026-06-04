@@ -153,6 +153,28 @@ pub enum DomainEvent {
         external_removed: usize,
     },
 
+    /// A contradiction was detected between a new memory and an existing
+    /// verified entry. Published by the contradiction detector so the chat
+    /// agent can surface a prompt.
+    ContradictionDetected {
+        /// Namespace where the contradiction was found.
+        namespace: String,
+        /// Key of the existing verified entry.
+        existing_key: String,
+        /// Content of the existing verified entry.
+        existing_content: String,
+        /// The new value that conflicts.
+        new_value: String,
+        /// Semantic similarity between existing and new.
+        similarity: f64,
+    },
+    /// A contradiction was resolved by user action.
+    ContradictionResolved {
+        namespace: String,
+        existing_key: String,
+        resolution: String, // "replace", "merge", "dismiss"
+    },
+
     // ── Channels ────────────────────────────────────────────────────────
     /// An inbound channel message from the transport layer, ready for processing.
     ///
@@ -671,6 +693,8 @@ impl DomainEvent {
             | Self::MemoryIngestionStarted { .. }
             | Self::MemoryIngestionCompleted { .. }
             | Self::ConfidenceDecayed { .. }
+            | Self::ContradictionDetected { .. }
+            | Self::ContradictionResolved { .. }
             | Self::DocumentCanonicalized { .. } => "memory",
 
             Self::CacheRebuilt { .. } => "learning",

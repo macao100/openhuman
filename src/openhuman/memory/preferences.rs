@@ -14,8 +14,11 @@
 
 use std::sync::Arc;
 
+use super::contradiction::{check_for_contradictions, ContradictionReport};
 use super::provenance::{ConfidenceLevel, MemorySource, Provenance};
 use super::Memory;
+
+use crate::core::event_bus::{publish_global, DomainEvent};
 
 /// Always-on preferences — injected into the system prompt every thread.
 pub const USER_PREF_GENERAL_NAMESPACE: &str = "user_pref_general";
@@ -163,6 +166,97 @@ pub async fn store_preference_correction(
             None,
         )
         .await
+}
+
+/// Store a preference value, checking for contradictions against existing
+/// verified entries before committing.
+///
+/// Returns `Ok(None)` when no contradiction was found and the write completed
+/// normally. Returns `Ok(Some(ContradictionReport))` when contradictions were
+/// detected — the caller (agent/tool) should surface this to the user and
+/// await a resolution action before proceeding.
+///
+/// When contradictions are found, the write is **not committed**. The caller
+/// must call `resolve_contradiction` (replace / merge / dismiss) first.
+pub async fn store_preference_with_contradiction_check(
+    memory: &Arc<dyn Memory>,
+    topic: &str,
+    value: &str,
+    provenance: Option<&Provenance>,
+) -> anyhow::Result<Option<ContradictionReport>> {
+    // Step 1: check for contradictions against both preference namespaces.
+    // We check the general namespace first (it's smaller and more likely to
+    // have verified entries), then the situational namespace.
+    let mut combined_candidates = Vec::new();
+    let mut total_checked = 0usize;
+    let mut total_elapsed = 0u64;
+
+    for ns in &[
+        USER_PREF_GENERAL_NAMESPACE,
+        USER_PREF_SITUATIONAL_NAMESPACE,
+    ] {
+        let report = check_for_contradictions(memory, ns, value, provenance, CONTRADICTION_SIMILARITY)
+            .await?;
+        if !report.candidates.is_empty() {
+            combined_candidates.extend(report.candidates);
+        }
+        total_checked += report.checked_against;
+        total_elapsed += report.elapsed_ms;
+    }
+
+    let report = ContradictionReport {
+        candidates: combined_candidates,
+        checked_against: total_checked,
+        elapsed_ms: total_elapsed,
+    };
+
+    // Step 2: if no contradictions found, commit the write.
+    if !report.has_contradictions() {
+        // TODO: use the provenance when the Memory::store signature accepts it.
+        // For now, embed it in content like store_preference_correction does.
+        let content = format!(
+            "{topic}: {value}\n[provenance] {}",
+            serde_json::to_string(
+                &provenance.unwrap_or(&Provenance {
+                    source: MemorySource::ChatHistory,
+                    confidence: ConfidenceLevel::Inferred,
+                    source_detail: String::new(),
+                })
+            )
+            .unwrap_or_else(|_| "{}".into())
+        );
+
+        memory
+            .store(
+                USER_PREF_GENERAL_NAMESPACE,
+                topic,
+                &content,
+                MemoryCategory::Core,
+                None,
+            )
+            .await?;
+
+        return Ok(None);
+    }
+
+    // Step 3: contradictions found — publish event, do NOT commit.
+    for candidate in &report.candidates {
+        publish_global(DomainEvent::ContradictionDetected {
+            namespace: candidate.namespace.clone(),
+            existing_key: candidate.existing_entry.key.clone(),
+            existing_content: candidate.existing_entry.content.clone(),
+            new_value: candidate.new_value.clone(),
+            similarity: candidate.similarity,
+        });
+    }
+
+    log::info!(
+        "[dadou_contradiction] detected {} contradiction(s) for topic '{}', write deferred",
+        report.candidates.len(),
+        topic,
+    );
+
+    Ok(Some(report))
 }
 
 #[cfg(test)]

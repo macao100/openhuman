@@ -10,6 +10,7 @@
 //! layer down in [`memory_store`](crate::openhuman::memory_store).
 
 // Legacy memory modules
+pub mod contradiction;
 pub mod global;
 pub mod ingestion;
 pub mod ops;
