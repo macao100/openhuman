@@ -1,0 +1,492 @@
+import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+import { persistLocalWalletFromMnemonic } from '../../../features/wallet/setupLocalWalletFromMnemonic';
+import { useT } from '../../../lib/i18n/I18nContext';
+import { useCoreState } from '../../../providers/CoreStateProvider';
+import {
+  generateMnemonicPhrase,
+  MNEMONIC_GENERATE_WORD_COUNT,
+  validateMnemonicPhrase,
+} from '../../../utils/cryptoKeys';
+import SettingsHeader from '../components/SettingsHeader';
+import { useSettingsNavigation } from '../hooks/useSettingsNavigation';
+
+const BIP39_IMPORT_LENGTHS = [12, 15, 18, 21, 24] as const;
+
+const IMPORT_SLOTS_INITIAL = MNEMONIC_GENERATE_WORD_COUNT;
+
+const RecoveryPhrasePanel = () => {
+  const { t } = useT();
+  const { navigateBack, breadcrumbs } = useSettingsNavigation();
+  const { snapshot, setEncryptionKey } = useCoreState();
+  const user = snapshot.currentUser;
+
+  const [mode, setMode] = useState<'generate' | 'import'>('generate');
+  const [copied, setCopied] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [revealed, setRevealed] = useState(false);
+
+  const mnemonic = useMemo(() => generateMnemonicPhrase(), []);
+  const words = useMemo(() => mnemonic.split(' '), [mnemonic]);
+
+  const [selectedWordCount, setSelectedWordCount] = useState(IMPORT_SLOTS_INITIAL);
+  const [importWords, setImportWords] = useState<string[]>(Array(IMPORT_SLOTS_INITIAL).fill(''));
+  const [importValid, setImportValid] = useState<boolean | null>(null);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    if (copied) {
+      const timer = setTimeout(() => setCopied(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [copied]);
+
+  const switchMode = useCallback((nextMode: 'generate' | 'import') => {
+    setMode(nextMode);
+    setConfirmed(false);
+    setError(null);
+    setImportValid(null);
+    setSelectedWordCount(IMPORT_SLOTS_INITIAL);
+    setImportWords(Array(IMPORT_SLOTS_INITIAL).fill(''));
+  }, []);
+
+  const handleWordCountChange = useCallback((count: number) => {
+    setSelectedWordCount(count);
+    setImportWords(prev => {
+      const newWords = Array(count).fill('');
+      for (let i = 0; i < Math.min(prev.length, count); i++) {
+        newWords[i] = prev[i];
+      }
+      return newWords;
+    });
+    setImportValid(null);
+    setError(null);
+  }, []);
+
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => {
+        navigateBack();
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [success, navigateBack]);
+
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(mnemonic);
+      setCopied(true);
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = mnemonic;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      if (ok) setCopied(true);
+    }
+  }, [mnemonic]);
+
+  const handleImportWordChange = useCallback(
+    (index: number, value: string) => {
+      const pastedWords = value.trim().split(/\s+/).filter(Boolean);
+      if (pastedWords.length > 1) {
+        const fullPhraseLen = pastedWords.length;
+        if (BIP39_IMPORT_LENGTHS.includes(fullPhraseLen as (typeof BIP39_IMPORT_LENGTHS)[number])) {
+          setImportWords(pastedWords.map(w => w.toLowerCase()));
+          setImportValid(null);
+          inputRefs.current[fullPhraseLen - 1]?.focus();
+          return;
+        }
+        const newWords = [...importWords];
+        const slotCount = newWords.length;
+        for (let i = 0; i < Math.min(pastedWords.length, slotCount - index); i++) {
+          newWords[index + i] = pastedWords[i].toLowerCase();
+        }
+        setImportWords(newWords);
+        setImportValid(null);
+        const nextEmpty = newWords.findIndex(w => !w);
+        const focusIndex = nextEmpty === -1 ? slotCount - 1 : nextEmpty;
+        inputRefs.current[focusIndex]?.focus();
+        return;
+      }
+
+      const newWords = [...importWords];
+      newWords[index] = value.toLowerCase().trim();
+      setImportWords(newWords);
+      setImportValid(null);
+    },
+    [importWords]
+  );
+
+  const handleImportKeyDown = useCallback(
+    (index: number, e: KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Backspace' && !importWords[index] && index > 0) {
+        inputRefs.current[index - 1]?.focus();
+      }
+    },
+    [importWords]
+  );
+
+  const handleValidateImport = useCallback(() => {
+    const phrase = importWords.join(' ').trim();
+    const filledWords = importWords.filter(w => w.trim());
+    const n = filledWords.length;
+
+    if (!BIP39_IMPORT_LENGTHS.includes(n as (typeof BIP39_IMPORT_LENGTHS)[number])) {
+      setError(`Recovery phrase must be ${BIP39_IMPORT_LENGTHS.join(', ')} words (you have ${n}).`);
+      setImportValid(false);
+      return false;
+    }
+
+    const isValid = validateMnemonicPhrase(phrase);
+    setImportValid(isValid);
+
+    if (!isValid) {
+      setError(t('mnemonic.invalidPhrase'));
+      return false;
+    }
+
+    setError(null);
+    return true;
+  }, [importWords, t]);
+
+  const handleSave = async () => {
+    setError(null);
+    setLoading(true);
+
+    try {
+      let phraseToUse: string;
+
+      if (mode === 'import') {
+        if (!handleValidateImport()) {
+          setLoading(false);
+          return;
+        }
+        phraseToUse = importWords.join(' ').trim();
+      } else {
+        if (!confirmed) {
+          setLoading(false);
+          return;
+        }
+        phraseToUse = mnemonic;
+      }
+
+      if (!user?._id) {
+        setError(t('mnemonic.userNotLoaded'));
+        return;
+      }
+      await persistLocalWalletFromMnemonic({
+        mnemonic: phraseToUse,
+        source: mode === 'generate' ? 'generated' : 'imported',
+        setEncryptionKey,
+      });
+      setSuccess(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('mnemonic.somethingWentWrong'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const importWordCount = importWords.filter(w => w.trim()).length;
+  const isImportComplete =
+    importWords.every(w => w.trim()) &&
+    BIP39_IMPORT_LENGTHS.includes(importWordCount as (typeof BIP39_IMPORT_LENGTHS)[number]);
+  const canSave = mode === 'generate' ? confirmed : isImportComplete;
+
+  return (
+    <div>
+      <SettingsHeader
+        title={t('mnemonic.title')}
+        showBackButton
+        onBack={navigateBack}
+        breadcrumbs={breadcrumbs}
+      />
+
+      <div>
+        <div className="p-4">
+          {success ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-12">
+              <div className="w-12 h-12 rounded-full bg-sage-500/20 flex items-center justify-center">
+                <svg
+                  className="w-6 h-6 text-sage-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <p className="text-sm font-medium text-sage-500">{t('mnemonic.phraseSaved')}</p>
+              <p className="text-xs text-stone-500 dark:text-neutral-400">
+                {t('mnemonic.walletReady')}
+              </p>
+            </div>
+          ) : (
+            <>
+              {mode === 'generate' ? (
+                <>
+                  <div className="mb-4 space-y-3">
+                    <p className="text-sm text-stone-600 dark:text-neutral-300 leading-relaxed">
+                      {t('mnemonic.writeDownWords')} {MNEMONIC_GENERATE_WORD_COUNT}{' '}
+                      {t('mnemonic.wordsInOrder')}
+                    </p>
+                    <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30">
+                      <svg
+                        className="w-4 h-4 text-amber-600 dark:text-amber-300 flex-shrink-0 mt-0.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+                        />
+                      </svg>
+                      <p className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
+                        {t('mnemonic.cannotRecover')}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-stone-50 dark:bg-neutral-800/60 rounded-2xl p-4 mb-4 border border-stone-200 dark:border-neutral-800 relative">
+                    <div
+                      className="grid grid-cols-3 gap-2 transition-all duration-300"
+                      style={{
+                        filter: revealed ? 'none' : 'blur(8px)',
+                        userSelect: revealed ? 'auto' : 'none',
+                        pointerEvents: revealed ? 'auto' : 'none',
+                      }}>
+                      {words.map((word, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center gap-2 bg-white dark:bg-neutral-900 rounded-lg px-3 py-2 text-sm border border-stone-200 dark:border-neutral-800">
+                          <span className="text-stone-500 dark:text-neutral-400 font-mono text-xs w-5 text-right">
+                            {index + 1}.
+                          </span>
+                          <span className="font-mono font-medium">{word}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {!revealed && (
+                      <button
+                        type="button"
+                        onClick={() => setRevealed(true)}
+                        aria-label={t('mnemonic.revealPhrase')}
+                        className="absolute inset-0 flex items-center justify-center cursor-pointer bg-transparent">
+                        <svg
+                          className="w-7 h-7 text-stone-900 dark:text-white transition-opacity duration-200 hover:opacity-70"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={1.5}>
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"
+                          />
+                          <line x1="1" y1="1" x2="23" y2="23" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={handleCopy}
+                    disabled={!revealed}
+                    className="w-full flex items-center justify-center gap-2 border border-stone-200 dark:border-neutral-800 hover:border-stone-300 dark:border-neutral-700 dark:hover:border-neutral-700 font-medium py-2.5 text-sm rounded-xl text-stone-700 dark:text-neutral-200 transition-all duration-200 mb-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-stone-200 dark:disabled:hover:border-neutral-800">
+                    {copied ? (
+                      <>
+                        <svg
+                          className="w-4 h-4 text-sage-400"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span className="text-sage-400">{t('common.copied')}</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}>
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                          />
+                        </svg>
+                        <span>{t('mnemonic.copyToClipboard')}</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => switchMode('import')}
+                    className="w-full text-center text-sm text-primary-400 hover:text-primary-600 dark:text-primary-300 transition-colors mb-3">
+                    {t('mnemonic.alreadyHavePhrase')}
+                  </button>
+
+                  <label className="flex items-start gap-3 cursor-pointer mb-4">
+                    <input
+                      type="checkbox"
+                      checked={confirmed}
+                      onChange={e => setConfirmed(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 rounded border-stone-500 text-primary-500 focus:ring-primary-500"
+                    />
+                    <span className="text-sm text-stone-700 dark:text-neutral-200">
+                      {t('mnemonic.consentSaved')}
+                    </span>
+                  </label>
+                </>
+              ) : (
+                <>
+                  <div className="mb-4">
+                    <p className="text-sm text-stone-600 dark:text-neutral-300 leading-relaxed">
+                      {t('mnemonic.enterPhraseToRestore')}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs text-stone-500 dark:text-neutral-400">
+                      {t('mnemonic.words')}:
+                    </span>
+                    {BIP39_IMPORT_LENGTHS.map(len => (
+                      <button
+                        key={len}
+                        type="button"
+                        onClick={() => handleWordCountChange(len)}
+                        className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-colors ${
+                          selectedWordCount === len
+                            ? 'bg-primary-500/20 border-primary-500/40 text-primary-600 dark:text-primary-300 border'
+                            : 'border border-stone-200 dark:border-neutral-800 text-stone-500 dark:text-neutral-400 hover:border-stone-300 dark:border-neutral-700'
+                        }`}>
+                        {len}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="bg-stone-50 dark:bg-neutral-800/60 rounded-2xl p-4 mb-4 border border-stone-200 dark:border-neutral-800">
+                    <div className="grid grid-cols-3 gap-2">
+                      {importWords.map((word, index) => (
+                        <div key={index} className="flex items-center gap-1.5">
+                          <span className="text-stone-500 dark:text-neutral-400 font-mono text-xs w-5 text-right shrink-0">
+                            {index + 1}.
+                          </span>
+                          <input
+                            aria-label={`Recovery phrase word ${index + 1}`}
+                            ref={el => {
+                              inputRefs.current[index] = el;
+                            }}
+                            type="text"
+                            value={word}
+                            onChange={e => handleImportWordChange(index, e.target.value)}
+                            onKeyDown={e => handleImportKeyDown(index, e)}
+                            autoComplete="off"
+                            spellCheck={false}
+                            className={`w-full font-mono text-sm font-medium px-2 py-1.5 rounded-lg border bg-white dark:bg-neutral-900 text-stone-900 dark:text-neutral-100 outline-none transition-colors ${
+                              importValid === false && word.trim()
+                                ? 'border-coral-400 focus:border-coral-300 dark:border-coral-500/40'
+                                : importValid === true
+                                  ? 'border-sage-400 focus:border-sage-300 dark:border-sage-500/40'
+                                  : 'border-stone-200 dark:border-neutral-800 focus:border-primary-400'
+                            }`}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {importValid === true && (
+                    <div className="flex items-center gap-2 text-sage-400 text-sm mb-3 justify-center">
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>{t('mnemonic.validPhrase')}</span>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => switchMode('generate')}
+                    className="w-full text-center text-sm text-primary-400 hover:text-primary-600 dark:text-primary-300 transition-colors mb-3">
+                    {t('mnemonic.generateNewPhrase')}
+                  </button>
+                </>
+              )}
+
+              {error && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-2.5 p-3 mb-3 rounded-xl bg-coral-50 dark:bg-coral-500/10 border border-coral-200 dark:border-coral-500/30">
+                  <svg
+                    className="w-4 h-4 text-coral-500 flex-shrink-0 mt-0.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+                    />
+                  </svg>
+                  <p className="text-xs text-coral-700 dark:text-coral-300 leading-relaxed">
+                    {error}
+                  </p>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => void handleSave()}
+                disabled={!canSave || loading}
+                className="btn-primary w-full py-3 text-sm font-medium rounded-xl disabled:opacity-60 flex items-center justify-center gap-2">
+                {loading ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      />
+                    </svg>
+                    <span>{t('mnemonic.securingData')}</span>
+                  </>
+                ) : (
+                  t('mnemonic.saveRecoveryPhrase')
+                )}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default RecoveryPhrasePanel;

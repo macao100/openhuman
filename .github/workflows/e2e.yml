@@ -1,0 +1,31 @@
+---
+# PR/push E2E gate.
+#
+# Desktop full-flow lane (mega-flow) across Linux, macOS, and Windows.
+# The browser-hosted Playwright suite lives in its own standalone workflow so
+# it can be run on demand without gating every push / PR.
+name: E2E
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  packages: read
+  pull-requests: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e-desktop:
+    uses: ./.github/workflows/e2e-reusable.yml
+    with:
+      run_linux: true
+      run_macos: true
+      run_windows: true
+      full: false

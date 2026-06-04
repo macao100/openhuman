@@ -1,0 +1,266 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+
+import { useScreenIntelligenceState } from '../../../features/screen-intelligence/useScreenIntelligenceState';
+import { useT } from '../../../lib/i18n/I18nContext';
+import { isTauri, openhumanUpdateScreenIntelligenceSettings } from '../../../utils/tauriCommands';
+import SettingsHeader from '../components/SettingsHeader';
+import { useSettingsNavigation } from '../hooks/useSettingsNavigation';
+import PermissionsSection from './screen-intelligence/PermissionsSection';
+
+const formatRemaining = (remainingMs: number | null): string => {
+  if (remainingMs === null || remainingMs <= 0) {
+    return '00:00';
+  }
+
+  const totalSeconds = Math.floor(remainingMs / 1000);
+  const mins = Math.floor(totalSeconds / 60)
+    .toString()
+    .padStart(2, '0');
+  const secs = (totalSeconds % 60).toString().padStart(2, '0');
+  return `${mins}:${secs}`;
+};
+
+const ScreenIntelligencePanel = () => {
+  const { t } = useT();
+  const { navigateBack, breadcrumbs } = useSettingsNavigation();
+  const {
+    status,
+    lastRestartSummary,
+    isLoading,
+    isRequestingPermissions,
+    isRestartingCore,
+    isStartingSession,
+    isStoppingSession,
+    isFlushingVision,
+    lastError,
+    refreshStatus,
+    startSession,
+    stopSession,
+    flushVision,
+    requestPermission,
+    refreshPermissionsWithRestart,
+  } = useScreenIntelligenceState({ loadVision: false, pollMs: 2000 });
+  const [featureOverrides, setFeatureOverrides] = useState<{ screen_monitoring?: boolean }>({});
+  const [enabled, setEnabled] = useState<boolean>(false);
+  const [policyMode, setPolicyMode] = useState<'all_except_blacklist' | 'whitelist_only'>(
+    'all_except_blacklist'
+  );
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
+  const [configError, setConfigError] = useState<string | null>(null);
+
+  const lastSyncedConfigSigRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!status?.config) {
+      return;
+    }
+    const sig = JSON.stringify(status.config);
+    if (lastSyncedConfigSigRef.current === sig) {
+      return;
+    }
+    lastSyncedConfigSigRef.current = sig;
+    setEnabled(status.config.enabled ?? false);
+    setPolicyMode(
+      status.config.policy_mode === 'whitelist_only' ? 'whitelist_only' : 'all_except_blacklist'
+    );
+  }, [status?.config]);
+
+  const screenMonitoring =
+    featureOverrides.screen_monitoring ?? status?.features.screen_monitoring ?? true;
+
+  const remaining = useMemo(
+    () => formatRemaining(status?.session.remaining_ms ?? null),
+    [status?.session.remaining_ms]
+  );
+
+  const anyPermissionDenied =
+    status?.permissions.screen_recording === 'denied' ||
+    status?.permissions.accessibility === 'denied' ||
+    status?.permissions.input_monitoring === 'denied';
+
+  const startDisabled =
+    isStartingSession ||
+    isLoading ||
+    !status ||
+    !status.platform_supported ||
+    status.session.active ||
+    status.permissions.accessibility !== 'granted';
+  const stopDisabled = isStoppingSession || !status?.session.active;
+
+  const saveConfig = async () => {
+    if (!isTauri()) return;
+    setConfigError(null);
+    setIsSavingConfig(true);
+    try {
+      await openhumanUpdateScreenIntelligenceSettings({
+        enabled,
+        policy_mode: policyMode,
+        baseline_fps: status?.config.baseline_fps ?? 1,
+        use_vision_model: status?.config.use_vision_model ?? true,
+        keep_screenshots: status?.config.keep_screenshots ?? false,
+        allowlist: status?.config.allowlist ?? [],
+        denylist: status?.config.denylist ?? [],
+      });
+      await refreshStatus();
+    } catch (error) {
+      setConfigError(error instanceof Error ? error.message : 'Failed to save screen intelligence');
+    } finally {
+      setIsSavingConfig(false);
+    }
+  };
+
+  return (
+    <div className="z-10 relative">
+      <SettingsHeader
+        title={t('settings.features.screenAwareness')}
+        showBackButton={true}
+        onBack={navigateBack}
+        breadcrumbs={breadcrumbs}
+      />
+
+      <div className="max-w-2xl mx-auto w-full p-4 space-y-4">
+        {(status?.platform_supported ?? true) && (
+          <PermissionsSection
+            screenRecording={status?.permissions.screen_recording ?? 'unknown'}
+            accessibility={status?.permissions.accessibility ?? 'unknown'}
+            inputMonitoring={status?.permissions.input_monitoring ?? 'unknown'}
+            anyPermissionDenied={anyPermissionDenied ?? false}
+            lastRestartSummary={lastRestartSummary}
+            permissionCheckProcessPath={status?.permission_check_process_path}
+            isRequestingPermissions={isRequestingPermissions}
+            isRestartingCore={isRestartingCore}
+            isLoading={isLoading}
+            requestPermission={requestPermission}
+            refreshPermissionsWithRestart={refreshPermissionsWithRestart}
+            refreshStatus={refreshStatus}
+          />
+        )}
+
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold text-stone-900 dark:text-neutral-100">
+            {t('settings.features.screenAwareness')}
+          </h3>
+
+          <label className="flex items-center justify-between rounded-xl border border-stone-200 dark:border-neutral-800 bg-stone-50 dark:bg-neutral-800/60 px-3 py-2">
+            <span className="text-sm text-stone-700 dark:text-neutral-200">
+              {t('common.enabled')}
+            </span>
+            <input
+              type="checkbox"
+              checked={enabled}
+              onChange={event => setEnabled(event.target.checked)}
+            />
+          </label>
+
+          <label className="flex items-center justify-between rounded-xl border border-stone-200 dark:border-neutral-800 bg-stone-50 dark:bg-neutral-800/60 px-3 py-2">
+            <span className="text-sm text-stone-700 dark:text-neutral-200">
+              {t('settings.screenAwareness.mode')}
+            </span>
+            <select
+              value={policyMode}
+              onChange={event =>
+                setPolicyMode(
+                  event.target.value === 'whitelist_only'
+                    ? 'whitelist_only'
+                    : 'all_except_blacklist'
+                )
+              }
+              className="rounded border border-stone-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-2 py-1 text-xs text-stone-700 dark:text-neutral-200">
+              <option value="all_except_blacklist">
+                {t('settings.screenAwareness.allExceptBlacklist')}
+              </option>
+              <option value="whitelist_only">{t('settings.screenAwareness.whitelistOnly')}</option>
+            </select>
+          </label>
+
+          <label className="flex items-center justify-between rounded-xl border border-stone-200 dark:border-neutral-800 bg-stone-50 dark:bg-neutral-800/60 px-3 py-2">
+            <span className="text-sm text-stone-700 dark:text-neutral-200">
+              {t('settings.screenAwareness.screenMonitoring')}
+            </span>
+            <input
+              type="checkbox"
+              checked={screenMonitoring}
+              onChange={event =>
+                setFeatureOverrides(current => ({
+                  ...current,
+                  screen_monitoring: event.target.checked,
+                }))
+              }
+            />
+          </label>
+
+          <button
+            type="button"
+            onClick={() => void saveConfig()}
+            disabled={isSavingConfig}
+            className="rounded-lg border border-primary-400 bg-primary-50 dark:bg-primary-500/10 px-3 py-2 text-sm text-primary-700 dark:text-primary-300 disabled:opacity-50">
+            {isSavingConfig ? 'Saving…' : t('settings.screenAwareness.saveSettings')}
+          </button>
+          {configError && (
+            <div className="text-xs text-red-600 dark:text-red-300">{configError}</div>
+          )}
+        </section>
+
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold text-stone-900 dark:text-neutral-100">
+            {t('settings.screenAwareness.session')}
+          </h3>
+          <div className="text-sm text-stone-600 dark:text-neutral-300 space-y-1">
+            <div>
+              {t('settings.screenAwareness.status')}:{' '}
+              {status?.session.active
+                ? t('settings.screenAwareness.active')
+                : t('settings.screenAwareness.stopped')}
+            </div>
+            <div>
+              {t('settings.screenAwareness.remaining')}: {remaining}
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                void startSession({
+                  consent: true,
+                  ttl_secs: status?.config.session_ttl_secs ?? 300,
+                  screen_monitoring: screenMonitoring,
+                })
+              }
+              disabled={startDisabled}
+              className="rounded-lg border border-green-400 bg-green-50 dark:bg-green-500/10 px-3 py-2 text-sm text-green-700 dark:text-green-300 disabled:opacity-50">
+              {isStartingSession ? 'Starting…' : t('settings.screenAwareness.startSession')}
+            </button>
+            <button
+              type="button"
+              onClick={() => void stopSession('manual_stop')}
+              disabled={stopDisabled}
+              className="rounded-lg border border-red-400 bg-red-50 dark:bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-300 disabled:opacity-50">
+              {isStoppingSession ? 'Stopping…' : t('settings.screenAwareness.stopSession')}
+            </button>
+            <button
+              type="button"
+              onClick={() => void flushVision()}
+              disabled={isFlushingVision || !status?.session.active}
+              className="rounded-lg border border-primary-400 bg-primary-50 dark:bg-primary-500/10 px-3 py-2 text-sm text-primary-700 dark:text-primary-300 disabled:opacity-50">
+              {isFlushingVision ? 'Analyzing…' : t('settings.screenAwareness.analyzeNow')}
+            </button>
+          </div>
+        </section>
+
+        {status !== null && !status.platform_supported && (
+          <div className="rounded-xl border border-amber-300 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-500/10 dark:border-amber-500/30 p-3 text-sm text-amber-700 dark:text-amber-300">
+            {t('settings.screenAwareness.macosOnly')}
+          </div>
+        )}
+
+        {lastError && (
+          <div className="rounded-xl border border-red-300 dark:border-red-500/40 bg-red-50 dark:bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-300">
+            {lastError}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default ScreenIntelligencePanel;
