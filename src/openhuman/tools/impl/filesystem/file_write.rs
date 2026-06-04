@@ -1,3 +1,4 @@
+use crate::openhuman::rollback::RollbackStore;
 use crate::openhuman::security::{CommandClass, GateDecision, SecurityPolicy};
 use crate::openhuman::tools::traits::{PermissionLevel, Tool, ToolResult};
 use async_trait::async_trait;
@@ -7,11 +8,22 @@ use std::sync::Arc;
 /// Write file contents with path sandboxing
 pub struct FileWriteTool {
     security: Arc<SecurityPolicy>,
+    rollback: Option<Arc<RollbackStore>>,
 }
 
 impl FileWriteTool {
     pub fn new(security: Arc<SecurityPolicy>) -> Self {
-        Self { security }
+        Self {
+            security,
+            rollback: None,
+        }
+    }
+
+    pub fn with_rollback(security: Arc<SecurityPolicy>, rollback: Arc<RollbackStore>) -> Self {
+        Self {
+            security,
+            rollback: Some(rollback),
+        }
     }
 }
 
@@ -103,6 +115,8 @@ impl Tool for FileWriteTool {
         // Security check first: validate path string, resolve symlinks, confirm workspace
         // containment. validate_parent_path walks up to the deepest existing ancestor so
         // it does not require the parent directory to exist yet.
+        // SECURITY: validate_parent_path MUST be called BEFORE create_dir_all
+        // to prevent symlink race (PITFALL-9, issue #1927).
         let resolved_target = match self.security.validate_parent_path(path).await {
             Ok(p) => p,
             Err(msg) => return Ok(ToolResult::error(msg)),
@@ -129,11 +143,44 @@ impl Tool for FileWriteTool {
             ));
         }
 
+        // ── Rollback: capture pre-write snapshot ──────────────────────────
+        let rollback_state = if let Some(ref rb) = self.rollback {
+            // Read old content (if file exists) for after_write diff generation
+            let old_content = tokio::fs::read(&resolved_target).await.unwrap_or_default();
+            match rb.before_write_with_content(
+                &resolved_target,
+                "file_write",
+                &old_content,
+                path,
+                None,
+            ) {
+                Ok(entry) => Some((entry, old_content)),
+                Err(e) => {
+                    log::warn!("[rollback] before_write failed for {}: {}", path, e);
+                    None
+                }
+            }
+        } else {
+            None
+        };
+        // ── Fin rollback ──────────────────────────────────────────────────
+
         match tokio::fs::write(&resolved_target, content).await {
-            Ok(()) => Ok(ToolResult::success(format!(
-                "Written {} bytes to {path}",
-                content.len()
-            ))),
+            Ok(()) => {
+                // ── Rollback: generate diff and complete entry ────────────
+                if let Some((ref entry, ref old_content)) = rollback_state {
+                    if let Some(ref rb) = self.rollback {
+                        if let Err(e) = rb.after_write(entry, old_content, content.as_bytes()) {
+                            log::warn!("[rollback] after_write failed for {}: {}", path, e);
+                        }
+                    }
+                }
+                // ── Fin rollback ──────────────────────────────────────────
+                Ok(ToolResult::success(format!(
+                    "Written {} bytes to {path}",
+                    content.len()
+                )))
+            }
             Err(e) => Ok(ToolResult::error(format!("Failed to write file: {e}"))),
         }
     }

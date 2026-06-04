@@ -6,6 +6,7 @@
 //! exactly once in the file (so the model can't accidentally edit
 //! every match). Set `replace_all` to override.
 
+use crate::openhuman::rollback::RollbackStore;
 use crate::openhuman::security::{CommandClass, GateDecision, SecurityPolicy};
 use crate::openhuman::tools::traits::{PermissionLevel, Tool, ToolResult};
 use async_trait::async_trait;
@@ -16,11 +17,22 @@ const MAX_FILE_BYTES: u64 = 5 * 1024 * 1024;
 
 pub struct EditFileTool {
     security: Arc<SecurityPolicy>,
+    rollback: Option<Arc<RollbackStore>>,
 }
 
 impl EditFileTool {
     pub fn new(security: Arc<SecurityPolicy>) -> Self {
-        Self { security }
+        Self {
+            security,
+            rollback: None,
+        }
+    }
+
+    pub fn with_rollback(security: Arc<SecurityPolicy>, rollback: Arc<RollbackStore>) -> Self {
+        Self {
+            security,
+            rollback: Some(rollback),
+        }
     }
 }
 
@@ -159,10 +171,41 @@ impl Tool for EditFileTool {
             contents.replacen(old_string, new_string, 1)
         };
 
+        // ── Rollback: capture pre-write snapshot (content already in memory) ─
+        let rollback_entry = if let Some(ref rb) = self.rollback {
+            match rb.before_write_with_content(
+                &resolved,
+                "edit",
+                contents.as_bytes(),
+                path,
+                None,
+            ) {
+                Ok(entry) => Some(entry),
+                Err(e) => {
+                    log::warn!("[rollback] before_write failed for {}: {}", path, e);
+                    None
+                }
+            }
+        } else {
+            None
+        };
+        // ── Fin rollback ──────────────────────────────────────────────────
+
         match tokio::fs::write(&resolved, &updated).await {
-            Ok(()) => Ok(ToolResult::success(format!(
-                "Edited {path}: {count} replacement(s)"
-            ))),
+            Ok(()) => {
+                // ── Rollback: generate diff and complete entry ────────────
+                if let Some(ref entry) = rollback_entry {
+                    if let Some(ref rb) = self.rollback {
+                        if let Err(e) = rb.after_write(entry, contents.as_bytes(), updated.as_bytes()) {
+                            log::warn!("[rollback] after_write failed for {}: {}", path, e);
+                        }
+                    }
+                }
+                // ── Fin rollback ──────────────────────────────────────────
+                Ok(ToolResult::success(format!(
+                    "Edited {path}: {count} replacement(s)"
+                )))
+            }
             Err(e) => Ok(ToolResult::error(format!("Failed to write file: {e}"))),
         }
     }

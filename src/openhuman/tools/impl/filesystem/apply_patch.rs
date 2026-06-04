@@ -6,6 +6,7 @@
 //! before any file is written. If any edit fails validation, no files
 //! are touched.
 
+use crate::openhuman::rollback::RollbackStore;
 use crate::openhuman::security::{CommandClass, GateDecision, SecurityPolicy};
 use crate::openhuman::tools::traits::{PermissionLevel, Tool, ToolResult};
 use async_trait::async_trait;
@@ -19,11 +20,22 @@ const MAX_EDITS: usize = 50;
 
 pub struct ApplyPatchTool {
     security: Arc<SecurityPolicy>,
+    rollback: Option<Arc<RollbackStore>>,
 }
 
 impl ApplyPatchTool {
     pub fn new(security: Arc<SecurityPolicy>) -> Self {
-        Self { security }
+        Self {
+            security,
+            rollback: None,
+        }
+    }
+
+    pub fn with_rollback(security: Arc<SecurityPolicy>, rollback: Arc<RollbackStore>) -> Self {
+        Self {
+            security,
+            rollback: Some(rollback),
+        }
     }
 }
 
@@ -227,6 +239,27 @@ impl Tool for ApplyPatchTool {
         let mut summary: Vec<String> = Vec::new();
         let mut written: Vec<&FileBuffer> = Vec::new();
         for (path, buf) in &buffers {
+            // ── Rollback: capture pre-write snapshot for this file ────────
+            let rollback_entry = if let Some(ref rb) = self.rollback {
+                // buf.original contains the pre-edit content (snapshot)
+                match rb.before_write_with_content(
+                    &buf.resolved,
+                    "apply_patch",
+                    buf.original.as_bytes(),
+                    path,
+                    None,
+                ) {
+                    Ok(entry) => Some(entry),
+                    Err(e) => {
+                        log::warn!("[rollback] before_write failed for {}: {}", path, e);
+                        None
+                    }
+                }
+            } else {
+                None
+            };
+            // ── Fin rollback ──────────────────────────────────────────────
+
             if let Err(e) = tokio::fs::write(&buf.resolved, &buf.contents).await {
                 let restore_errors = restore_originals(&written).await;
                 let suffix = if restore_errors.is_empty() {
@@ -238,6 +271,17 @@ impl Tool for ApplyPatchTool {
                     "Failed to write {path}: {e}{suffix}"
                 )));
             }
+
+            // ── Rollback: complete this file's entry with diff ────────────
+            if let Some(ref entry) = rollback_entry {
+                if let Some(ref rb) = self.rollback {
+                    if let Err(e) = rb.after_write(entry, buf.original.as_bytes(), buf.contents.as_bytes()) {
+                        log::warn!("[rollback] after_write failed for {}: {}", path, e);
+                    }
+                }
+            }
+            // ── Fin rollback ──────────────────────────────────────────────
+
             written.push(buf);
             summary.push(format!("{path}: {} replacement(s)", buf.edit_count));
         }
