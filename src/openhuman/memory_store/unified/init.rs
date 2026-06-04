@@ -260,6 +260,10 @@ impl UnifiedMemory {
             );
         }
 
+        // DADOU provenance schema migration: adds `provenance_json` column
+        // to `memory_docs` if not already present (idempotent).
+        crate::openhuman::memory::provenance::migration::migrate_dadou_provenance(&conn)?;
+
         Ok(Self {
             workspace_dir: workspace_dir.to_path_buf(),
             db_path,

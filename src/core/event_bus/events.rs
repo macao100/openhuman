@@ -143,6 +143,15 @@ pub enum DomainEvent {
         elapsed_ms: u64,
         queue_depth: usize,
     },
+    /// A confidence decay pass completed, affecting memory entries.
+    ///
+    /// Published by `decay_pass()` in the provenance domain after scanning
+    /// `memory_docs` and demoting/removing entries based on age thresholds.
+    ConfidenceDecayed {
+        entries_affected: usize,
+        verified_demoted: usize,
+        external_removed: usize,
+    },
 
     // ── Channels ────────────────────────────────────────────────────────
     /// An inbound channel message from the transport layer, ready for processing.
@@ -661,6 +670,7 @@ impl DomainEvent {
             | Self::MemorySyncStageChanged { .. }
             | Self::MemoryIngestionStarted { .. }
             | Self::MemoryIngestionCompleted { .. }
+            | Self::ConfidenceDecayed { .. }
             | Self::DocumentCanonicalized { .. } => "memory",
 
             Self::CacheRebuilt { .. } => "learning",

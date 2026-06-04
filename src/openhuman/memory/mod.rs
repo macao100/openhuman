@@ -14,6 +14,7 @@ pub mod global;
 pub mod ingestion;
 pub mod ops;
 pub mod preferences;
+pub mod provenance;
 pub mod rpc_models;
 pub mod schemas;
 pub mod traits;
@@ -51,6 +52,9 @@ pub use schemas::{
     all_registered_controllers as all_memory_registered_controllers,
 };
 pub use traits::{Memory, MemoryCategory, MemoryEntry, NamespaceSummary, RecallOpts};
+
+// Re-export provenance types at the memory:: level for convenience.
+pub use provenance::{ConfidenceLevel, MemorySource, Provenance};
 
 // Re-export types that external tests and consumers historically imported
 // from `memory::*`. The definitions moved to sibling crates during the

@@ -30,6 +30,21 @@ pub struct MemoryEntry {
     pub session_id: Option<String>,
     /// Optional relevance or confidence score, typically from 0.0 to 1.0.
     pub score: Option<f64>,
+    /// Optional provenance metadata (source + confidence).
+    ///
+    /// Backward-compatible: missing/unknown fields deserialize as `None`.
+    #[serde(default)]
+    pub provenance: Option<crate::openhuman::memory::provenance::Provenance>,
+}
+
+impl MemoryEntry {
+    /// Convenience accessor: returns the `ConfidenceLevel` from the optional
+    /// provenance field, if present.
+    pub fn confidence_level(
+        &self,
+    ) -> Option<crate::openhuman::memory::provenance::ConfidenceLevel> {
+        self.provenance.as_ref().map(|p| p.confidence)
+    }
 }
 
 /// Categories used to organize and filter memories by their nature and lifecycle.
@@ -226,6 +241,7 @@ mod tests {
             timestamp: "2026-02-16T00:00:00Z".into(),
             session_id: Some("session-abc".into()),
             score: Some(0.98),
+            provenance: None,
         };
 
         let json = serde_json::to_string(&entry).unwrap();
@@ -238,5 +254,79 @@ mod tests {
         assert_eq!(parsed.category, MemoryCategory::Core);
         assert_eq!(parsed.session_id.as_deref(), Some("session-abc"));
         assert_eq!(parsed.score, Some(0.98));
+        assert!(parsed.provenance.is_none());
+    }
+
+    #[test]
+    fn memory_entry_with_provenance_roundtrips() {
+        use crate::openhuman::memory::provenance::{ConfidenceLevel, MemorySource, Provenance};
+
+        let entry = MemoryEntry {
+            id: "id-2".into(),
+            key: "user_pref_theme".into(),
+            content: "Dark theme preferred".into(),
+            namespace: Some("user_pref_general".into()),
+            category: MemoryCategory::Core,
+            timestamp: "2026-06-01T00:00:00Z".into(),
+            session_id: None,
+            score: Some(1.0),
+            provenance: Some(Provenance {
+                source: MemorySource::UserCorrection,
+                confidence: ConfidenceLevel::Verified,
+                source_detail: "dadou_correct_preference: theme".into(),
+            }),
+        };
+
+        let json = serde_json::to_string(&entry).unwrap();
+        let parsed: MemoryEntry = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(parsed.id, "id-2");
+        let prov = parsed.provenance.unwrap();
+        assert_eq!(prov.source, MemorySource::UserCorrection);
+        assert_eq!(prov.confidence, ConfidenceLevel::Verified);
+        assert_eq!(prov.source_detail, "dadou_correct_preference: theme");
+    }
+
+    #[test]
+    fn memory_entry_without_provenance_deserializes_old_json() {
+        // Simulate a JSON payload from before provenance existed.
+        let old_json = r#"{
+            "id": "legacy-1",
+            "key": "old_key",
+            "content": "old content",
+            "category": "core",
+            "timestamp": "2025-01-01T00:00:00Z"
+        }"#;
+        let parsed: MemoryEntry = serde_json::from_str(old_json).unwrap();
+        assert_eq!(parsed.id, "legacy-1");
+        assert!(parsed.provenance.is_none());
+    }
+
+    #[test]
+    fn confidence_level_accessor() {
+        use crate::openhuman::memory::provenance::{ConfidenceLevel, MemorySource, Provenance};
+
+        let entry = MemoryEntry {
+            id: "id-3".into(),
+            key: "test".into(),
+            content: "test".into(),
+            namespace: None,
+            category: MemoryCategory::Core,
+            timestamp: "2026-06-01T00:00:00Z".into(),
+            session_id: None,
+            score: None,
+            provenance: Some(Provenance {
+                source: MemorySource::ChatHistory,
+                confidence: ConfidenceLevel::Verified,
+                source_detail: String::new(),
+            }),
+        };
+        assert_eq!(entry.confidence_level(), Some(ConfidenceLevel::Verified));
+
+        let entry_no_prov = MemoryEntry {
+            provenance: None,
+            ..entry
+        };
+        assert_eq!(entry_no_prov.confidence_level(), None);
     }
 }

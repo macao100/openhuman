@@ -73,6 +73,14 @@ fn all_variants_have_correct_domain() {
             },
             "memory",
         ),
+        (
+            DomainEvent::ConfidenceDecayed {
+                entries_affected: 3,
+                verified_demoted: 2,
+                external_removed: 1,
+            },
+            "memory",
+        ),
         // Channel
         (
             DomainEvent::ChannelInboundMessage {

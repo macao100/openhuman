@@ -260,6 +260,10 @@ fn build_registered_controllers() -> Vec<RegisteredController> {
     controllers.extend(crate::openhuman::whatsapp_data::all_whatsapp_data_registered_controllers());
     // Mobile device pairing and management
     controllers.extend(crate::openhuman::devices::all_devices_registered_controllers());
+    // DADOU provenance tracking — confidence decay, source attribution
+    controllers.extend(
+        crate::openhuman::memory::provenance::schemas::all_registered_controllers(),
+    );
     controllers
 }
 
@@ -369,6 +373,10 @@ fn build_declared_controller_schemas() -> Vec<ControllerSchema> {
     schemas.extend(crate::openhuman::whatsapp_data::all_whatsapp_data_controller_schemas());
     // Mobile device pairing and management
     schemas.extend(crate::openhuman::devices::all_devices_controller_schemas());
+    // DADOU provenance tracking — confidence decay, source attribution
+    schemas.extend(
+        crate::openhuman::memory::provenance::schemas::all_controller_schemas(),
+    );
     schemas
 }
 
