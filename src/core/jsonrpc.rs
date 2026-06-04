@@ -1364,10 +1364,19 @@ async fn run_server_inner(
                     ),
                     Err(e) => log::warn!("[boot] whatsapp_data::global init failed: {e}"),
                 }
+                // Initialize DADOU session context — restores the last active
+                // project, phase, and topic so the agent can resume across
+                // restarts.  Safe to call even when memory DB does not exist yet.
+                crate::openhuman::session_context::ops::init_session_context(
+                    &cfg.workspace_dir,
+                );
+                // Register a shutdown hook for standalone mode (Ctrl-C / SIGTERM).
+                // In embedded mode the save runs inline after the server stops.
+                crate::openhuman::session_context::ops::register_shutdown_hook();
             }
             Err(e) => {
                 log::error!(
-                    "[boot] memory::global + whatsapp_data init SKIPPED — \
+                    "[boot] memory::global + whatsapp_data + session_context init SKIPPED — \
                      Config::load_or_init failed ({e:#}). Memory persistence is \
                      DISABLED for this run; no silent fallback to the default \
                      workspace (which would cause chunk loss / cross-workspace \
@@ -1644,6 +1653,10 @@ async fn run_server_inner(
             log::warn!("[core] shutdown: ollama cleanup exceeded 2s budget; proceeding with exit");
         }
     }
+
+    // Save DADOU session context on shutdown so the next startup can resume.
+    // This runs for both embedded and standalone modes.
+    crate::openhuman::session_context::ops::save_on_shutdown();
 
     Ok(())
 }

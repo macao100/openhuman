@@ -80,6 +80,7 @@ pub mod runtime_python;
 pub mod scheduler_gate;
 pub mod screen_intelligence;
 pub mod security;
+pub mod session_context;
 pub mod service;
 pub mod skills;
 pub mod socket;

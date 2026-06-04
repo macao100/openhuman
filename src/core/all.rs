@@ -269,6 +269,15 @@ fn build_registered_controllers() -> Vec<RegisteredController> {
     controllers.extend(
         crate::openhuman::memory::project_context::schemas::all_registered_controllers(),
     );
+    // DADOU contradiction detection — check and resolve memory contradictions.
+    controllers.extend(
+        crate::openhuman::memory::contradiction::schemas::all_registered_controllers(),
+    );
+    // DADOU session context — cross-session continuity via
+    // the dadou_session_context namespace.
+    controllers.extend(
+        crate::openhuman::session_context::schemas::all_registered_controllers(),
+    );
     controllers
 }
 
@@ -386,6 +395,15 @@ fn build_declared_controller_schemas() -> Vec<ControllerSchema> {
     // the dadou_project_context namespace.
     schemas.extend(
         crate::openhuman::memory::project_context::schemas::all_controller_schemas(),
+    );
+    // DADOU contradiction detection — check and resolve memory contradictions.
+    schemas.extend(
+        crate::openhuman::memory::contradiction::schemas::all_controller_schemas(),
+    );
+    // DADOU session context — cross-session continuity via
+    // the dadou_session_context namespace.
+    schemas.extend(
+        crate::openhuman::session_context::schemas::all_controller_schemas(),
     );
     schemas
 }
@@ -508,6 +526,9 @@ pub fn namespace_description(namespace: &str) -> Option<&'static str> {
         ),
         "companion" => Some(
             "Desktop companion — Clicky-style hotkey-driven interaction loop with STT, LLM, TTS, and visual pointing.",
+        ),
+        "dadou_session_context" => Some(
+            "DADOU session context — cross-session continuity save/restore for project, phase, and topic.",
         ),
         _ => None,
     }
