@@ -80,9 +80,80 @@ pub fn run_from_cli_args(args: &[String]) -> Result<()> {
             );
             crate::core::agent_cli::run_agent_command(&args[1..])
         }
+        "undo" => run_undo_command(&args[1..]),
         "sentry-test" => run_sentry_test_command(&args[1..]),
         // Generic namespace dispatcher: `openhuman <namespace> <function> ...`
         namespace => run_namespace_command(namespace, &args[1..], &grouped),
+    }
+}
+
+/// Handles the `undo` subcommand: `openhuman-core undo [--last | --before <timestamp>]`.
+///
+/// Restores files to their pre-modification state using the rollback history.
+fn run_undo_command(args: &[String]) -> Result<()> {
+    if args.is_empty() || args[0] == "--help" || args[0] == "-h" {
+        println!("Usage: openhuman-core undo [--last | --before <timestamp>]");
+        println!("  --last              Undo the most recent file change");
+        println!("  --before <ts>       Rollback all files modified before ISO 8601 timestamp");
+        println!("  --list              List recent rollback history entries");
+        return Ok(());
+    }
+
+    let rt = tokio::runtime::Runtime::new()?;
+    match args[0].as_str() {
+        "--last" => {
+            let store = crate::openhuman::rollback::store::global_store()
+                .ok_or_else(|| anyhow::anyhow!("Rollback store not initialized"))?;
+            rt.block_on(async {
+                match crate::openhuman::rollback::ops::undo_last(store).await {
+                    Ok(outcome) => {
+                        println!("{}", serde_json::to_string_pretty(&outcome.value)?);
+                        Ok(())
+                    }
+                    Err(err) => {
+                        eprintln!("Error: {err}");
+                        std::process::exit(1);
+                    }
+                }
+            })
+        }
+        "--before" => {
+            let timestamp = args
+                .get(1)
+                .ok_or_else(|| anyhow::anyhow!("Missing timestamp argument after --before"))?;
+            let store = crate::openhuman::rollback::store::global_store()
+                .ok_or_else(|| anyhow::anyhow!("Rollback store not initialized"))?;
+            rt.block_on(async {
+                match crate::openhuman::rollback::ops::undo_before(store, timestamp).await {
+                    Ok(outcome) => {
+                        println!("{}", serde_json::to_string_pretty(&outcome.value)?);
+                        Ok(())
+                    }
+                    Err(err) => {
+                        eprintln!("Error: {err}");
+                        std::process::exit(1);
+                    }
+                }
+            })
+        }
+        "--list" => {
+            let store = crate::openhuman::rollback::store::global_store()
+                .ok_or_else(|| anyhow::anyhow!("Rollback store not initialized"))?;
+            match store.list_recent(20) {
+                Ok(entries) => {
+                    println!("{}", serde_json::to_string_pretty(&entries)?);
+                    Ok(())
+                }
+                Err(err) => {
+                    eprintln!("Error: {err}");
+                    std::process::exit(1);
+                }
+            }
+        }
+        other => {
+            eprintln!("Unknown undo option: {other}. Use --last, --before <timestamp>, or --list");
+            std::process::exit(1);
+        }
     }
 }
 
