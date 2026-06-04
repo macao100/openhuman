@@ -912,6 +912,78 @@ pub(crate) async fn run_tool_call_loop(
             }
 
             let (result, call_succeeded) = if let Some(tool) = tool_opt {
+                // ── Guardian N1 interception ──────────────────────────
+                if let Some(guardian) =
+                    crate::openhuman::guardian::GuardianN1::try_global()
+                {
+                    let command = if call.name == "bash" || call.name == "shell" {
+                        call.arguments.get("command").and_then(|v| v.as_str())
+                    } else {
+                        None
+                    };
+                    let file_path = match call.name.as_str() {
+                        "file_write" | "edit" | "file_read" | "glob" | "grep"
+                        | "list_files" | "glob_search" | "read_diff"
+                        | "run_linter" | "run_tests" => {
+                            call.arguments.get("path").and_then(|v| v.as_str())
+                        }
+                        "apply_patch" => call
+                            .arguments
+                            .get("edits")
+                            .and_then(|v| v.as_array())
+                            .and_then(|arr| arr.first())
+                            .and_then(|edit| edit.get("path"))
+                            .and_then(|v| v.as_str()),
+                        _ => None,
+                    };
+
+                    let n1_result = guardian
+                        .evaluate(&call.name, &call.arguments, command, file_path)
+                        .await;
+
+                    if !n1_result.allowed {
+                        let reason = format!(
+                            "[policy-blocked] Guardian N1 blocked: {}",
+                            n1_result
+                                .rule_results
+                                .iter()
+                                .filter(|r| r.action == crate::openhuman::guardian::RuleAction::Block)
+                                .map(|r| format!("[{}: {}]", r.rule_name, r.reason))
+                                .collect::<Vec<_>>()
+                                .join("; ")
+                        );
+                        tracing::warn!(
+                            tool = call.name.as_str(),
+                            %reason,
+                            "[guardian] N1 blocked action"
+                        );
+                        crate::core::event_bus::bus::publish_global(
+                            crate::core::event_bus::DomainEvent::GuardianBlocked {
+                                tool_name: call.name.clone(),
+                                reason: reason.clone(),
+                                latency_us: n1_result.latency_us,
+                            },
+                        );
+                        let _ = writeln!(
+                            tool_results,
+                            "<tool_result name=\"{}\">\n{reason}\n</tool_result>",
+                            call.name
+                        );
+                        emit_failed_completion(&reason).await;
+                        if let Some(halt) = failure_guard.record(
+                            &call.name,
+                            &call.arguments.to_string(),
+                            false,
+                            &reason,
+                        ) {
+                            halt_reason = Some(halt);
+                        }
+                        individual_results.push(reason);
+                        continue;
+                    }
+                }
+                // ── Fin interception N1 ───────────────────────────────
+
                 let tool_deadline =
                     crate::openhuman::tool_timeout::tool_execution_timeout_duration();
                 let timeout_secs = crate::openhuman::tool_timeout::tool_execution_timeout_secs();

@@ -276,6 +276,15 @@ pub enum DomainEvent {
         elapsed_ms: u64,
     },
 
+    // ── Guardian ──────────────────────────────────────────────────────────────
+    /// An action was blocked by Guardian N1 deterministic rules
+    /// before reaching tool execution.
+    GuardianBlocked {
+        tool_name: String,
+        reason: String,
+        latency_us: u64,
+    },
+
     // ── Approval ────────────────────────────────────────────────────────
     /// Agent attempted a tool call that produces an external side
     /// effect; awaiting user approval. Published by `ApprovalGate`
@@ -675,6 +684,8 @@ impl DomainEvent {
             | Self::SkillExecuted { .. } => "skill",
 
             Self::ToolExecutionStarted { .. } | Self::ToolExecutionCompleted { .. } => "tool",
+
+            Self::GuardianBlocked { .. } => "guardian",
 
             Self::WebhookIncomingRequest { .. }
             | Self::WebhookReceived { .. }
