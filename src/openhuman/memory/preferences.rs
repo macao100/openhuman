@@ -14,6 +14,7 @@
 
 use std::sync::Arc;
 
+use super::provenance::{ConfidenceLevel, MemorySource, Provenance};
 use super::Memory;
 
 /// Always-on preferences — injected into the system prompt every thread.
@@ -129,6 +130,41 @@ pub async fn recall_related_preferences(
     out
 }
 
+/// Store a user preference correction with explicit provenance.
+///
+/// Writes to `user_pref_general` namespace with `MemoryCategory::Core`.
+/// The content is structured as `"[user correction] {topic}: {value}"` so
+/// the agent can parse the correction intent from the stored text.
+///
+/// Provenance is stamped as `{source: UserCorrection, confidence: Verified}`
+/// and embedded in the content as a `[provenance]` metadata line, consistent
+/// with the memory_loader `[Prior conversations]` block pattern.
+pub async fn store_preference_correction(
+    memory: &Arc<dyn Memory>,
+    topic: &str,
+    value: &str,
+) -> anyhow::Result<()> {
+    let content = format!(
+        "[user correction] {topic}: {value}\n[provenance] {}",
+        serde_json::to_string(&Provenance {
+            source: MemorySource::UserCorrection,
+            confidence: ConfidenceLevel::Verified,
+            source_detail: format!("store_preference_correction: '{topic}'"),
+        })
+        .unwrap_or_else(|_| "{}".to_string())
+    );
+
+    memory
+        .store(
+            USER_PREF_GENERAL_NAMESPACE,
+            topic,
+            &content,
+            MemoryCategory::Core,
+            None,
+        )
+        .await
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -170,5 +206,57 @@ mod tests {
 
         // The limit caps the block.
         assert_eq!(load_general_preferences(&mem, 1).await.len(), 1);
+    }
+
+    // ── store_preference_correction ────────────────────────────────────
+
+    #[tokio::test]
+    async fn store_preference_correction_creates_entry_in_general_namespace() {
+        let tmp = TempDir::new().unwrap();
+        let mem: Arc<dyn Memory> =
+            Arc::new(UnifiedMemory::new(tmp.path(), Arc::new(NoopEmbedding), None).unwrap());
+
+        store_preference_correction(&mem, "theme", "dark mode").await.unwrap();
+
+        let retrieved = mem
+            .get(USER_PREF_GENERAL_NAMESPACE, "theme")
+            .await
+            .unwrap()
+            .expect("entry should exist");
+        assert!(retrieved.content.contains("[user correction]"));
+        assert!(retrieved.content.contains("theme: dark mode"));
+        assert!(retrieved.content.contains("[provenance]"));
+    }
+
+    #[tokio::test]
+    async fn store_preference_correction_overwrites_existing_key() {
+        let tmp = TempDir::new().unwrap();
+        let mem: Arc<dyn Memory> =
+            Arc::new(UnifiedMemory::new(tmp.path(), Arc::new(NoopEmbedding), None).unwrap());
+
+        store_preference_correction(&mem, "language", "English").await.unwrap();
+        store_preference_correction(&mem, "language", "French").await.unwrap();
+
+        let retrieved = mem
+            .get(USER_PREF_GENERAL_NAMESPACE, "language")
+            .await
+            .unwrap()
+            .expect("entry should exist");
+        assert!(retrieved.content.contains("French"));
+        assert!(!retrieved.content.contains("English"));
+    }
+
+    #[tokio::test]
+    async fn store_preference_correction_appears_in_load_general_preferences() {
+        let tmp = TempDir::new().unwrap();
+        let mem: Arc<dyn Memory> =
+            Arc::new(UnifiedMemory::new(tmp.path(), Arc::new(NoopEmbedding), None).unwrap());
+
+        store_preference_correction(&mem, "reply_style", "always cite sources")
+            .await
+            .unwrap();
+
+        let prefs = load_general_preferences(&mem, 10).await;
+        assert!(prefs.iter().any(|v| v.contains("always cite sources")));
     }
 }

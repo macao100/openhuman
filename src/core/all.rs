@@ -264,6 +264,11 @@ fn build_registered_controllers() -> Vec<RegisteredController> {
     controllers.extend(
         crate::openhuman::memory::provenance::schemas::all_registered_controllers(),
     );
+    // DADOU project context — structured project facts stored in
+    // the dadou_project_context namespace.
+    controllers.extend(
+        crate::openhuman::memory::project_context::schemas::all_registered_controllers(),
+    );
     controllers
 }
 
@@ -376,6 +381,11 @@ fn build_declared_controller_schemas() -> Vec<ControllerSchema> {
     // DADOU provenance tracking — confidence decay, source attribution
     schemas.extend(
         crate::openhuman::memory::provenance::schemas::all_controller_schemas(),
+    );
+    // DADOU project context — structured project facts stored in
+    // the dadou_project_context namespace.
+    schemas.extend(
+        crate::openhuman::memory::project_context::schemas::all_controller_schemas(),
     );
     schemas
 }

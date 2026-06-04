@@ -14,6 +14,7 @@ pub mod global;
 pub mod ingestion;
 pub mod ops;
 pub mod preferences;
+pub mod project_context;
 pub mod provenance;
 pub mod rpc_models;
 pub mod schemas;

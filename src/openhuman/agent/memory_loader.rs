@@ -175,6 +175,49 @@ impl MemoryLoader for DefaultMemoryLoader {
             usize::MAX
         };
 
+        // ── Project context (MEM-01) ─────────────────────────────
+        // Structured facts about the user's projects (goals, architecture
+        // decisions, known issues) loaded from the `dadou_project_context`
+        // namespace. Injected at session start so DADOU always has the full
+        // project picture — not just the current file — when planning
+        // multi-step actions.
+        if let Some(client) = crate::openhuman::memory::global::client_if_ready() {
+            let ctx =
+                crate::openhuman::memory::project_context::ops::load_project_context(&client).await;
+            if !ctx.is_empty() && context.len() + ctx.len() + 2 <= budget {
+                context.push_str(&ctx);
+                context.push('\n');
+            }
+        }
+
+        // ── General preferences (MEM-02) ─────────────────────────
+        // Always-on preferences injected into the system prompt every
+        // session (not gated on recall scoring) so user corrections and
+        // preference choices are retained across restarts — DADOU doesn't
+        // relearn the same settings.
+        if let Some(client) = crate::openhuman::memory::global::client_if_ready() {
+            let mem = client.memory_handle();
+            let prefs = crate::openhuman::memory::preferences::load_general_preferences(
+                &mem,
+                crate::openhuman::memory::preferences::STANDING_PREFS_LIMIT,
+            )
+            .await;
+            if !prefs.is_empty() {
+                let section = "[Preferences]\n";
+                if context.len() + section.len() <= budget {
+                    context.push_str(section);
+                    for pref in &prefs {
+                        let line = format!("- {}\n", pref);
+                        if context.len() + line.len() > budget {
+                            break;
+                        }
+                        context.push_str(&line);
+                    }
+                    context.push('\n');
+                }
+            }
+        }
+
         let working_query = format!("working.user {user_message}");
         let working_entries = memory
             .recall(
