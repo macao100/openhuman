@@ -1,0 +1,40 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-06-04T22:45:45Z",
+  "phase": "02",
+  "phase_name": "memory-continuity",
+  "phase_dir": ".planning/phases/02-memory-continuity",
+  "plan": 1,
+  "task": 1,
+  "total_tasks": 3,
+  "status": "paused",
+  "completed_tasks": [],
+  "remaining_tasks": [
+    {"id": 1, "name": "Define provenance types and integrate with MemoryEntry", "status": "in_progress", "progress": "Background agent launched, no files committed yet"},
+    {"id": 2, "name": "SQLite schema migration for provenance column", "status": "not_started"},
+    {"id": 3, "name": "Confidence decay scheduler + domain event + controllers", "status": "not_started"}
+  ],
+  "pending_plans": [
+    {"plan": "02-02", "name": "Project Context & Preferences", "requirements": ["MEM-01", "MEM-02"], "wave": 2, "depends_on": ["02-01"]},
+    {"plan": "02-03", "name": "Contradiction Detection", "requirements": ["MEM-03"], "wave": 3, "depends_on": ["02-01", "02-02"]},
+    {"plan": "02-04", "name": "Cross-Session Continuity", "requirements": ["CTX-01", "CTX-02"], "wave": 3, "depends_on": ["02-02"]}
+  ],
+  "blockers": [
+    {"description": "whisper-rs-sys build requires libclang.dll (LLVM) — cargo check/test cannot run on this Windows machine", "type": "technical", "workaround": "Match existing code patterns exactly; verify correctness by structural comparison"}
+  ],
+  "human_actions_pending": [],
+  "decisions": [
+    {"decision": "D-12: Provenance stocké comme champ JSON dans colonne provenance_json de memory_docs", "rationale": "JSON assez structuré pour queries simples, schema flexible", "phase": "02"},
+    {"decision": "D-13: Pas de nouvelle table — ALTER TABLE ADD COLUMN sur memory_docs existante", "rationale": "Migration minimale, backward compat", "phase": "02"},
+    {"decision": "D-14: Migration via PRAGMA user_version (pattern chunks/store.rs:1488-1566)", "rationale": "Pattern existant éprouvé, idempotent", "phase": "02"},
+    {"decision": "D-15: score (f64, relevance) conservé — confidence est orthogonal", "rationale": "Fiabilité source ≠ pertinence contextuelle", "phase": "02"},
+    {"decision": "D-16: Decay scheduler: Verified→Inferred après 30j, External supprimé après 7j", "rationale": "Configurable via set_decay_config RPC", "phase": "02"},
+    {"decision": "D-17: verified nécessite confirmation utilisateur explicite via dadou_memory_confirm", "rationale": "Rien n'est verified sans accord explicite", "phase": "02"}
+  ],
+  "uncommitted_files": [".gitignore", "CLAUDE.md"],
+  "background_processes": [
+    {"agent_id": "a59c9d682bda0bd6f", "description": "gsd-executor for Plan 02-01 (Provenance & Confidence)", "status": "running"}
+  ],
+  "next_action": "Vérifier si l'agent 02-01 a produit des fichiers. Si oui, les commit et continuer avec Plan 02-02. Si non, relancer l'exécution du Plan 02-01.",
+  "context_notes": "Phase 1 (Security Foundation) est COMPLETED — 6/6 plans, 7 commits, ~5200 lignes. Phase 2 (Memory & Continuity) — planification terminée (4 plans, 20 décisions D-12 à D-31). Exécution Wave 1 (Plan 02-01) lancée via agent gsd-executor en arrière-plan. Approche: étendre l'existant (UnifiedMemory, MemoryEntry, MemoryClient), ne pas réécrire."
+}
