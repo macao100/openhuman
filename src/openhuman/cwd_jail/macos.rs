@@ -9,9 +9,9 @@
 
 #![cfg(target_os = "macos")]
 
-use std::process::{Child, Command};
+use std::process::Command;
 
-use super::jail::{Jail, JailBackend};
+use super::jail::{Jail, JailBackend, JailedChild};
 
 pub struct SeatbeltBackend;
 
@@ -30,7 +30,7 @@ impl JailBackend for SeatbeltBackend {
         std::path::Path::new("/usr/bin/sandbox-exec").exists()
     }
 
-    fn spawn(&self, jail: &Jail, cmd: Command) -> std::io::Result<Child> {
+    fn spawn(&self, jail: &Jail, cmd: Command) -> std::io::Result<JailedChild> {
         let profile = render_profile(jail);
 
         // sandbox-exec only accepts profiles from disk or from `-p`. Inline
@@ -64,7 +64,7 @@ impl JailBackend for SeatbeltBackend {
         // defaults — callers can re-wire by spawning into a pre-set stdio
         // via the returned `Child` is not possible; for now we match the
         // sandbox-exec defaults (inherit). Document this in mod.rs.
-        wrapper.spawn()
+        wrapper.spawn().map(JailedChild::Std)
     }
 }
 

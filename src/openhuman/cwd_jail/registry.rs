@@ -25,13 +25,13 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::process::{Child, Command};
+use std::process::Command;
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 
-use super::jail::{Jail, JailBackend};
+use super::jail::{Jail, JailBackend, JailedChild};
 use super::{default_backend, spawn_with};
 
 /// Metadata persisted for each jail.
@@ -318,7 +318,7 @@ impl JailRegistry {
     /// Spawn `cmd` inside the named jail, using the default backend.
     /// Convenience wrapper — the same effect as
     /// `spawn(&Jail::new(record.dir, record.label), cmd)`.
-    pub fn spawn_in(&self, id: &str, cmd: Command) -> io::Result<Child> {
+    pub fn spawn_in(&self, id: &str, cmd: Command) -> io::Result<JailedChild> {
         let jail = self.jail_for(id)?;
         log::debug!("[cwd_jail] registry.spawn_in id={id}");
         default_backend().spawn(&jail, cmd)
@@ -330,7 +330,7 @@ impl JailRegistry {
         id: &str,
         backend: &dyn JailBackend,
         cmd: Command,
-    ) -> io::Result<Child> {
+    ) -> io::Result<JailedChild> {
         let jail = self.jail_for(id)?;
         log::debug!(
             "[cwd_jail] registry.spawn_in_with id={id} backend={}",

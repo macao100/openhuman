@@ -31,7 +31,7 @@ use std::io;
 use std::os::windows::ffi::OsStrExt;
 use std::os::windows::io::{FromRawHandle, OwnedHandle};
 use std::path::Path;
-use std::process::{Child, Command};
+use std::process::Command;
 use std::ptr;
 
 use windows_sys::core::PWSTR;
@@ -63,7 +63,7 @@ use windows_sys::Win32::System::Threading::{
     PROCESS_INFORMATION, PROC_THREAD_ATTRIBUTE_SECURITY_CAPABILITIES, STARTUPINFOEXW, STARTUPINFOW,
 };
 
-use super::jail::{Jail, JailBackend};
+use super::jail::{Jail, JailBackend, JailedChild};
 
 pub struct AppContainerBackend;
 
@@ -86,12 +86,12 @@ impl JailBackend for AppContainerBackend {
         true
     }
 
-    fn spawn(&self, jail: &Jail, cmd: Command) -> io::Result<Child> {
+    fn spawn(&self, jail: &Jail, cmd: Command) -> io::Result<JailedChild> {
         unsafe { spawn_in_container(jail, cmd) }
     }
 }
 
-unsafe fn spawn_in_container(jail: &Jail, cmd: Command) -> io::Result<Child> {
+unsafe fn spawn_in_container(jail: &Jail, cmd: Command) -> io::Result<JailedChild> {
     // 1. Create or open the AppContainer profile and obtain its SID.
     let profile_name = sanitize_profile_name(&jail.label);
     let wide_name = to_wide(&profile_name);
@@ -197,27 +197,19 @@ unsafe fn spawn_in_container(jail: &Jail, cmd: Command) -> io::Result<Child> {
         return Err(io::Error::last_os_error());
     }
 
-    // 6. Wrap the raw process handle in a std `Child`.
+    // 6. Wrap the raw process handle in `JailedChild::Custom`.
     //
-    // std::process::Child has no public constructor from a raw HANDLE on
-    // Windows. We close the thread handle (we don't need it) and leak the
-    // process handle into an OwnedHandle so the caller can at least wait
-    // via the OS. Returning a `Child` requires nightly's `FromRawHandle for
-    // Child`, which is unstable. For now we close the process handle too
-    // and return an error explaining the limitation — see TODO below.
+    // Close the thread handle (we don't need it) and construct an
+    // `OwnedHandle` from the process handle. `JailedChild::Custom`
+    // owns the handle and provides `wait()` / `kill()` / `try_wait()`
+    // via Win32 APIs (WaitForSingleObject, GetExitCodeProcess, …).
     CloseHandle(pi.hThread);
+    let process_handle = OwnedHandle::from_raw_handle(pi.hProcess as _);
 
-    let _process_handle = OwnedHandle::from_raw_handle(pi.hProcess as _);
-
-    // TODO: bridge OwnedHandle -> std::process::Child once
-    // `std::os::windows::process::ChildExt::from_raw_handle` lands, OR
-    // expose a custom `OpenhumanChild` from the cwd_jail module that
-    // mirrors the bits of `Child` callers actually need (id, wait, kill).
-    Err(io::Error::new(
-        io::ErrorKind::Unsupported,
-        "AppContainer spawn succeeded but cannot yet be returned as std::process::Child; \
-         see TODO in src/openhuman/cwd_jail/windows.rs",
-    ))
+    Ok(JailedChild::Custom {
+        handle: process_handle,
+        pid: pi.dwProcessId,
+    })
 }
 
 unsafe fn grant_sid_access(path: &Path, sid: PSID, access: u32) -> io::Result<()> {

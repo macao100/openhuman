@@ -11,12 +11,13 @@
 //! `cwd_jail` is the user-facing facade. Callers describe *what* the
 //! jail looks like ([`Jail`]) and the module picks the right OS backend:
 //!
-//! | OS      | Backend       | Mechanism                                  |
-//! |---------|---------------|--------------------------------------------|
-//! | Linux   | landlock      | Kernel 5.13+ LSM, applied in `pre_exec`    |
-//! | macOS   | seatbelt      | `sandbox-exec -p '<profile>' …`            |
-//! | Windows | appcontainer  | `CreateAppContainerProfile` + `STARTUPINFOEX` |
-//! | other   | noop          | Plain `Command::spawn`, audit-only         |
+//! | OS      | Backend            | Mechanism                                  |
+//! |---------|--------------------|--------------------------------------------|
+//! | Linux   | landlock           | Kernel 5.13+ LSM, applied in `pre_exec`    |
+//! | macOS   | seatbelt           | `sandbox-exec -p '<profile>' …`            |
+//! | Windows | restricted_token   | `CreateRestrictedToken` + Low IL + CIG/CFG |
+//! | Windows | appcontainer       | `CreateAppContainerProfile` (fallback)     |
+//! | other   | noop               | fail-closed (returns error)                |
 //!
 //! ## Quick start
 //!
@@ -31,7 +32,8 @@
 //!
 //! let mut cmd = Command::new("node");
 //! cmd.arg("script.js");
-//! let child = spawn(&jail, cmd)?;
+//! let mut child = spawn(&jail, cmd)?;
+//! let status = child.wait()?;
 //! ```
 //!
 //! ## What this does *not* do
@@ -55,12 +57,14 @@ pub mod linux;
 pub mod macos;
 #[cfg(target_os = "windows")]
 pub mod windows;
+#[cfg(target_os = "windows")]
+pub mod windows_restricted;
 
-pub use jail::{Jail, JailBackend};
+pub use jail::{Jail, JailBackend, JailedChild};
 pub use noop::NoopBackend;
 pub use registry::{JailRecord, JailRegistry};
 
-use std::process::{Child, Command};
+use std::process::Command;
 use std::sync::{Arc, OnceLock};
 
 /// Cached default backend for the current platform.
@@ -77,16 +81,20 @@ pub fn default_backend() -> Arc<dyn JailBackend> {
 /// `..` or symlinks. If the root does not exist, the spawn fails with
 /// `NotFound` (canonicalize bubbles it up) — callers should create the
 /// workspace before encapsulating.
-pub fn spawn(jail: &Jail, cmd: Command) -> std::io::Result<Child> {
+pub fn spawn(jail: &Jail, cmd: Command) -> std::io::Result<JailedChild> {
     let mut jail = jail.clone();
     jail.canonicalize()?;
     default_backend().spawn(&jail, cmd)
 }
 
-/// Same as [`jail`] but with a caller-supplied backend. Useful in
+/// Same as [`spawn`] but with a caller-supplied backend. Useful in
 /// tests and for callers that want to opt into a weaker backend
 /// explicitly (e.g. forcing [`NoopBackend`] during local dev).
-pub fn spawn_with(backend: &dyn JailBackend, jail: &Jail, cmd: Command) -> std::io::Result<Child> {
+pub fn spawn_with(
+    backend: &dyn JailBackend,
+    jail: &Jail,
+    cmd: Command,
+) -> std::io::Result<JailedChild> {
     let mut jail = jail.clone();
     jail.canonicalize()?;
     backend.spawn(&jail, cmd)
@@ -95,7 +103,7 @@ pub fn spawn_with(backend: &dyn JailBackend, jail: &Jail, cmd: Command) -> std::
 impl Jail {
     /// Best-effort canonicalize that swallows errors and logs them. Most
     /// callers should use the validating [`Jail::canonicalize`] path that
-    /// [`jail`] runs automatically.
+    /// [`spawn`] runs automatically.
     pub fn canonicalize_or_log(&mut self) {
         if let Err(e) = self.canonicalize() {
             log::warn!(
@@ -110,22 +118,6 @@ impl Jail {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn noop_backend_spawns_unrestricted() {
-        let dir = std::env::temp_dir();
-        let jail = Jail::new(&dir, "test.noop");
-        let mut child = spawn_with(&NoopBackend, &jail, {
-            let mut c = Command::new(if cfg!(windows) { "cmd" } else { "true" });
-            if cfg!(windows) {
-                c.args(["/C", "exit"]);
-            }
-            c
-        })
-        .expect("noop spawn");
-        let status = child.wait().expect("wait");
-        assert!(status.success() || cfg!(windows));
-    }
 
     #[test]
     fn jail_builder_chains() {
@@ -173,7 +165,7 @@ mod tests {
         // Must succeed via whichever platform backend is detected (or
         // noop). The point of the test is that we go through the public
         // `spawn` entry rather than `spawn_with`.
-        let mut child = spawn(&jail, cmd).expect("spawn spawn");
+        let mut child = spawn(&jail, cmd).expect("spawn");
         let _ = child.wait().expect("wait");
     }
 

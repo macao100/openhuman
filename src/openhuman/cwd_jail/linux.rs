@@ -9,9 +9,9 @@
 
 #![cfg(target_os = "linux")]
 
-use std::process::{Child, Command};
+use std::process::Command;
 
-use super::jail::{Jail, JailBackend};
+use super::jail::{Jail, JailBackend, JailedChild};
 
 pub struct LandlockBackend;
 
@@ -41,7 +41,7 @@ impl JailBackend for LandlockBackend {
         }
     }
 
-    fn spawn(&self, jail: &Jail, mut cmd: Command) -> std::io::Result<Child> {
+    fn spawn(&self, jail: &Jail, mut cmd: Command) -> std::io::Result<JailedChild> {
         #[cfg(feature = "sandbox-landlock")]
         {
             use landlock::{
@@ -110,12 +110,12 @@ impl JailBackend for LandlockBackend {
                 });
             }
 
-            cmd.spawn()
+            cmd.spawn().map(JailedChild::Std)
         }
         #[cfg(not(feature = "sandbox-landlock"))]
         {
             let _ = jail;
-            cmd.spawn()
+            cmd.spawn().map(JailedChild::Std)
         }
     }
 }
