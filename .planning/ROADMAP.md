@@ -182,7 +182,7 @@ Plans:
 | 4. Skills WASM | 5/5 | ✅ Complete | 2026-06-05 |
 | 5. Anti-Injection | 4/4 | ✅ Complete | 2026-06-05 |
 | 6. Dashboard & Semantic Router | 4/4 | ✅ Complete | 2026-06-05 |
-| 7. Python Skills | 0/TBD | ⏳ Pending | - |
+| 7. Python Skills | 2/2 | ✅ Complete | 2026-06-05 |
 
 ---
 
@@ -200,7 +200,7 @@ Plans:
 | MEM-04 | Phase 2 | ✅ |
 | SKL-01 | Phase 4 | ✅ |
 | SKL-02 | Phase 4 | ✅ |
-| SKL-03 | Phase 7 | ⏳ |
+| SKL-03 | Phase 7 | ✅ |
 | SKL-04 | Phase 4 | ✅ |
 | SKL-05 | Phase 4 | ✅ |
 | SKL-06 | Phase 4 | ✅ |
