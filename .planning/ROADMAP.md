@@ -181,7 +181,7 @@ Plans:
 | 3. Guardian N2+N3 | 4/4 | ✅ Complete | 2026-06-05 |
 | 4. Skills WASM | 5/5 | ✅ Complete | 2026-06-05 |
 | 5. Anti-Injection | 4/4 | ✅ Complete | 2026-06-05 |
-| 6. Dashboard & Semantic Router | 0/TBD | ⏳ Planning | - |
+| 6. Dashboard & Semantic Router | 4/4 | ✅ Complete | 2026-06-05 |
 | 7. Python Skills | 0/TBD | ⏳ Pending | - |
 
 ---
@@ -211,8 +211,8 @@ Plans:
 | INJ-04 | Phase 5 | ✅ |
 | UND-01 | Phase 1 | ✅ |
 | UND-02 | Phase 1 | ✅ |
-| RTR-01 | Phase 6 | ⏳ |
-| OBS-01 | Phase 6 | ⏳ |
+| RTR-01 | Phase 6 | ✅ |
+| OBS-01 | Phase 6 | ✅ |
 | CTX-01 | Phase 2 | ✅ |
 | CTX-02 | Phase 2 | ✅ |
 

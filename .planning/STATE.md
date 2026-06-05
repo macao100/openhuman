@@ -1,10 +1,10 @@
 # DADOU — Project State
 
-**Last updated:** 2026-06-05 16:00
-**Current phase:** 5 (Anti-Injection) — COMPLETED
-**Next phase:** 6 (Dashboard & Semantic Router)
+**Last updated:** 2026-06-05 17:15
+**Current phase:** 6 (Dashboard & Semantic Router) — COMPLETED
+**Next phase:** 7 (Python Skills)
 **Milestone:** v1
-**Global progress:** 5/7 phases (71%)
+**Global progress:** 6/7 phases (86%)
 
 ---
 
@@ -58,11 +58,11 @@
 | Dimension | Value |
 |-----------|-------|
 | Milestone | v1 |
-| Phase | 5 - Anti-Injection |
+| Phase | 6 - Dashboard & Semantic Router |
 | Status | COMPLETED |
-| Progress | [####################                ] 71% |
+| Progress | [######################            ] 86% |
 
-**Next action:** Planifier puis exécuter la Phase 6 (`/gsd:plan-phase 06-dashboard`).
+**Next action:** Planifier Phase 7 (Python Skills) — `plan-phase 7`.
 
 ---
 
