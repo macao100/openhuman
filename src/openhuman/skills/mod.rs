@@ -5,6 +5,7 @@ pub mod bus;
 pub mod inject;
 pub mod manifest;
 pub mod ops;
+pub mod python;
 pub mod ops_create;
 pub mod ops_discover;
 pub mod ops_install;
@@ -20,8 +21,10 @@ pub mod wasm_install;
 
 pub use manifest::{
     parse_manifest, Dependency, FilesystemPerms, GpgConfig, ManifestError, Permissions,
-    SkillManifest, WasmConfig,
+    PythonConfig, SkillManifest, WasmConfig,
 };
+pub use python::PythonSkillRuntime;
+pub use store::{InstalledSkill, SkillRuntime, SkillsStore};
 pub use ops::*;
 pub use schemas::{
     all_dadou_skills_controller_schemas, all_dadou_skills_registered_controllers,

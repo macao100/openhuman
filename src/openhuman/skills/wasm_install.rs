@@ -73,6 +73,10 @@ pub enum InstallError {
     #[error("skill not found: {0}")]
     NotFound(String),
 
+    /// pip install failed during Python skill setup.
+    #[error("pip install failed: {0}")]
+    PipError(String),
+
     /// Workspace / skills directory could not be resolved.
     #[error("directory resolution error: {0}")]
     DirResolution(String),
@@ -234,10 +238,28 @@ impl GitSkillInstaller {
         // Step 3 — Read and parse manifest
         let manifest = read_manifest(&clone_path)?;
         tracing::info!(
-            "[skills:install] manifest parsed: {} v{}",
+            "[skills:install] manifest parsed: {} v{} runtime={}",
             manifest.name,
-            manifest.version
+            manifest.version,
+            manifest.runtime_kind()
         );
+
+        // Route to WASM or Python install path based on manifest runtime.
+        match manifest.runtime_kind() {
+            "python" => {
+                return self.install_python_skill(&manifest, &clone_path, git_url).await;
+            }
+            "wasm" => {
+                // Continue with WASM path below.
+            }
+            _ => {
+                return Err(InstallError::Manifest(
+                    ManifestError::InvalidField(
+                        "manifest must specify either 'wasm' or 'python' section".to_string(),
+                    ),
+                ));
+            }
+        }
 
         // Skip GPG + tag steps if no GPG is configured in manifest.
         let sig_result = if manifest.gpg.is_some() {
@@ -341,6 +363,8 @@ impl GitSkillInstaller {
             } else {
                 "pass".to_string()
             }),
+            runtime: crate::openhuman::skills::store::SkillRuntime::Wasm,
+            python_config: None,
         };
 
         self.store
@@ -360,6 +384,116 @@ impl GitSkillInstaller {
             gpg_status,
             name: manifest.name,
             version: manifest.version,
+            analysis_verdict: analysis.verdict,
+            findings_count: analysis.findings.len(),
+            path: dest_dir,
+        })
+    }
+
+    // -----------------------------------------------------------------------
+    // Python install pipeline
+    // -----------------------------------------------------------------------
+
+    /// Install a Python skill from a cloned repository.
+    ///
+    /// Unlike WASM skills, Python skills copy the entire source tree and
+    /// the skill is executed at runtime via Docker or local Python.
+    async fn install_python_skill(
+        &mut self,
+        manifest: &SkillManifest,
+        clone_path: &Path,
+        _git_url: &str,
+    ) -> Result<InstallOutcome, InstallError> {
+        let python_config = manifest.python.as_ref()
+            .ok_or_else(|| InstallError::Manifest(ManifestError::InvalidField(
+                "python section missing from manifest".to_string(),
+            )))?;
+
+        // Steps 4-5 — GPG + static analysis (reuse WASM pipeline steps)
+        let sig_result = if manifest.gpg.is_some() {
+            let tag = find_latest_tag(clone_path)?;
+            let result = verify_git_tag_signature(&tag, clone_path, &self.trust_store)?;
+            match &result {
+                SignatureVerificationResult::Invalid { reason } => {
+                    return Err(InstallError::Gpg(VerifyError::SignatureInvalid(
+                        reason.clone(),
+                    )));
+                }
+                _ => {}
+            }
+            checkout_tag(clone_path, &tag)?;
+            Some(result)
+        } else {
+            None
+        };
+
+        let analysis = scoped_static_analysis(clone_path, manifest)?;
+        if analysis.verdict == AnalysisVerdict::Block {
+            let reasons: Vec<String> = analysis
+                .findings
+                .iter()
+                .map(|f| format!("[{}] {}:{} — {}", f.severity, f.file, f.line, f.pattern))
+                .collect();
+            return Err(InstallError::AnalysisBlocked(reasons.join("\n")));
+        }
+
+        // Step 6 — Copy entire source tree to ~/.openhuman/skills/<name>/src/
+        let dest_dir = self.skills_dir.join(&manifest.name);
+        let src_dir = dest_dir.join("src");
+        std::fs::create_dir_all(&src_dir)
+            .with_context(|| format!("failed to create skill src dir: {}", src_dir.display()))?;
+
+        copy_dir_except_git(clone_path, &src_dir)?;
+        tracing::info!("[skills:install] copied Python source to {}", src_dir.display());
+
+        // Copy manifest YAML for audit trail
+        let manifest_src = clone_path.join("dadou-skill.yaml");
+        if manifest_src.exists() {
+            std::fs::copy(&manifest_src, dest_dir.join("dadou-skill.yaml"))?;
+        }
+
+        // Step 7 — GPG status and store registration
+        let (gpg_status, gpg_fingerprint) = match &sig_result {
+            Some(SignatureVerificationResult::Valid { fingerprint }) => {
+                ("verified".to_string(), Some(fingerprint.clone()))
+            }
+            Some(SignatureVerificationResult::Untrusted { fingerprint: _, .. }) => {
+                ("untrusted".to_string(), None)
+            }
+            None => ("no_signature".to_string(), None),
+            Some(SignatureVerificationResult::Invalid { .. }) => unreachable!(),
+        };
+
+        let commit_hash = resolve_head_commit(clone_path)?;
+
+        let installed = InstalledSkill {
+            name: manifest.name.clone(),
+            version: manifest.version.clone(),
+            commit_hash,
+            enabled: true,
+            gpg_fingerprint,
+            installed_at: Utc::now().to_rfc3339(),
+            last_audit_at: Some(Utc::now().to_rfc3339()),
+            audit_result: Some("pass".to_string()),
+            runtime: crate::openhuman::skills::store::SkillRuntime::Python,
+            python_config: Some(serde_json::to_value(python_config).unwrap_or_default()),
+        };
+
+        self.store
+            .upsert(installed)
+            .map_err(|e| InstallError::Store(e.to_string()))?;
+
+        tracing::info!(
+            "[skills:install] installed Python skill {} v{} at {}",
+            manifest.name,
+            manifest.version,
+            dest_dir.display()
+        );
+
+        Ok(InstallOutcome {
+            gpg_status,
+            name: manifest.name.clone(),
+            version: manifest.version.clone(),
             analysis_verdict: analysis.verdict,
             findings_count: analysis.findings.len(),
             path: dest_dir,
@@ -706,6 +840,27 @@ fn checkout_tag(repo_path: &Path, tag: &str) -> Result<(), InstallError> {
         )));
     }
 
+    Ok(())
+}
+
+/// Recursively copy a directory tree, skipping `.git`.
+fn copy_dir_except_git(src: &Path, dest: &Path) -> Result<(), std::io::Error> {
+    for entry in std::fs::read_dir(src)? {
+        let entry = entry?;
+        let file_type = entry.file_type()?;
+        let name = entry.file_name();
+        if name == ".git" {
+            continue;
+        }
+        let src_path = entry.path();
+        let dest_path = dest.join(&name);
+        if file_type.is_dir() {
+            std::fs::create_dir_all(&dest_path)?;
+            copy_dir_except_git(&src_path, &dest_path)?;
+        } else {
+            std::fs::copy(&src_path, &dest_path)?;
+        }
+    }
     Ok(())
 }
 

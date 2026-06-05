@@ -55,8 +55,13 @@ pub struct SkillManifest {
     /// Optional GPG key configuration (for signed-tag verification).
     #[serde(default)]
     pub gpg: Option<GpgConfig>,
-    /// WASM binary and entry-point configuration (required).
-    pub wasm: WasmConfig,
+    /// WASM binary and entry-point configuration. Optional when `python` is set.
+    #[serde(default)]
+    pub wasm: Option<WasmConfig>,
+    /// Python runtime configuration. Optional when `wasm` is set.
+    /// Mutually exclusive with `wasm`.
+    #[serde(default)]
+    pub python: Option<PythonConfig>,
     /// Capability permissions (default: deny-all).
     #[serde(default = "default_permissions")]
     pub permissions: Permissions,
@@ -87,6 +92,36 @@ pub struct WasmConfig {
 
 fn default_entry() -> String {
     "_start".to_string()
+}
+
+/// Python runtime configuration for a DADOU skill.
+///
+/// Mutually exclusive with `wasm` — exactly one runtime must be specified.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PythonConfig {
+    /// Path to the Python entry-point script, relative to repo root.
+    /// Default: `"main.py"`.
+    #[serde(default = "default_python_entry")]
+    pub entry: String,
+    /// List of pip requirements (e.g. `["requests>=2.28", "pydantic"]`).
+    #[serde(default)]
+    pub requirements: Vec<String>,
+    /// Optional custom PyPI index URL.
+    #[serde(default)]
+    pub pip_index: Option<String>,
+    /// Preferred execution mode: `"docker"` (default, sandboxed) or `"local"`.
+    /// Falls back to local Python when Docker is not available.
+    #[serde(default = "default_python_runtime")]
+    pub runtime: String,
+}
+
+fn default_python_entry() -> String {
+    "main.py".to_string()
+}
+
+fn default_python_runtime() -> String {
+    "docker".to_string()
 }
 
 /// Capability permissions for a skill (deny-by-default).
@@ -154,6 +189,21 @@ pub enum ManifestError {
     InvalidField(String),
 }
 
+impl SkillManifest {
+    /// Returns the runtime kind: `"wasm"` or `"python"`.
+    ///
+    /// Panics if neither or both runtimes are set (should be caught by validation).
+    pub fn runtime_kind(&self) -> &str {
+        if self.wasm.is_some() {
+            "wasm"
+        } else if self.python.is_some() {
+            "python"
+        } else {
+            "unknown"
+        }
+    }
+}
+
 impl From<serde_yaml::Error> for ManifestError {
     fn from(e: serde_yaml::Error) -> Self {
         ManifestError::ParseError(e.to_string())
@@ -206,15 +256,45 @@ pub fn parse_manifest(yaml_str: &str) -> Result<SkillManifest, ManifestError> {
         return Err(ManifestError::MissingField("version"));
     }
 
-    // Validate `wasm.path` — must be non-empty and free of path traversal.
-    let wasm_path_str = manifest.wasm.path.to_string_lossy();
-    if wasm_path_str.trim().is_empty() {
-        return Err(ManifestError::MissingField("wasm.path"));
+    // Validate exactly one runtime is specified.
+    let has_wasm = manifest.wasm.is_some();
+    let has_python = manifest.python.is_some();
+    if has_wasm == has_python {
+        if has_wasm {
+            return Err(ManifestError::InvalidField(
+                "both wasm and python are set — exactly one runtime must be specified".to_string(),
+            ));
+        } else {
+            return Err(ManifestError::MissingField(
+                "either 'wasm' or 'python' section is required",
+            ));
+        }
     }
-    if wasm_path_str.contains("..") {
-        return Err(ManifestError::InvalidField(format!(
-            "wasm.path must not contain '..' (got {wasm_path_str:?})"
-        )));
+
+    // Validate `wasm.path` when present — must be non-empty and free of path traversal.
+    if let Some(ref wasm) = manifest.wasm {
+        let wasm_path_str = wasm.path.to_string_lossy();
+        if wasm_path_str.trim().is_empty() {
+            return Err(ManifestError::MissingField("wasm.path"));
+        }
+        if wasm_path_str.contains("..") {
+            return Err(ManifestError::InvalidField(format!(
+                "wasm.path must not contain '..' (got {wasm_path_str:?})"
+            )));
+        }
+    }
+
+    // Validate `python.entry` when present.
+    if let Some(ref python) = manifest.python {
+        let entry = python.entry.trim();
+        if entry.is_empty() {
+            return Err(ManifestError::MissingField("python.entry"));
+        }
+        if entry.contains("..") {
+            return Err(ManifestError::InvalidField(format!(
+                "python.entry must not contain '..' (got {entry:?})"
+            )));
+        }
     }
 
     Ok(SkillManifest {
@@ -267,8 +347,8 @@ min_dadou_version: "0.5.0"
             m.description.as_deref(),
             Some("A test skill")
         );
-        assert_eq!(m.wasm.path.to_string_lossy(), "build/output.wasm");
-        assert_eq!(m.wasm.entry, "run");
+        assert_eq!(m.wasm.as_ref().unwrap().path.to_string_lossy(), "build/output.wasm");
+        assert_eq!(m.wasm.as_ref().unwrap().entry, "run");
         assert!(!m.permissions.network);
         assert_eq!(m.permissions.filesystem.read.len(), 1);
         assert_eq!(m.permissions.filesystem.read[0], "/tmp/**");
@@ -443,8 +523,8 @@ wasm:
         assert_eq!(m.name, m2.name);
         assert_eq!(m.version, m2.version);
         assert_eq!(m.author, m2.author);
-        assert_eq!(m.wasm.path, m2.wasm.path);
-        assert_eq!(m.wasm.entry, m2.wasm.entry);
+        assert_eq!(m.wasm.as_ref().unwrap().path, m2.wasm.as_ref().unwrap().path);
+        assert_eq!(m.wasm.as_ref().unwrap().entry, m2.wasm.as_ref().unwrap().entry);
         assert_eq!(m.permissions.network, m2.permissions.network);
         assert_eq!(m.gpg.as_ref().map(|g| &g.fingerprint), m2.gpg.as_ref().map(|g| &g.fingerprint));
         assert_eq!(m.dependencies.len(), m2.dependencies.len());
@@ -459,7 +539,7 @@ wasm:
   path: test.wasm
 "#;
         let m = parse_manifest(yaml).unwrap();
-        assert_eq!(m.wasm.entry, "_start");
+        assert_eq!(m.wasm.as_ref().unwrap().entry, "_start");
     }
 
     #[test]
@@ -473,7 +553,7 @@ wasm:
         let m = parse_manifest(yaml).unwrap();
         assert_eq!(m.name, "minimal");
         assert_eq!(m.version, "1.0.0");
-        assert_eq!(m.wasm.path.to_string_lossy(), "output.wasm");
+        assert_eq!(m.wasm.as_ref().unwrap().path.to_string_lossy(), "output.wasm");
         assert!(m.author.is_none());
         assert!(m.description.is_none());
         assert!(m.dependencies.is_empty());

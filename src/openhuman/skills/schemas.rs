@@ -816,6 +816,34 @@ pub fn dadou_skills_schemas(function: &str) -> ControllerSchema {
                 required: true,
             }],
         },
+        "dadou_skill_execute" => ControllerSchema {
+            namespace: "dadou".to_string(),
+            function: "skill_execute".to_string(),
+            description: "Execute an installed Python skill with the given arguments.".to_string(),
+            inputs: vec![
+                FieldSchema {
+                    name: "name".to_string(),
+                    ty: TypeSchema::String,
+                    comment: "Name of the installed Python skill to execute.".to_string(),
+                    required: true,
+                },
+                FieldSchema {
+                    name: "args".to_string(),
+                    ty: TypeSchema::Json,
+                    comment: "Arguments passed to the skill's run() function.".to_string(),
+                    required: false,
+                },
+                FieldSchema {
+                    name: "timeout_secs".to_string(),
+                    ty: TypeSchema::U64,
+                    comment: "Optional timeout in seconds (default 120, max 600).".to_string(),
+                    required: false,
+                },
+            ],
+            outputs: vec![],
+            input_type_hint: None,
+            output_type_hint: None,
+        },
         "dadou_skill_trust_author" => ControllerSchema {
             namespace: "dadou",
             function: "skill_trust_author",
@@ -871,6 +899,7 @@ pub fn all_dadou_skills_controller_schemas() -> Vec<ControllerSchema> {
         dadou_skills_schemas("dadou_skill_remove"),
         dadou_skills_schemas("dadou_skill_list"),
         dadou_skills_schemas("dadou_skill_trust_author"),
+        dadou_skills_schemas("dadou_skill_execute"),
     ]
 }
 
@@ -900,6 +929,10 @@ pub fn all_dadou_skills_registered_controllers() -> Vec<RegisteredController> {
         RegisteredController {
             schema: dadou_skills_schemas("dadou_skill_trust_author"),
             handler: handle_dadou_skill_trust_author,
+        },
+        RegisteredController {
+            schema: dadou_skills_schemas("dadou_skill_execute"),
+            handler: handle_dadou_skill_execute,
         },
     ]
 }
@@ -1100,6 +1133,44 @@ fn handle_dadou_skill_trust_author(params: Map<String, Value>) -> ControllerFutu
             }
             Err(e) => Err(format!("failed to add trusted author: {e}")),
         }
+    })
+}
+
+fn handle_dadou_skill_execute(params: Map<String, Value>) -> ControllerFuture {
+    Box::pin(async move {
+        let name = get_string_param(&params, "name")?;
+        let args = params.get("args").cloned().unwrap_or(serde_json::Value::Null);
+        let timeout_secs = params
+            .get("timeout_secs")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(120)
+            .min(600);
+
+        tracing::info!("[dadou-skills][rpc] execute {name}");
+
+        let store = crate::openhuman::skills::store::SkillsStore::load()
+            .map_err(|e| format!("failed to load skills store: {e}"))?;
+        let skill = store
+            .get(&name)
+            .ok_or_else(|| format!("skill '{name}' not found"))?;
+
+        if skill.runtime != crate::openhuman::skills::store::SkillRuntime::Python {
+            return Err(format!("skill '{name}' is not a Python skill (runtime: {:?})", skill.runtime));
+        }
+
+        let skills_dir = crate::openhuman::skills::store::SkillsStore::default_skills_dir()
+            .ok_or_else(|| "cannot resolve skills directory".to_string())?;
+
+        let runtime = crate::openhuman::skills::python::PythonSkillRuntime::new(skills_dir);
+        let envelope = runtime
+            .execute_skill(&name, args, std::time::Duration::from_secs(timeout_secs))
+            .await;
+
+        to_json(RpcOutcome::new(
+            serde_json::to_value(&envelope).map_err(|e| format!("serialize: {e}"))?,
+            Vec::new(),
+        ))
+    })
     })
 }
 

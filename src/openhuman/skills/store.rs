@@ -28,6 +28,24 @@ use serde::{Deserialize, Serialize};
 // Types
 // ---------------------------------------------------------------------------
 
+/// Skill runtime type (WASM sandbox or Python subprocess).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum SkillRuntime {
+    Wasm,
+    Python,
+}
+
+impl Default for SkillRuntime {
+    fn default() -> Self {
+        Self::Wasm
+    }
+}
+
+fn default_runtime() -> SkillRuntime {
+    SkillRuntime::Wasm
+}
+
 /// A single installed skill entry in the TOML store.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InstalledSkill {
@@ -51,6 +69,12 @@ pub struct InstalledSkill {
     /// Audit result: "pass", "fail", or absent if not yet audited.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub audit_result: Option<String>,
+    /// Skill runtime: WASM or Python (default: Wasm for backward compat).
+    #[serde(default = "default_runtime")]
+    pub runtime: SkillRuntime,
+    /// Optional Python skill configuration (PythonConfig serialized as JSON).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub python_config: Option<serde_json::Value>,
 }
 
 fn default_enabled() -> bool {
@@ -180,6 +204,11 @@ impl SkillsStore {
         self.skills.get_mut(name)
     }
 
+    /// Return all installed skills as owned values (for consumers that need ownership).
+    pub fn installed(&self) -> Vec<InstalledSkill> {
+        self.skills.values().cloned().collect()
+    }
+
     /// List all installed skills, sorted alphabetically by name.
     pub fn list(&self) -> Vec<&InstalledSkill> {
         let mut skills: Vec<&InstalledSkill> = self.skills.values().collect();
@@ -293,6 +322,8 @@ mod tests {
             installed_at: "2026-06-05T10:00:00Z".to_string(),
             last_audit_at: None,
             audit_result: None,
+            runtime: SkillRuntime::Wasm,
+            python_config: None,
         }
     }
 
