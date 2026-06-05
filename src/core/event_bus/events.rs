@@ -25,6 +25,21 @@
 //! - [`DomainEvent::ChannelMessageReceived`]
 //! - [`DomainEvent::ChannelMessageProcessed`]
 
+/// JSON-serializable representation of an N2 score for event payloads.
+///
+/// Carries the suspicion score, human-readable reason, and detector name
+/// so event subscribers have full context without importing domain types.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct N2ScoreJson {
+    /// Suspicion score: 0.0 (safe) through 1.0 (definitely malicious).
+    pub score: f64,
+    /// Human-readable explanation of why this score was assigned.
+    pub reason: String,
+    /// Name of the detector that produced this score
+    /// (e.g. `"exfiltration"`, `"entropy"`, `"hidden_payloads"`).
+    pub triggered_by: String,
+}
+
 /// Top-level domain event. Non-exhaustive so new variants can be added
 /// without breaking existing match arms.
 #[non_exhaustive]
@@ -312,6 +327,29 @@ pub enum DomainEvent {
     /// before reaching tool execution.
     GuardianBlocked {
         tool_name: String,
+        reason: String,
+        latency_us: u64,
+    },
+
+    /// An action was blocked by Guardian N2 heuristic classifiers.
+    N2Blocked {
+        tool_name: String,
+        reason: String,
+        scores_json: String,
+        latency_us: u64,
+    },
+
+    /// N2 flagged an action as uncertain and is escalating to N3 (LLM validator).
+    N2Escalated {
+        tool_name: String,
+        scores_json: String,
+        latency_us: u64,
+    },
+
+    /// N3 LLM validation result for an escalated action.
+    N3Result {
+        tool_name: String,
+        verdict: String,
         reason: String,
         latency_us: u64,
     },
@@ -719,7 +757,10 @@ impl DomainEvent {
 
             Self::ToolExecutionStarted { .. } | Self::ToolExecutionCompleted { .. } => "tool",
 
-            Self::GuardianBlocked { .. } => "guardian",
+            Self::GuardianBlocked { .. }
+            | Self::N2Blocked { .. }
+            | Self::N2Escalated { .. }
+            | Self::N3Result { .. } => "guardian",
 
             Self::WebhookIncomingRequest { .. }
             | Self::WebhookReceived { .. }

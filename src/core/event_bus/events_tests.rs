@@ -466,6 +466,41 @@ fn all_variants_have_correct_domain() {
             },
             "auth",
         ),
+        // Guardian
+        (
+            DomainEvent::GuardianBlocked {
+                tool_name: "shell".into(),
+                reason: "blocked".into(),
+                latency_us: 0,
+            },
+            "guardian",
+        ),
+        (
+            DomainEvent::N2Blocked {
+                tool_name: "shell".into(),
+                reason: "entropy".into(),
+                scores_json: "[]".into(),
+                latency_us: 0,
+            },
+            "guardian",
+        ),
+        (
+            DomainEvent::N2Escalated {
+                tool_name: "shell".into(),
+                scores_json: "[]".into(),
+                latency_us: 0,
+            },
+            "guardian",
+        ),
+        (
+            DomainEvent::N3Result {
+                tool_name: "shell".into(),
+                verdict: "block".into(),
+                reason: "malicious".into(),
+                latency_us: 0,
+            },
+            "guardian",
+        ),
     ];
 
     for (event, expected_domain) in cases {

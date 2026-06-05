@@ -5,6 +5,9 @@
 
 use serde::{Deserialize, Serialize};
 
+pub use crate::openhuman::guardian::n2::types::N2Result;
+pub use crate::openhuman::guardian::n3::types::N3Result;
+
 /// Action taken by a Guardian rule after evaluation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RuleAction {
@@ -68,6 +71,25 @@ pub struct N1Result {
     pub rule_results: Vec<RuleResult>,
     /// Total pipeline latency in microseconds.
     pub latency_us: u64,
+}
+
+/// Result of the combined Guardian pipeline (N1 + N2 + N3).
+///
+/// Contains the final decision, which level blocked the action, and the
+/// individual results from each stage. Stages that were not evaluated
+/// due to early exit contain `None`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GuardianPipelineResult {
+    /// Whether the action is ultimately allowed.
+    pub allowed: bool,
+    /// Which level blocked the action: `"n1"`, `"n2"`, `"n3"`, or `"none"`.
+    pub blocked_by: String,
+    /// The N1 deterministic rule result (always present).
+    pub n1: N1Result,
+    /// The N2 heuristic classifier result, if evaluated.
+    pub n2: Option<N2Result>,
+    /// The N3 LLM validator result, if evaluated.
+    pub n3: Option<N3Result>,
 }
 
 /// Trait for an individual Guardian rule.

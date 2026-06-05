@@ -104,6 +104,18 @@ impl Default for N3Config {
     }
 }
 
+impl From<crate::openhuman::config::schema::types::GuardianN3Config> for N3Config {
+    fn from(cfg: crate::openhuman::config::schema::types::GuardianN3Config) -> Self {
+        Self {
+            enabled: cfg.enabled,
+            max_tokens: cfg.max_tokens,
+            timeout_ms: cfg.timeout_ms,
+            cache_size: cfg.cache_size,
+            model_override: cfg.model_override,
+        }
+    }
+}
+
 // ── Tests ──────────────────────────────────────────────────────────────────
 
 #[cfg(test)]

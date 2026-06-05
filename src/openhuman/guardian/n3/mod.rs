@@ -64,6 +64,11 @@ impl GuardianN3 {
         Self::new(N3Config::default())
     }
 
+    /// Get a reference to the N3 configuration.
+    pub fn config(&self) -> &N3Config {
+        &self.config
+    }
+
     /// Evaluate an ambiguous tool action via the local LLM.
     ///
     /// Steps:
@@ -201,6 +206,16 @@ impl GuardianN3 {
         service
             .prompt_interactive(&config, prompt, Some(max_tokens), true)
             .await
+    }
+
+    /// Returns `true` if N3 validation is enabled.
+    pub fn is_enabled(&self) -> bool {
+        self.config.enabled
+    }
+
+    /// Returns a reference to the N3 configuration.
+    pub fn config(&self) -> &N3Config {
+        &self.config
     }
 
     /// Reset the internal cache (useful for testing and config reload).

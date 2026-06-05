@@ -10,6 +10,9 @@ use serde_json::{json, Value};
 
 use crate::openhuman::guardian::pipeline::GuardianN1;
 use crate::openhuman::guardian::rules;
+use crate::openhuman::guardian::n2::types::N2EngineConfig;
+use crate::openhuman::guardian::n2::GuardianN2;
+use crate::openhuman::guardian::n3::GuardianN3;
 use crate::rpc::RpcOutcome;
 
 /// Default path for YAML rules: `~/.dadou/guardian-rules.yaml`.
@@ -85,5 +88,65 @@ pub async fn evaluate_pipeline(
         "latency_us": result.latency_us,
     });
 
+    Ok(RpcOutcome::new(payload, vec![]))
+}
+
+/// Evaluate the N2 classifier for debugging purposes.
+pub async fn n2_evaluate(
+    tool_name: &str,
+    args: Value,
+    command: Option<&str>,
+    file_path: Option<&str>,
+) -> Result<RpcOutcome<Value>, String> {
+    let config = N2EngineConfig::default();
+    let n2 = GuardianN2::new(config);
+    let result = n2.evaluate(tool_name, &args, command, file_path);
+    let payload = json!({
+        "allowed": result.allowed,
+        "escalate": result.escalate,
+        "scores": result.scores.iter().map(|s| json!({
+            "score": s.score,
+            "reason": s.reason,
+            "triggered_by": s.triggered_by,
+        })).collect::<Vec<_>>(),
+        "latency_us": result.latency_us,
+    });
+    Ok(RpcOutcome::new(payload, vec![]))
+}
+
+/// Get N3 validator status.
+pub async fn n3_status() -> Result<RpcOutcome<Value>, String> {
+    let n3 = GuardianN3::with_defaults();
+    let payload = json!({
+        "enabled": n3.config().enabled,
+        "cache_size": 100,
+        "max_tokens": n3.config().max_tokens,
+        "timeout_ms": n3.config().timeout_ms,
+        "model": n3.config().model_override.as_deref().unwrap_or("default"),
+        "version": "1.0",
+    });
+    Ok(RpcOutcome::new(payload, vec![]))
+}
+
+/// Get full pipeline status.
+pub async fn pipeline_status() -> Result<RpcOutcome<Value>, String> {
+    let n1_rules = get_active_rules().await?;
+    let payload = json!({
+        "n1": {
+            "rules": n1_rules.value,
+            "pipeline": "active",
+        },
+        "n2": {
+            "enabled": true,
+            "block_threshold": 0.7,
+            "escalate_threshold": 0.3,
+        },
+        "n3": {
+            "enabled": true,
+            "max_tokens": 256,
+            "timeout_ms": 450,
+        },
+        "pipeline_order": ["n1", "n2", "n3"],
+    });
     Ok(RpcOutcome::new(payload, vec![]))
 }

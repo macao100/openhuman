@@ -912,9 +912,9 @@ pub(crate) async fn run_tool_call_loop(
             }
 
             let (result, call_succeeded) = if let Some(tool) = tool_opt {
-                // ── Guardian N1 interception ──────────────────────────
-                if let Some(guardian) =
-                    crate::openhuman::guardian::GuardianN1::try_global()
+                // ── Guardian pipeline interception (N1 -> N2 -> N3) ──
+                if let Some(pipeline) =
+                    crate::openhuman::guardian::GuardianPipeline::try_global()
                 {
                     let command = if call.name == "bash" || call.name == "shell" {
                         call.arguments.get("command").and_then(|v| v.as_str())
@@ -937,33 +937,69 @@ pub(crate) async fn run_tool_call_loop(
                         _ => None,
                     };
 
-                    let n1_result = guardian
+                    let pipeline_result = pipeline
                         .evaluate(&call.name, &call.arguments, command, file_path)
                         .await;
 
-                    if !n1_result.allowed {
-                        let reason = format!(
-                            "[policy-blocked] Guardian N1 blocked: {}",
-                            n1_result
-                                .rule_results
-                                .iter()
-                                .filter(|r| r.action == crate::openhuman::guardian::RuleAction::Block)
-                                .map(|r| format!("[{}: {}]", r.rule_name, r.reason))
-                                .collect::<Vec<_>>()
-                                .join("; ")
-                        );
+                    if !pipeline_result.allowed {
+                        let reason = build_pipeline_block_reason(&pipeline_result);
                         tracing::warn!(
                             tool = call.name.as_str(),
+                            blocked_by = pipeline_result.blocked_by,
                             %reason,
-                            "[guardian] N1 blocked action"
+                            "[guardian] Pipeline blocked action"
                         );
-                        crate::core::event_bus::bus::publish_global(
-                            crate::core::event_bus::DomainEvent::GuardianBlocked {
-                                tool_name: call.name.clone(),
-                                reason: reason.clone(),
-                                latency_us: n1_result.latency_us,
-                            },
-                        );
+
+                        // Publish the appropriate event based on which level blocked.
+                        match pipeline_result.blocked_by.as_str() {
+                            "n1" => {
+                                crate::core::event_bus::bus::publish_global(
+                                    crate::core::event_bus::DomainEvent::GuardianBlocked {
+                                        tool_name: call.name.clone(),
+                                        reason: reason.clone(),
+                                        latency_us: pipeline_result.n1.latency_us,
+                                    },
+                                );
+                            }
+                            "n2" => {
+                                let scores_json = pipeline_result
+                                    .n2
+                                    .as_ref()
+                                    .map(|n2| serde_json::to_string(&n2.scores).unwrap_or_default())
+                                    .unwrap_or_default();
+                                crate::core::event_bus::bus::publish_global(
+                                    crate::core::event_bus::DomainEvent::N2Blocked {
+                                        tool_name: call.name.clone(),
+                                        reason: reason.clone(),
+                                        scores_json,
+                                        latency_us: pipeline_result
+                                            .n2
+                                            .as_ref()
+                                            .map_or(0, |r| r.latency_us),
+                                    },
+                                );
+                            }
+                            "n3" => {
+                                let verdict = pipeline_result
+                                    .n3
+                                    .as_ref()
+                                    .map(|r| format!("{:?}", r.verdict))
+                                    .unwrap_or_default();
+                                crate::core::event_bus::bus::publish_global(
+                                    crate::core::event_bus::DomainEvent::N3Result {
+                                        tool_name: call.name.clone(),
+                                        verdict,
+                                        reason: reason.clone(),
+                                        latency_us: pipeline_result
+                                            .n3
+                                            .as_ref()
+                                            .map_or(0, |r| r.latency_us),
+                                    },
+                                );
+                            }
+                            _ => {}
+                        }
+
                         let _ = writeln!(
                             tool_results,
                             "<tool_result name=\"{}\">\n{reason}\n</tool_result>",
@@ -981,8 +1017,26 @@ pub(crate) async fn run_tool_call_loop(
                         individual_results.push(reason);
                         continue;
                     }
+
+                    // If N2 escalated but N3 allowed, publish N2Escalated.
+                    if let Some(ref n2) = pipeline_result.n2 {
+                        if n2.escalate {
+                            let scores_json = serde_json::to_string(&n2.scores).unwrap_or_default();
+                            crate::core::event_bus::bus::publish_global(
+                                crate::core::event_bus::DomainEvent::N2Escalated {
+                                    tool_name: call.name.clone(),
+                                    scores_json,
+                                    latency_us: n2.latency_us,
+                                },
+                            );
+                            tracing::info!(
+                                tool = call.name.as_str(),
+                                "[guardian] N2 escalated, N3 allowed (proceeding)"
+                            );
+                        }
+                    }
                 }
-                // ── Fin interception N1 ───────────────────────────────
+                // ── Fin interception pipeline ─────────────────────────
 
                 let tool_deadline =
                     crate::openhuman::tool_timeout::tool_execution_timeout_duration();
@@ -1266,6 +1320,68 @@ pub(crate) async fn run_tool_call_loop(
             max: max_iterations,
         },
     ))
+}
+
+/// Build a human-readable block reason from a [`GuardianPipelineResult`].
+///
+/// The reason is prefixed with `[policy-blocked]` so the agent loop's
+/// hard-reject detection (HARD_REJECT_REPEAT_THRESHOLD) recognizes it as a
+/// deterministic, unrecoverable block.
+///
+/// The message includes WHICH level blocked (`[N1]` / `[N2]` / `[N3]`) and
+/// the specific rules or scores that triggered the block.
+fn build_pipeline_block_reason(
+    result: &crate::openhuman::guardian::GuardianPipelineResult,
+) -> String {
+    match result.blocked_by.as_str() {
+        "n1" => {
+            let blocks: Vec<String> = result
+                .n1
+                .rule_results
+                .iter()
+                .filter(|r| {
+                    r.action
+                        == crate::openhuman::guardian::RuleAction::Block
+                })
+                .map(|r| format!("[{}: {}]", r.rule_name, r.reason))
+                .collect();
+            format!(
+                "[policy-blocked] Guardian N1 blocked: {}",
+                blocks.join("; ")
+            )
+        }
+        "n2" => {
+            let blocks: Vec<String> = result
+                .n2
+                .as_ref()
+                .map(|n2| {
+                    n2.scores
+                        .iter()
+                        .filter(|s| s.score >= 0.7) // BLOCK_THRESHOLD
+                        .map(|s| {
+                            format!(
+                                "[{}: {} (score={})]",
+                                s.triggered_by, s.reason, s.score
+                            )
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+            format!(
+                "[policy-blocked] Guardian N2 blocked: {}",
+                blocks.join("; ")
+            )
+        }
+        "n3" => {
+            let detail = result
+                .n3
+                .as_ref()
+                .map(|n3| format!("[verdict={:?}] {}", n3.verdict, n3.reason))
+                .unwrap_or_else(|| "unknown".to_string());
+            format!("[policy-blocked] Guardian N3 blocked: {}", detail)
+        }
+        _ => "[policy-blocked] Guardian blocked: unknown reason".to_string(),
+    }
 }
 
 #[cfg(test)]

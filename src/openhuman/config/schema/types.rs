@@ -208,6 +208,15 @@ pub struct Config {
     #[serde(default)]
     pub local_ai: LocalAiConfig,
 
+    // ── Guardian configuration ───────────────────────────────────────────────
+    //
+    // N2 heuristic classifier and N3 LLM validator settings. Both are loaded
+    // at startup and used by the GuardianPipeline.
+    #[serde(default)]
+    pub guardian_n2: GuardianN2Config,
+    #[serde(default)]
+    pub guardian_n3: GuardianN3Config,
+
     // ── Unified AI provider routing ──────────────────────────────────────────
     //
     // Provider-string grammar (consumed by `providers::factory`):
@@ -380,6 +389,59 @@ fn default_temperature_unsupported_models() -> Vec<String> {
         "moonshot*".to_string(),
         "moonshotai/*".to_string(),
     ]
+}
+
+/// Guardian N2 classifier configuration.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(default)]
+pub struct GuardianN2Config {
+    /// Enable N2 classifier. Default: true.
+    pub enabled: bool,
+    /// Score threshold for blocking (0.0-1.0). Default: 0.7.
+    pub block_threshold: f64,
+    /// Score threshold for escalating to N3 (0.0-1.0). Default: 0.3.
+    pub escalate_threshold: f64,
+    /// Maximum input characters to analyse. Default: 10000.
+    pub max_input_chars: usize,
+}
+
+impl Default for GuardianN2Config {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            block_threshold: 0.7,
+            escalate_threshold: 0.3,
+            max_input_chars: 10000,
+        }
+    }
+}
+
+/// Guardian N3 LLM validator configuration.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(default)]
+pub struct GuardianN3Config {
+    /// Enable N3 LLM validator. Default: true.
+    pub enabled: bool,
+    /// Maximum tokens for LLM response. Default: 256.
+    pub max_tokens: u32,
+    /// Timeout in milliseconds. Default: 450 (<500ms target).
+    pub timeout_ms: u64,
+    /// LRU cache size. Default: 100.
+    pub cache_size: usize,
+    /// Optional model override (uses default if None).
+    pub model_override: Option<String>,
+}
+
+impl Default for GuardianN3Config {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            max_tokens: 256,
+            timeout_ms: 450,
+            cache_size: 100,
+            model_override: None,
+        }
+    }
 }
 
 /// Normalize a configured output language into a display name suitable for
@@ -628,6 +690,8 @@ impl Default for Config {
             computer_control: ComputerControlConfig::default(),
             agents: HashMap::new(),
             local_ai: LocalAiConfig::default(),
+            guardian_n2: GuardianN2Config::default(),
+            guardian_n3: GuardianN3Config::default(),
             cloud_providers: Vec::new(),
             primary_cloud: None,
             chat_provider: None,

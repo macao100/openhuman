@@ -11,6 +11,9 @@ pub fn all_controller_schemas() -> Vec<ControllerSchema> {
         schemas("rules_list"),
         schemas("rules_reload"),
         schemas("evaluate"),
+        schemas("n2_evaluate"),
+        schemas("n3_status"),
+        schemas("pipeline_status"),
     ]
 }
 
@@ -27,6 +30,18 @@ pub fn all_registered_controllers() -> Vec<RegisteredController> {
         RegisteredController {
             schema: schemas("evaluate"),
             handler: handle_evaluate,
+        },
+        RegisteredController {
+            schema: schemas("n2_evaluate"),
+            handler: handle_n2_evaluate,
+        },
+        RegisteredController {
+            schema: schemas("n3_status"),
+            handler: handle_n3_status,
+        },
+        RegisteredController {
+            schema: schemas("pipeline_status"),
+            handler: handle_pipeline_status,
         },
     ]
 }
@@ -59,6 +74,67 @@ pub fn schemas(function: &str) -> ControllerSchema {
                 name: "loaded_count",
                 ty: TypeSchema::Int,
                 comment: "Number of YAML rules loaded after reload.",
+                required: true,
+            }],
+        },
+        "n2_evaluate" => ControllerSchema {
+            namespace: "guardian",
+            function: "n2_evaluate",
+            description: "Evaluate the N2 classifier for a given tool invocation (debugging).",
+            inputs: vec![
+                FieldSchema {
+                    name: "tool_name",
+                    ty: TypeSchema::String,
+                    comment: "Tool name (e.g. 'file_write', 'shell').",
+                    required: true,
+                },
+                FieldSchema {
+                    name: "args",
+                    ty: TypeSchema::Json,
+                    comment: "JSON arguments for the tool.",
+                    required: true,
+                },
+                FieldSchema {
+                    name: "command",
+                    ty: TypeSchema::String,
+                    comment: "Optional shell command string.",
+                    required: false,
+                },
+                FieldSchema {
+                    name: "file_path",
+                    ty: TypeSchema::String,
+                    comment: "Optional file path.",
+                    required: false,
+                },
+            ],
+            outputs: vec![FieldSchema {
+                name: "result",
+                ty: TypeSchema::Json,
+                comment: "N2Result with scores and decision.",
+                required: true,
+            }],
+        },
+        "n3_status" => ControllerSchema {
+            namespace: "guardian",
+            function: "n3_status",
+            description: "Get N3 validator status (enabled, cache size, last latency).",
+            inputs: vec![],
+            outputs: vec![FieldSchema {
+                name: "status",
+                ty: TypeSchema::Json,
+                comment: "N3 configuration and cache stats.",
+                required: true,
+            }],
+        },
+        "pipeline_status" => ControllerSchema {
+            namespace: "guardian",
+            function: "pipeline_status",
+            description: "Get full pipeline status: N1 rules, N2 scores, N3 verdicts for the last invocation.",
+            inputs: vec![],
+            outputs: vec![FieldSchema {
+                name: "status",
+                ty: TypeSchema::Json,
+                comment: "Pipeline configuration and last result.",
                 required: true,
             }],
         },
@@ -162,6 +238,61 @@ fn handle_evaluate(params: Map<String, Value>) -> ControllerFuture {
             }
             Err(err) => {
                 log::warn!("[guardian][rpc] evaluate failed: {err}");
+                Err(err)
+            }
+        }
+    })
+}
+
+fn handle_n2_evaluate(params: Map<String, Value>) -> ControllerFuture {
+    Box::pin(async {
+        log::debug!("[guardian][rpc] n2_evaluate enter");
+        let tool_name = params
+            .get("tool_name")
+            .and_then(|v| v.as_str())
+            .unwrap_or("unknown");
+        let args = params.get("args").cloned().unwrap_or(Value::Null);
+        let command = params.get("command").and_then(|v| v.as_str());
+        let file_path = params.get("file_path").and_then(|v| v.as_str());
+        match crate::openhuman::guardian::ops::n2_evaluate(tool_name, args, command, file_path).await {
+            Ok(outcome) => {
+                log::debug!("[guardian][rpc] n2_evaluate ok");
+                to_json(outcome)
+            }
+            Err(err) => {
+                log::warn!("[guardian][rpc] n2_evaluate failed: {err}");
+                Err(err)
+            }
+        }
+    })
+}
+
+fn handle_n3_status(_params: Map<String, Value>) -> ControllerFuture {
+    Box::pin(async {
+        log::debug!("[guardian][rpc] n3_status enter");
+        match crate::openhuman::guardian::ops::n3_status().await {
+            Ok(outcome) => {
+                log::debug!("[guardian][rpc] n3_status ok");
+                to_json(outcome)
+            }
+            Err(err) => {
+                log::warn!("[guardian][rpc] n3_status failed: {err}");
+                Err(err)
+            }
+        }
+    })
+}
+
+fn handle_pipeline_status(_params: Map<String, Value>) -> ControllerFuture {
+    Box::pin(async {
+        log::debug!("[guardian][rpc] pipeline_status enter");
+        match crate::openhuman::guardian::ops::pipeline_status().await {
+            Ok(outcome) => {
+                log::debug!("[guardian][rpc] pipeline_status ok");
+                to_json(outcome)
+            }
+            Err(err) => {
+                log::warn!("[guardian][rpc] pipeline_status failed: {err}");
                 Err(err)
             }
         }

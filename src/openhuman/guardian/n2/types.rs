@@ -7,6 +7,8 @@
 //! Each detector returns an [`N2Score`]; the engine aggregates all scores
 //! and combines them with threshold logic to produce an [`N2Result`].
 
+use serde::{Deserialize, Serialize};
+
 // ── Threshold constants ────────────────────────────────────────────────
 
 /// Default threshold beyond which an action is **blocked** immediately.
@@ -29,7 +31,7 @@ pub const MAX_INPUT_CHARS: usize = 10_000;
 /// Each detector evaluates tool arguments / commands and produces a suspicion
 /// score between 0.0 (safe) and 1.0 (definitely malicious), along with a
 /// human-readable reason and the detector name.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct N2Score {
     /// Suspicion score: 0.0 (safe) through 1.0 (definitely malicious).
     pub score: f64,
@@ -75,7 +77,7 @@ impl N2Score {
 ///
 /// Contains the final allow/block decision, escalation flag, individual
 /// detector scores, and total latency.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct N2Result {
     /// Whether the action is allowed (`true`) or blocked (`false`).
     ///
@@ -113,7 +115,7 @@ impl N2Result {
 ///
 /// All fields have sensible defaults; custom thresholds can be injected
 /// via [`N2EngineConfig::new`] or from config.toml (planned D-41).
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct N2EngineConfig {
     /// Score threshold for immediate blocking (default: 0.7).
     pub block_threshold: f64,
@@ -141,6 +143,16 @@ impl N2EngineConfig {
             block_threshold,
             escalate_threshold,
             max_input_chars,
+        }
+    }
+}
+
+impl From<crate::openhuman::config::schema::types::GuardianN2Config> for N2EngineConfig {
+    fn from(cfg: crate::openhuman::config::schema::types::GuardianN2Config) -> Self {
+        Self {
+            block_threshold: cfg.block_threshold,
+            escalate_threshold: cfg.escalate_threshold,
+            max_input_chars: cfg.max_input_chars,
         }
     }
 }
