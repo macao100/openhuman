@@ -1,9 +1,10 @@
 # DADOU — Project State
 
-**Last updated:** 2026-06-05
-**Current phase:** 5 (Anti-Injection) — PLANNED
-**Next phase:** 6 (Dashboard)
+**Last updated:** 2026-06-05 16:00
+**Current phase:** 5 (Anti-Injection) — COMPLETED
+**Next phase:** 6 (Dashboard & Semantic Router)
 **Milestone:** v1
+**Global progress:** 5/7 phases (71%)
 
 ---
 
@@ -58,10 +59,10 @@
 |-----------|-------|
 | Milestone | v1 |
 | Phase | 5 - Anti-Injection |
-| Status | Planning completed |
-| Progress | [#############                       ] 37% |
+| Status | COMPLETED |
+| Progress | [####################                ] 71% |
 
-**Next action:** Executer la Phase 3 (`/gsd:execute-phase 03-guardian-n2n3`), puis Phase 4, puis Phase 5.
+**Next action:** Planifier puis exécuter la Phase 6 (`/gsd:plan-phase 06-dashboard`).
 
 ---
 
@@ -185,7 +186,7 @@
 | 02-03 | Contradiction Detection (MEM-03) | `270f323` |
 | 02-04 | Cross-Session Continuity (CTX-01, CTX-02) | `ed5acc5` |
 
-### Phase 3 — Guardian N2+N3 📋 (Planned)
+### Phase 3 — Guardian N2+N3 ✅
 | Plan | Content | Wave |
 |------|---------|------|
 | 03-01 | Guardian N2: types, detecteurs (exfiltration, entropie, hidden payloads) | 1 |
@@ -193,7 +194,7 @@
 | 03-03 | Pipeline etendu N1->N2->N3, events, tool loop wiring | 2 |
 | 03-04 | Controllers N2/N3, config schema, initialization | 2 |
 
-### Phase 4 — Skills WASM 📋 (Planned)
+### Phase 4 — Skills WASM ✅
 | Plan | Content | Wave |
 |------|---------|------|
 | 04-01 | Manifest dadou-skill.yaml + TOML SkillsStore (SKL-01, SKL-06) | 1 |
@@ -202,7 +203,7 @@
 | 04-04 | Static analysis: imports, filesystem, network (SKL-05) | 1 |
 | 04-05 | CLI dadou skill + JSON-RPC controllers (SKL-07) | 2 |
 
-### Phase 5 — Anti-Injection 📋 (Planned)
+### Phase 5 — Anti-Injection ✅
 | Plan | Content | Wave |
 |------|---------|------|
 | 05-01 | External data tagging `<external_data>` + AntiInjectionSection (INJ-01) | 1 |
@@ -210,11 +211,11 @@
 | 05-03 | Semantic output validation: rules + LLM check (INJ-03) | 2 |
 | 05-04 | JSON plan validation via Guardian pipeline (INJ-04) | 2 |
 
-### Phase 6 — Dashboard ⏳
-*To be planned*
+### Phase 6 — Dashboard & Semantic Router 📋 (To plan)
+*Planning en cours — Phase 6*
 
 ### Phase 7 — Python Skills ⏳
-*To be planned*
+*To be planned after Phase 6*
 
 ---
 
@@ -249,10 +250,11 @@
 
 ### Next commands
 
-1. `/gsd:execute-phase 03-guardian-n2n3` — Executer les 4 plans Phase 3 (Wave 1: 03-01+03-02, Wave 2: 03-03+03-04)
-2. Puis `/gsd:execute-phase 04-skills-wasm` — Executer les 5 plans Phase 4 (Wave 1: 04-01..04-04, Wave 2: 04-05)
-3. Puis `/gsd:execute-phase 05-anti-injection` — Executer les 4 plans Phase 5 (Wave 1: 05-01+05-02, Wave 2: 05-03+05-04)
-4. `set LIBCLANG_PATH=<path to LLVM bin>` puis `cargo check` pour verifier la compilation (bloqueur pre-existant)
+1. `plan-phase 6` — Planifier la Phase 6 (Dashboard & Semantic Router)
+2. `execute-phase 06-dashboard` — Exécuter les plans Phase 6
+3. `plan-phase 7` — Planifier la Phase 7 (Python Skills)
+4. `execute-phase 07-python-skills` — Exécuter les plans Phase 7
+5. Installer cmake + LLVM pour débloquer `cargo check` (whisper-rs-sys)
 
 ---
 *Last updated: 2026-06-05*

@@ -284,6 +284,14 @@ fn build_registered_controllers() -> Vec<RegisteredController> {
     controllers.extend(
         crate::openhuman::anti_injection::all_anti_injection_registered_controllers(),
     );
+    // Live observability dashboard
+    controllers.extend(
+        crate::openhuman::dashboard::schemas::all_dashboard_registered_controllers(),
+    );
+    // Semantic skill router — embedding-based skill discovery
+    controllers.extend(
+        crate::openhuman::semantic_router::schemas::all_semantic_router_registered_controllers(),
+    );
     controllers
 }
 
@@ -417,6 +425,12 @@ fn build_declared_controller_schemas() -> Vec<ControllerSchema> {
     schemas.extend(
         crate::openhuman::anti_injection::all_anti_injection_controller_schemas(),
     );
+    schemas.extend(
+        crate::openhuman::dashboard::schemas::all_dashboard_controller_schemas(),
+    );
+    schemas.extend(
+        crate::openhuman::semantic_router::schemas::all_semantic_router_controller_schemas(),
+    );
     schemas
 }
 
@@ -455,6 +469,8 @@ pub fn namespace_description(namespace: &str) -> Option<&'static str> {
             "Connectivity diagnostics for the local sidecar, listening port, and backend Socket.IO state.",
         ),
         "cron" => Some("Manage scheduled jobs and run history."),
+        "dashboard" => Some("Live observability dashboard — Guardian, tools, skills, memory stats."),
+        "semantic_router" => Some("Embedding-based skill discovery — query-to-skill matching on-device."),
         "mcp_clients" => Some(
             "Browse the Smithery.ai MCP registry, install MCP servers locally, manage their stdio connections, and expose their tools to the agent.",
         ),

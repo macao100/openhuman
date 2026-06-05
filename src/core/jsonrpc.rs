@@ -1622,6 +1622,36 @@ async fn run_server_inner(
         log::info!("[channels] OPENHUMAN_DISABLE_CHANNEL_LISTENERS set — skipping start_channels");
     }
 
+    // Start the DADOU observability dashboard on its own port (default :7790).
+    // Runs as a background task alongside the main RPC server.
+    // The dashboard store is already initialised in register_domain_subscribers.
+    if cfg.dashboard.enabled {
+        let dashboard_shutdown = shutdown_token
+            .clone()
+            .unwrap_or_else(CancellationToken::new);
+        let dashboard_cfg = cfg.dashboard.clone();
+        tokio::spawn(async move {
+            log::info!(
+                "[dashboard] starting server on http://{}:{}",
+                dashboard_cfg.host,
+                dashboard_cfg.port
+            );
+            // Build a minimal config carrying just the dashboard section.
+            let config = crate::openhuman::config::Config {
+                dashboard: dashboard_cfg,
+                ..Default::default()
+            };
+            if let Err(e) =
+                crate::openhuman::dashboard::server::start_dashboard_server(&config, dashboard_shutdown)
+                    .await
+            {
+                log::warn!("[dashboard] server stopped: {e}");
+            }
+        });
+    } else {
+        log::info!("[dashboard] disabled in config — skipping");
+    }
+
     if let Some(shutdown_token) = shutdown_token {
         log::info!("[core] embedded server waiting on cancellation token for graceful shutdown");
         axum::serve(listener, app)
@@ -1770,6 +1800,20 @@ fn register_domain_subscribers(
         // events, and register acks. Must be registered before any tunnel:frame
         // events can arrive.
         crate::openhuman::devices::bus::register_device_tunnel_subscriber();
+
+        // Dashboard event recorder — persists Guardian/Tool/Agent events
+        // for the local observability dashboard.
+        crate::openhuman::dashboard::store::init_global(&config)
+            .unwrap_or_else(|e| {
+                log::warn!("[dashboard] failed to initialise event store: {e} — dashboard will be unavailable");
+            });
+        if let Some(handle) = crate::core::event_bus::subscribe_global(Arc::new(
+            crate::openhuman::dashboard::bus::DashboardRecorder,
+        )) {
+            std::mem::forget(handle);
+        } else {
+            log::warn!("[dashboard] failed to register recorder subscriber — bus not initialised");
+        }
 
         // Native request handlers — typed in-process request/response.
         // The agent `agent.run_turn` handler is what channel dispatch

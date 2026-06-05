@@ -84,6 +84,8 @@ pub fn run_from_cli_args(args: &[String]) -> Result<()> {
         "sentry-test" => run_sentry_test_command(&args[1..]),
         // DADOU skill lifecycle subcommand: `openhuman-core skill install <url>`
         "skill" => run_dadou_skill_command(&args[1..]),
+        // DADOU dashboard: `openhuman-core dashboard`
+        "dashboard" => run_dashboard_command(&args[1..]),
         // Generic namespace dispatcher: `openhuman <namespace> <function> ...`
         namespace => run_namespace_command(namespace, &args[1..], &grouped),
     }
@@ -174,6 +176,97 @@ fn run_undo_command(args: &[String]) -> Result<()> {
 /// openhuman-core skill list
 /// openhuman-core skill trust-author <pubkey_file>
 /// ```
+/// Handles the `dashboard` subcommand: `openhuman-core dashboard [--port <u16>] [--host <addr>]`.
+///
+/// Starts only the dashboard HTTP server on a dedicated port.
+fn run_dashboard_command(args: &[String]) -> Result<()> {
+    let mut port: u16 = 7790;
+    let mut host = "127.0.0.1".to_string();
+
+    let mut i = 0;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--port" => {
+                i += 1;
+                if i < args.len() {
+                    port = args[i].parse().map_err(|_| anyhow::anyhow!("invalid port"))?;
+                }
+            }
+            "--host" => {
+                i += 1;
+                if i < args.len() {
+                    host = args[i].clone();
+                }
+            }
+            "--help" | "-h" => {
+                println!("Usage: openhuman-core dashboard [--port <u16>] [--host <addr>]");
+                println!("  --port   Listen port (default: 7790)");
+                println!("  --host   Bind address (default: 127.0.0.1)");
+                println!();
+                println!("Starts the DADOU observability dashboard.");
+                return Ok(());
+            }
+            _ => {
+                eprintln!("Unknown flag: {}", args[i]);
+                std::process::exit(1);
+            }
+        }
+        i += 1;
+    }
+
+    let rt = tokio::runtime::Runtime::new()?;
+    rt.block_on(async {
+        // Ensure the event bus is alive so SSE can subscribe.
+        crate::core::event_bus::init_global(crate::core::event_bus::DEFAULT_CAPACITY);
+
+        let mut config = crate::openhuman::config::Config::load_or_init()
+            .await
+            .map_err(|e| anyhow::anyhow!("failed to load config: {e}"))?;
+        config.dashboard.port = port;
+        config.dashboard.host = host;
+
+        // Initialise the dashboard event store.
+        crate::openhuman::dashboard::store::init_global(&config)
+            .unwrap_or_else(|e| {
+                log::warn!("[dashboard] store initialisation failed: {e}");
+            });
+
+        // Register the dashboard recorder subscriber.
+        if let Some(handle) = crate::core::event_bus::subscribe_global(
+            std::sync::Arc::new(crate::openhuman::dashboard::bus::DashboardRecorder),
+        ) {
+            std::mem::forget(handle);
+        }
+
+        let shutdown = tokio_util::sync::CancellationToken::new();
+        let shutdown_clone = shutdown.clone();
+
+        // Handle Ctrl+C for graceful shutdown.
+        tokio::spawn(async move {
+            tokio::signal::ctrl_c().await.ok();
+            log::info!("[dashboard] Ctrl+C received — shutting down");
+            shutdown_clone.cancel();
+        });
+
+        match crate::openhuman::dashboard::server::start_dashboard_server(
+            &config,
+            shutdown,
+        )
+        .await
+        {
+            Ok(addr) => {
+                log::info!("[dashboard] server started at http://{addr}");
+            }
+            Err(e) => {
+                eprintln!("Dashboard server error: {e}");
+                std::process::exit(1);
+            }
+        }
+
+        Ok(())
+    })
+}
+
 fn run_dadou_skill_command(args: &[String]) -> Result<()> {
     if args.is_empty() || is_help(&args[0]) {
         println!("Usage: openhuman-core skill <subcommand> [options]");

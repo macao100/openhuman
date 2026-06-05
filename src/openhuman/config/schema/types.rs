@@ -216,6 +216,8 @@ pub struct Config {
     pub guardian_n2: GuardianN2Config,
     #[serde(default)]
     pub guardian_n3: GuardianN3Config,
+    #[serde(default)]
+    pub dashboard: DashboardConfig,
 
     // ── Unified AI provider routing ──────────────────────────────────────────
     //
@@ -692,6 +694,7 @@ impl Default for Config {
             local_ai: LocalAiConfig::default(),
             guardian_n2: GuardianN2Config::default(),
             guardian_n3: GuardianN3Config::default(),
+            dashboard: crate::openhuman::config::schema::dashboard::DashboardConfig::default(),
             cloud_providers: Vec::new(),
             primary_cloud: None,
             chat_provider: None,

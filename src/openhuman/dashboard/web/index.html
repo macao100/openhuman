@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DADOU Dashboard</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --border: #2a2d3a;
+    --text: #e1e4eb;
+    --muted: #888b96;
+    --green: #4ade80;
+    --red: #f87171;
+    --amber: #fbbf24;
+    --blue: #4a83dd;
+    --purple: #a78bfa;
+    --radius: 8px;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --mono: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
+  }
+  * { box-sizing:border-box; margin:0; padding:0 }
+  body {
+    background:var(--bg); color:var(--text); font-family:var(--font);
+    padding:24px; line-height:1.5;
+  }
+  h1 { font-size:1.5rem; font-weight:700; margin-bottom:4px }
+  h2 { font-size:1rem; font-weight:600; color:var(--blue); margin-bottom:12px; text-transform:uppercase; letter-spacing:0.5px }
+  .header { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px }
+  .status { display:flex; align-items:center; gap:8px; font-size:0.85rem; color:var(--muted) }
+  .status-dot { width:8px; height:8px; border-radius:50% }
+  .status-dot.connected { background:var(--green); box-shadow:0 0 6px var(--green) }
+  .status-dot.disconnected { background:var(--red) }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:24px }
+  .card {
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:16px;
+  }
+  .card-label { font-size:0.75rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px }
+  .card-value { font-size:1.5rem; font-weight:700; font-family:var(--mono) }
+  .panel {
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:16px; margin-bottom:16px;
+  }
+  .timeline { max-height:300px; overflow-y:auto }
+  .timeline-entry {
+    display:flex; align-items:flex-start; gap:10px; padding:8px 0;
+    border-bottom:1px solid var(--border); font-size:0.85rem;
+  }
+  .timeline-entry:last-child { border-bottom:none }
+  .badge {
+    padding:2px 8px; border-radius:4px; font-size:0.72rem; font-weight:600;
+    white-space:nowrap; text-transform:uppercase;
+  }
+  .badge-block { background:rgba(248,113,113,0.15); color:var(--red) }
+  .badge-escalate { background:rgba(251,191,36,0.15); color:var(--amber) }
+  .badge-allow { background:rgba(74,222,128,0.15); color:var(--green) }
+  .badge-n1 { background:rgba(248,113,113,0.12); color:var(--red) }
+  .badge-n2 { background:rgba(251,191,36,0.12); color:var(--amber) }
+  .badge-n3 { background:rgba(167,139,250,0.12); color:var(--purple) }
+  table { width:100%; border-collapse:collapse; font-size:0.85rem }
+  th { text-align:left; color:var(--muted); font-weight:500; padding:8px 12px; border-bottom:1px solid var(--border); font-size:0.75rem; text-transform:uppercase }
+  td { padding:8px 12px; border-bottom:1px solid var(--border); font-family:var(--mono); font-size:0.8rem }
+  tr:hover { background:rgba(74,131,221,0.05) }
+  .empty { color:var(--muted); font-style:italic; padding:24px; text-align:center }
+  .skill-row { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border); font-size:0.85rem }
+  .skill-row:last-child { border-bottom:none }
+  .skill-dot { width:6px; height:6px; border-radius:50% }
+  .skill-dot.enabled { background:var(--green) }
+  .skill-dot.disabled { background:var(--muted) }
+  .skill-version { color:var(--muted); font-family:var(--mono); font-size:0.75rem }
+  .skill-gpg { font-size:0.7rem; color:var(--green); margin-left:auto }
+  .refresh { color:var(--blue); cursor:pointer; font-size:0.8rem }
+  .refresh:hover { text-decoration:underline }
+  input[type="text"] {
+    background:var(--bg); border:1px solid var(--border); border-radius:var(--radius);
+    color:var(--text); padding:8px 12px; font-size:0.85rem; width:100%;
+    font-family:var(--mono);
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>&#x1f6e1; DADOU Dashboard</h1>
+    <span style="color:var(--muted);font-size:0.8rem">Observability at a glance</span>
+  </div>
+  <div class="status">
+    <span class="status-dot disconnected" id="status-dot"></span>
+    <span id="status-text">Disconnected</span>
+    <span class="refresh" onclick="location.reload()">&#x21bb; Reload</span>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="grid">
+  <div class="card">
+    <div class="card-label">Guardian Blocks</div>
+    <div class="card-value" style="color:var(--red)" id="stat-blocks">0</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Tools Executed</div>
+    <div class="card-value" style="color:var(--blue)" id="stat-tools">0</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Active Skills</div>
+    <div class="card-value" style="color:var(--green)" id="stat-skills">0</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Memory Events</div>
+    <div class="card-value" style="color:var(--purple)" id="stat-memory">0</div>
+  </div>
+</div>
+
+<!-- Guardian Timeline -->
+<div class="panel">
+  <h2>Guardian Timeline</h2>
+  <div class="timeline" id="timeline">
+    <div class="empty">No events yet — Guardian decisions will appear here</div>
+  </div>
+</div>
+
+<!-- Active Skills -->
+<div class="panel">
+  <h2>Active Skills</h2>
+  <div id="skills-list">
+    <div class="empty">Loading skills...</div>
+  </div>
+</div>
+
+<!-- Semantic Router test (placeholder) -->
+<div class="panel" id="router-panel" style="display:none">
+  <h2>&#x1f50d; Semantic Router</h2>
+  <div style="display:flex;gap:8px">
+    <input type="text" id="router-query" placeholder="Test a query to find matching skills..." onkeydown="if(event.key==='Enter') testRoute()">
+    <button style="background:var(--blue);color:white;border:none;border-radius:var(--radius);padding:8px 16px;cursor:pointer;font-family:var(--font)" onclick="testRoute()">Route</button>
+  </div>
+  <div id="router-result" style="margin-top:8px;font-size:0.85rem;color:var(--muted)"></div>
+</div>
+
+<!-- Action History -->
+<div class="panel">
+  <h2>Recent Actions</h2>
+  <table>
+    <thead><tr><th>Time</th><th>Tool</th><th>Event</th><th>Status</th></tr></thead>
+    <tbody id="action-table">
+      <tr><td colspan="4" class="empty">No actions recorded yet</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+// ── State ──
+const MAX_ROWS = 200;
+let eventCount = 0;
+
+// ── SSE connection ──
+function connectSSE() {
+  const es = new EventSource('/dashboard/events');
+  es.addEventListener('dashboard_event', e => {
+    updateStatus(true);
+    try {
+      const evt = JSON.parse(e.data);
+      appendTimeline(evt);
+      appendAction(evt);
+      updateCounters(evt);
+    } catch (_) {}
+  });
+  es.onerror = () => {
+    updateStatus(false);
+    es.close();
+    setTimeout(connectSSE, 5000); // reconnect with backoff
+  };
+  es.onopen = () => updateStatus(true);
+}
+
+// ── Status ──
+function updateStatus(connected) {
+  const dot = document.getElementById('status-dot');
+  const text = document.getElementById('status-text');
+  dot.className = 'status-dot ' + (connected ? 'connected' : 'disconnected');
+  text.textContent = connected ? 'Connected' : 'Disconnected';
+}
+
+// ── Timeline ──
+function appendTimeline(evt) {
+  const tl = document.getElementById('timeline');
+  if (tl.querySelector('.empty')) tl.innerHTML = '';
+
+  const kind = evt.kind || '';
+  if (!kind.includes('guardian') && !kind.includes('block') && !kind.includes('_result') &&
+      !kind.includes('injection') && !kind.includes('plan_')) return;
+
+  const badge = kindToBadge(kind);
+  const p = evt.payload || {};
+  const tool = p.tool_name || evt.domain || '-';
+  const reason = p.reason || p.verdict || '';
+  const time = new Date(evt.recorded_at || Date.now()).toLocaleTimeString();
+
+  const entry = document.createElement('div');
+  entry.className = 'timeline-entry';
+  entry.innerHTML = `<span style="color:var(--muted);font-family:var(--mono);font-size:0.75rem;min-width:70px">${time}</span>
+    <span class="badge ${badge.class}">${badge.label}</span>
+    <span style="font-weight:600">${esc(tool)}</span>
+    <span style="color:var(--muted);margin-left:auto;text-align:right;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(reason)}</span>`;
+  tl.insertBefore(entry, tl.firstChild);
+
+  if (tl.children.length > 100) tl.removeChild(tl.lastChild);
+}
+
+// ── Action table ──
+function appendAction(evt) {
+  const tbody = document.getElementById('action-table');
+  const emptyRow = tbody.querySelector('.empty');
+  if (emptyRow) emptyRow.parentElement.removeChild(emptyRow);
+
+  const kind = evt.kind || '';
+  const p = evt.payload || {};
+  const tool = p.tool_name || evt.domain || '-';
+  const success = p.success !== undefined ? (p.success ? 'OK' : 'FAIL') : '-';
+  const successColor = success === 'OK' ? 'var(--green)' : success === 'FAIL' ? 'var(--red)' : 'var(--muted)';
+  const time = new Date(evt.recorded_at || Date.now()).toLocaleTimeString();
+
+  const row = document.createElement('tr');
+  row.innerHTML = `<td>${time}</td><td>${esc(tool)}</td><td>${esc(kind)}</td><td style="color:${successColor}">${success}</td>`;
+  tbody.insertBefore(row, tbody.firstChild);
+
+  while (tbody.children.length > MAX_ROWS) tbody.removeChild(tbody.lastChild);
+}
+
+// ── Counters ──
+function updateCounters(evt) {
+  const kind = evt.kind || '';
+  if (kind.includes('block')) {
+    const el = document.getElementById('stat-blocks');
+    el.textContent = parseInt(el.textContent) + 1;
+  }
+  if (kind.includes('tool_')) {
+    const el = document.getElementById('stat-tools');
+    el.textContent = parseInt(el.textContent) + 1;
+  }
+  if (kind.includes('skill_')) {
+    const el = document.getElementById('stat-skills');
+    el.textContent = parseInt(el.textContent) + 1;
+  }
+  if (kind.includes('memory_')) {
+    const el = document.getElementById('stat-memory');
+    el.textContent = parseInt(el.textContent) + 1;
+  }
+}
+
+// ── Badge helpers ──
+function kindToBadge(kind) {
+  if (kind === 'guardian_blocked') return {label:'N1 BLOCK',class:'badge-block'};
+  if (kind === 'n2_blocked') return {label:'N2 BLOCK',class:'badge-block'};
+  if (kind === 'n2_escalated') return {label:'N2 ESCAL',class:'badge-escalate'};
+  if (kind === 'n3_result') return {label:'N3',class:'badge-n3'};
+  if (kind === 'injection_blocked') return {label:'INJ BLOCK',class:'badge-block'};
+  if (kind === 'plan_validated') return {label:'PLAN OK',class:'badge-allow'};
+  return {label:kind.toUpperCase(),class:'badge-allow'};
+}
+
+function esc(s) {
+  if (!s) return '-';
+  const div = document.createElement('div');
+  div.textContent = s;
+  return div.innerHTML;
+}
+
+// ── Skills polling ──
+async function loadSkills() {
+  try {
+    const res = await fetch('/api/skills');
+    const skills = await res.json();
+    const container = document.getElementById('skills-list');
+    if (!skills.length) {
+      container.innerHTML = '<div class="empty">No skills installed</div>';
+      return;
+    }
+    container.innerHTML = skills.map(s => `
+      <div class="skill-row">
+        <span class="skill-dot ${s.enabled ? 'enabled' : 'disabled'}"></span>
+        <span>${esc(s.name)}</span>
+        <span class="skill-version">v${esc(s.version)}</span>
+        ${s.gpg_verified ? '<span class="skill-gpg">&#x2705; GPG</span>' : ''}
+      </div>
+    `).join('');
+  } catch (_) {
+    document.getElementById('skills-list').innerHTML = '<div class="empty">Failed to load skills</div>';
+  }
+}
+
+// ── Stats polling ──
+async function loadStats() {
+  try {
+    const res = await fetch('/api/stats');
+    const stats = await res.json();
+    if (stats.error) return;
+    document.getElementById('stat-blocks').textContent = (stats.guardian_blocked || 0) + (stats.n2_blocked || 0);
+    document.getElementById('stat-tools').textContent = stats.tool_count || 0;
+    document.getElementById('stat-skills').textContent = stats.active_skill_count || 0;
+    document.getElementById('stat-memory').textContent = stats.memory_count || 0;
+  } catch (_) {}
+}
+
+async function testRoute() {
+  const q = document.getElementById('router-query').value;
+  if (!q) return;
+  const result = document.getElementById('router-result');
+  result.style.color = 'var(--muted)';
+  result.textContent = 'Searching...';
+  try {
+    const res = await fetch('/api/routing/search?q=' + encodeURIComponent(q) + '&top_k=5');
+    const data = await res.json();
+    if (data.error) {
+      result.style.color = 'var(--red)';
+      result.textContent = 'Error: ' + data.error;
+      return;
+    }
+    if (!data.matches || !data.matches.length) {
+      result.textContent = 'No matching skills found for "' + esc(q) + '"';
+      return;
+    }
+    result.style.color = 'var(--green)';
+    result.innerHTML = data.matches.map(m =>
+      '<div style="padding:4px 0">' +
+      '<span style="font-weight:600">' + esc(m.skill_name) + '</span>' +
+      ' <span style="color:var(--muted);font-family:var(--mono)">' + m.score.toFixed(3) + '</span>' +
+      ' <span style="color:var(--muted);font-size:0.75rem">(' + (data.method || 'unknown') + ')</span>' +
+      '</div>'
+    ).join('');
+  } catch(e) {
+    result.style.color = 'var(--red)';
+    result.textContent = 'Request failed: ' + e.message;
+  }
+}
+
+// ── Router status polling ──
+async function loadRouterStatus() {
+  try {
+    const res = await fetch('/api/routing');
+    const data = await res.json();
+    if (data.skill_count > 0) {
+      document.getElementById('router-panel').style.display = 'block';
+    }
+  } catch (_) {}
+}
+
+// ── Init ──
+connectSSE();
+loadSkills();
+loadStats();
+loadRouterStatus();
+setInterval(loadStats, 30000);
+</script>
+</body>
+</html>
