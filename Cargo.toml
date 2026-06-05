@@ -114,6 +114,11 @@ dotenvy = "0.15"
 console = "0.16"
 regex = "1.10"
 walkdir = "2"
+# DADOU WASM skill runtime. wasmtime is the only production-ready
+# WASM runtime with fine-grained WASI capability gating on Windows.
+# wasmtime-wasi provides the WASI preview 1 context builder.
+wasmtime = "29"
+wasmtime-wasi = { version = "29", default-features = false, features = ["preview1"] }
 glob = "0.3"
 unicode-segmentation = "1"
 unicode-width = "0.2"
@@ -233,6 +238,8 @@ sentry = { version = "0.47.0", default-features = false, features = ["test"] }
 wiremock = "0.6"
 # Used in json_rpc_e2e to backdate mtime on stale lock files.
 filetime = "0.2"
+# WAT-to-WASM compilation for tests.
+wat = "1"
 
 [features]
 sandbox-landlock = ["dep:landlock"]
