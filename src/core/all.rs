@@ -329,6 +329,7 @@ fn build_declared_controller_schemas() -> Vec<ControllerSchema> {
     schemas.extend(crate::openhuman::doctor::all_doctor_controller_schemas());
     schemas.extend(crate::openhuman::encryption::all_encryption_controller_schemas());
     schemas.extend(crate::openhuman::security::all_security_controller_schemas());
+    schemas.extend(crate::openhuman::guardian::all_guardian_controller_schemas());
     schemas.extend(crate::openhuman::rollback::all_rollback_controller_schemas());
     schemas.extend(crate::openhuman::approval::all_approval_controller_schemas());
     schemas.extend(crate::openhuman::heartbeat::all_heartbeat_controller_schemas());
