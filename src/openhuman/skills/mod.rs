@@ -35,7 +35,12 @@ pub use static_analysis::{
     AnalysisVerdict, FindingSeverity, SUPPORTED_EXTENSIONS, default_rules,
 };
 
-pub use wasm::{execute_wasm, skill_data_dir, WasmEngine, WasmExecutionError, build_wasi_ctx};
+pub use types::{ExecutionStatus, SkillOutputEnvelope};
+
+pub use wasm::{
+    execute_wasm, execute_wasm_structured, skill_data_dir, wrap_skill_output, WasmEngine,
+    WasmExecutionError, build_wasi_ctx,
+};
 
 pub use verify::{
     extract_fingerprint, TrustStore, TrustedAuthor, SignatureVerificationResult, VerificationResult,

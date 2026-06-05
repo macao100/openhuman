@@ -20,6 +20,8 @@ use std::path::{Path, PathBuf};
 use anyhow::Context;
 use wasmtime::{Config, Engine, Linker, Module, Store};
 
+use super::types::{ExecutionStatus, SkillOutputEnvelope};
+
 // `WasmConfig`, `Permissions`, `FilesystemPerms` are defined in the sibling
 // `manifest` module (Plan 01) and re-exported via `super::`.
 
@@ -327,6 +329,115 @@ pub fn execute_wasm(
         output.len()
     );
     Ok(output)
+}
+
+// ---------------------------------------------------------------------------
+// Structured output wrapping (INJ-02)
+// ---------------------------------------------------------------------------
+
+/// Execute a WASM module and return a structured [`SkillOutputEnvelope`].
+///
+/// Wraps the raw output bytes from [`execute_wasm`] in a
+/// [`SkillOutputEnvelope`] so the agent harness receives structured JSON
+/// rather than raw bytes that could contain injection payloads.
+///
+/// # Returns
+///
+/// Always returns `Ok(SkillOutputEnvelope)` even on execution errors —
+/// the error is captured in the envelope's `execution_status` and `error`
+/// fields. This ensures the tool loop always has a structured envelope to
+/// process.
+pub fn execute_wasm_structured(
+    engine: &Engine,
+    wasm_bytes: &[u8],
+    entry_fn: &str,
+    input: &[u8],
+    skill_name: &str,
+    skill_version: &str,
+    gpg_verified: bool,
+) -> SkillOutputEnvelope {
+    let start = std::time::Instant::now();
+    let result = execute_wasm(engine, wasm_bytes, entry_fn, input, skill_name);
+    let execution_time_ms = start.elapsed().as_millis() as u64;
+
+    match result {
+        Ok(output) => {
+            let output_str = String::from_utf8_lossy(&output);
+            log::debug!(
+                "[skills:output] structured wrap OK skill='{skill_name}' \
+                 version='{skill_version}' output_bytes={} elapsed_ms={execution_time_ms}",
+                output.len(),
+            );
+            let data = serde_json::json!({
+                "output": output_str,
+                "output_bytes": output.len(),
+            });
+            SkillOutputEnvelope::new_success(
+                skill_name,
+                skill_version,
+                data,
+                execution_time_ms,
+                gpg_verified,
+            )
+        }
+        Err(e) => {
+            let is_timeout = matches!(e, WasmExecutionError::Timeout);
+            log::debug!(
+                "[skills:output] structured wrap {} skill='{skill_name}' \
+                 version='{skill_version}' elapsed_ms={execution_time_ms}",
+                if is_timeout { "TIMEOUT" } else { "ERROR" },
+            );
+            if is_timeout {
+                SkillOutputEnvelope::new_timeout(
+                    skill_name,
+                    skill_version,
+                    execution_time_ms,
+                    gpg_verified,
+                )
+            } else {
+                SkillOutputEnvelope::new_error(
+                    skill_name,
+                    skill_version,
+                    e.to_string(),
+                    execution_time_ms,
+                    gpg_verified,
+                )
+            }
+        }
+    }
+}
+
+/// Post-hoc structured output wrapper for already-executed skill results.
+///
+/// Takes the textual result from a completed skill execution and wraps it
+/// in a [`SkillOutputEnvelope`] without re-executing the skill. Used by
+/// the agent tool loop when the raw output is already available as a
+/// string and only needs structured wrapping before LLM injection.
+///
+/// The `output_text` is placed inside `data["output"]` so the LLM sees
+/// structured JSON rather than raw text.
+pub fn wrap_skill_output(
+    skill_name: &str,
+    skill_version: &str,
+    output_text: &str,
+    execution_time_ms: u64,
+    gpg_verified: bool,
+) -> SkillOutputEnvelope {
+    log::debug!(
+        "[skills:output] post-hoc wrap skill='{skill_name}' version='{skill_version}' \
+         text_chars={} elapsed_ms={execution_time_ms}",
+        output_text.chars().count(),
+    );
+    let data = serde_json::json!({
+        "output": output_text,
+    });
+    SkillOutputEnvelope::new_success(
+        skill_name,
+        skill_version,
+        data,
+        execution_time_ms,
+        gpg_verified,
+    )
 }
 
 // ---------------------------------------------------------------------------
@@ -689,5 +800,103 @@ mod tests {
             }
             other => panic!("expected Trap error, got: {other}"),
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // Structured output (INJ-02)
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn execute_wasm_structured_returns_success_envelope() {
+        let engine = shared_engine();
+        let wasm = wat::parse_str(
+            r#"(module
+                (memory (export "memory") 1)
+                (func (export "run") (param i32 i32) (result i32)
+                    memory.copy (i32.const 65536) (local.get 0) (local.get 1)
+                    local.get 1
+                )
+            )"#,
+        )
+        .expect("valid WAT");
+
+        let input = b"hello structured output!";
+        let envelope =
+            execute_wasm_structured(engine.engine(), &wasm, "run", input, "structured-skill", "1.2.0", true);
+
+        assert_eq!(envelope.skill_name, "structured-skill");
+        assert_eq!(envelope.skill_version, "1.2.0");
+        assert_eq!(envelope.execution_status, ExecutionStatus::Success);
+        assert!(envelope.gpg_verified);
+        assert!(envelope.error.is_none());
+        // The data field should contain the output
+        assert_eq!(envelope.data["output"], "hello structured output!");
+        assert_eq!(envelope.data["output_bytes"], 22);
+    }
+
+    #[test]
+    fn execute_wasm_structured_returns_envelope_on_engine_error() {
+        let engine = shared_engine();
+        let garbage = b"not valid wasm at all";
+
+        let envelope =
+            execute_wasm_structured(engine.engine(), garbage, "run", b"", "bad-skill", "0.0.1", false);
+
+        // Should still return an envelope (not propagate the error)
+        assert_eq!(envelope.skill_name, "bad-skill");
+        assert_eq!(envelope.execution_status, ExecutionStatus::Error);
+        assert!(envelope.error.is_some());
+    }
+
+    #[test]
+    fn execute_wasm_structured_handles_empty_output() {
+        let engine = shared_engine();
+        let wasm = wat::parse_str(
+            r#"(module
+                (func (export "_start")
+                    nop
+                )
+            )"#,
+        )
+        .expect("valid WAT");
+
+        let envelope =
+            execute_wasm_structured(engine.engine(), &wasm, "_start", b"", "empty-skill", "0.1.0", false);
+
+        assert_eq!(envelope.execution_status, ExecutionStatus::Success);
+        assert_eq!(envelope.data["output"], "");
+        assert_eq!(envelope.data["output_bytes"], 0);
+    }
+
+    #[test]
+    fn wrap_skill_output_creates_success_envelope() {
+        let envelope = wrap_skill_output("my-skill", "3.0.0", "some result text", 1234, true);
+
+        assert_eq!(envelope.skill_name, "my-skill");
+        assert_eq!(envelope.skill_version, "3.0.0");
+        assert_eq!(envelope.execution_status, ExecutionStatus::Success);
+        assert_eq!(envelope.execution_time_ms, 1234);
+        assert!(envelope.gpg_verified);
+        assert_eq!(envelope.data["output"], "some result text");
+        assert!(envelope.error.is_none());
+    }
+
+    #[test]
+    fn wrap_skill_output_handles_empty_text() {
+        let envelope = wrap_skill_output("empty", "1.0.0", "", 0, false);
+
+        assert_eq!(envelope.execution_status, ExecutionStatus::Success);
+        assert_eq!(envelope.data["output"], "");
+    }
+
+    #[test]
+    fn wrap_skill_output_produces_valid_json_line() {
+        let envelope = wrap_skill_output("json-skill", "2.0.0", "{\"key\": \"val\"}", 50, false);
+        let line = envelope.to_json_line();
+        let parsed: serde_json::Value = serde_json::from_str(&line).unwrap();
+
+        assert_eq!(parsed["skill_name"], "json-skill");
+        assert_eq!(parsed["execution_status"], "success");
+        assert_eq!(parsed["data"]["output"], "{\"key\": \"val\"}");
     }
 }
