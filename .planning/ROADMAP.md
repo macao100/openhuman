@@ -106,7 +106,14 @@ Plans:
 5. User lists installed skills, checks their enabled/disabled state, and removes them via CLI
 6. The local TOML store tracks every skill (version, commit hash, activation state, signature fingerprint)
 
-**Plans**: TBD
+**Plans**: 5 plans in 2 waves
+
+Plans:
+- [ ] 04-01-PLAN.md — Manifest parsing (dadou-skill.yaml) + TOML skills store (SKL-01, SKL-06)
+- [ ] 04-02-PLAN.md — Wasmtime in-process runtime + WASI capability-gated sandbox (SKL-02)
+- [ ] 04-03-PLAN.md — GPG signature verification via sequoia-openpgp + trust store (SKL-04)
+- [ ] 04-04-PLAN.md — Static analysis: suspicious imports, filesystem writes, network detection (SKL-05)
+- [ ] 04-05-PLAN.md — CLI dadou skill commands + JSON-RPC controllers (SKL-07)
 
 ### Phase 5: Anti-Injection
 
@@ -166,7 +173,7 @@ Plans:
 | 1. Security Foundation | 0/6 | Not started | - |
 | 2. Memory & Continuity | 0/4 | Not started | - |
 | 3. Guardian N2+N3 | 0/4 | Planning complete | - |
-| 4. Skills WASM | 0/0 | Not started | - |
+| 4. Skills WASM | 0/5 | Planning complete | - |
 | 5. Anti-Injection | 0/0 | Not started | - |
 | 6. Dashboard & Semantic Router | 0/0 | Not started | - |
 | 7. Python Skills | 0/0 | Not started | - |

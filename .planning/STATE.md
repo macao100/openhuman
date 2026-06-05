@@ -1,8 +1,8 @@
 # DADOU — Project State
 
 **Last updated:** 2026-06-05
-**Current phase:** 2 (Memory & Continuity) — COMPLETED
-**Next phase:** 3 (Guardian N2+N3) — PLANNED
+**Current phase:** 3 (Guardian N2+N3) — PLANNED
+**Next phase:** 4 (Skills WASM) — PLANNED
 **Milestone:** v1
 
 ---
@@ -11,7 +11,7 @@
 
 **Core value:** Un assistant qui apprend. DADOU construit et maintient un modele mental persistant du monde numerique de l'utilisateur - projets, preferences, erreurs passees, succes.
 
-**Current focus:** Phase 3 planifiee (4 plans, 2 waves) — Pret pour execution.
+**Current focus:** Phase 3 planifiee (4 plans, 2 waves). Phase 4 planifiee (5 plans, 2 waves).
 
 **Key decisions:**
 - Fork independant OpenHuman (pas contribution upstream) - ACTIVE
@@ -33,6 +33,13 @@
 - Pipeline etendu N1->N2->N3 avec early exit et blocked_by - D-39 a D-40
 - Config guardian_n2 et guardian_n3 dans config.toml - D-41
 - Evenements N2Blocked, N2Escalated, N3Result - D-43
+- **Dadou-skill.yaml manifest**: format YAML avec nom, version, auteur, GPG, permissions, WASM config - D-44
+- **Store TOML**: SkillsStore dans `~/.openhuman/skills/store.toml` - D-45
+- **Wasmtime in-process**: WASI deny-by-default avec epoch-based timeout 30s - D-46
+- **GPG verification**: sequoia-openpgp, git verify-tag --raw + trust store - D-47
+- **Static analysis**: 15+ regles (eval, subprocess, socket, network, filesystem) - D-48
+- **CLI**: `dadou skill install|update|audit|remove|list|trust-author` - D-49
+- **Controllers**: 5 nouveaux controleurs prefixe `dadou.*` - D-50
 
 ---
 
@@ -42,10 +49,10 @@
 |-----------|-------|
 | Milestone | v1 |
 | Phase | 3 - Guardian N2+N3 |
-| Status | Planning completed |
-| Progress | [############              ] 40% |
+| Status | Planning completed (Phase 4 aussi planifiee) |
+| Progress | [##########                        ] 25% |
 
-**Next action:** Executer la Phase 3 (`/gsd:execute-phase 03-guardian-n2n3`).
+**Next action:** Executer la Phase 3 (`/gsd:execute-phase 03-guardian-n2n3`) puis Phase 4.
 
 ---
 
@@ -106,13 +113,20 @@
 | 2026-06-05 | D-41: Sections [guardian_n2] et [guardian_n3] dans config.toml | Seuils, timeouts, enable/disable |
 | 2026-06-05 | D-42: N3 disabled + N2 escalate = block (fail-closed) | Securite maximale par defaut |
 | 2026-06-05 | D-43: Nouveaux DomainEvent variants | N2Blocked, N2Escalated, N3Result |
+| **2026-06-05** | **D-44: dadou-skill.yaml manifest** | **Format YAML avec nom, version, auteur, GPG, permissions, WASM** |
+| **2026-06-05** | **D-45: Store TOML ~/.openhuman/skills/store.toml** | **SkillsStore avec load/save/upsert/remove** |
+| **2026-06-05** | **D-46: Wasmtime in-process avec WASI deny-by-default** | **Epoch-based timeout 30s, reseau bloque, filesystem restreint** |
+| **2026-06-05** | **D-47: GPG via sequoia-openpgp + git verify-tag --raw** | **Trust store ~/.openhuman/skills/certs/** |
+| **2026-06-05** | **D-48: Static analysis avec 15+ regles** | **Block sur eval/subprocess/socket/network non autorise** |
+| **2026-06-05** | **D-49: CLI dadou skill install|update|audit|remove|list** | **Sous-commande dans core/cli.rs** |
+| **2026-06-05** | **D-50: 5 nouveaux controleurs dadou.skill_*** | **Prefixe dadou. pour distinguer des skills.* herites** |
 
 ### Open questions
 
 1. Build/supply chain security audit - npm ~1100 packages, Cargo crates non audites
-2. Versions exactes des dependances (wasmtime, sequoia, candle) a verifier sur crates.io
-3. ~~Schema de migration de la memoire - superposition vs migration~~ -> RESOLU: PRAGMA user_version pattern
-4. Gestion des conflits de port 7790 pour le dashboard
+2. Versions exactes des dependances (wasmtime, sequoia) a verifier sur crates.io
+3. Gestion des conflits de port 7790 pour le dashboard
+4. ~~Schema de migration de la memoire - superposition vs migration~~ -> RESOLU: PRAGMA user_version pattern
 
 ### Risks
 
@@ -122,10 +136,12 @@
 | Docker non disponible sur Windows sans WSL2 | Low | High (Phase 7) | Fallback Python via wasmtime/Pyodide |
 | Performance N3 >500ms sur hardware modeste | Medium | Medium | N3 optionnel, basculer sur N2. Timeout configurable. |
 | whisper-rs-sys build bloque cargo check/test | **Active** | Medium | Verification manuelle par pattern matching |
+| wasmtime compile time/linkage Windows | Medium | Medium | CI test avec cargo check -p openhuman |
+| sequoia-openpgp compile time | Medium | Low | Feature crypto-rust, pas de native NSS |
 
 ### Blockers
 
-- **whisper-rs-sys**: libclang.dll manquant sur Windows -> cargo check impossible. Tout le code Phase 1+2+3 est verifie par correspondance structurelle avec les patterns existants.
+- **whisper-rs-sys**: libclang.dll manquant sur Windows -> cargo check impossible. Tout le code Phase 1+2+3+4 est verifie par correspondance structurelle avec les patterns existants.
 
 ---
 
@@ -157,8 +173,14 @@
 | 03-03 | Pipeline etendu N1->N2->N3, events, tool loop wiring | 2 |
 | 03-04 | Controllers N2/N3, config schema, initialization | 2 |
 
-### Phase 4 — Skills System ⏳
-*To be planned*
+### Phase 4 — Skills WASM 📋 (Planned)
+| Plan | Content | Wave |
+|------|---------|------|
+| 04-01 | Manifest dadou-skill.yaml + TOML SkillsStore (SKL-01, SKL-06) | 1 |
+| 04-02 | Wasmtime runtime + WASI capability-gated (SKL-02) | 1 |
+| 04-03 | GPG verification via sequoia-openpgp + trust store (SKL-04) | 1 |
+| 04-04 | Static analysis: imports, filesystem, network (SKL-05) | 1 |
+| 04-05 | CLI dadou skill + JSON-RPC controllers (SKL-07) | 2 |
 
 ### Phase 5 — Anti-Injection ⏳
 *To be planned*
@@ -187,13 +209,19 @@
 | `.planning/phases/03-guardian-n2n3/03-02-PLAN.md` | N3 LLM validator |
 | `.planning/phases/03-guardian-n2n3/03-03-PLAN.md` | Extended pipeline |
 | `.planning/phases/03-guardian-n2n3/03-04-PLAN.md` | Config + controllers |
+| `.planning/phases/04-skills-wasm/04-CONTEXT.md` | Phase 4 decisions D-44->D-50 |
+| `.planning/phases/04-skills-wasm/04-01-PLAN.md` | Manifest + Store (SKL-01, SKL-06) |
+| `.planning/phases/04-skills-wasm/04-02-PLAN.md` | Wasmtime runtime (SKL-02) |
+| `.planning/phases/04-skills-wasm/04-03-PLAN.md` | GPG verification (SKL-04) |
+| `.planning/phases/04-skills-wasm/04-04-PLAN.md` | Static analysis (SKL-05) |
+| `.planning/phases/04-skills-wasm/04-05-PLAN.md` | CLI + Controllers (SKL-07) |
 | `CLAUDE.md` | Repo layout, commands, conventions |
 
 ### Next commands
 
 1. `/gsd:execute-phase 03-guardian-n2n3` — Executer les 4 plans Phase 3
-2. Commencer par Wave 1: Plans 01 (N2) et 02 (N3) en parallele
-3. Puis Wave 2: Plans 03 (pipeline) et 04 (config)
+2. Puis `/gsd:execute-phase 04-skills-wasm` — Executer les 5 plans Phase 4
+3. Commencer par Wave 1: Plans 01-04 en parallele, puis Wave 2: Plan 05
 4. `set LIBCLANG_PATH=<path to LLVM bin>` puis `cargo check` pour verifier la compilation (bloqueur pre-existant)
 
 ---
