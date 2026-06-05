@@ -14,6 +14,7 @@ pub mod schemas;
 pub mod static_analysis;
 pub mod store;
 pub mod types;
+pub mod verify;
 pub mod wasm;
 
 pub use manifest::{
@@ -32,6 +33,11 @@ pub use static_analysis::{
 };
 
 pub use wasm::{execute_wasm, skill_data_dir, WasmEngine, WasmExecutionError, build_wasi_ctx};
+
+pub use verify::{
+    extract_fingerprint, TrustStore, TrustedAuthor, SignatureVerificationResult, VerificationResult,
+    VerifyError, verify_git_tag_signature, verify_manifest_signature, verify_skill_signature,
+};
 
 /// Integration test: manifest parsing -> store persistence -> reload roundtrip.
 #[cfg(test)]
