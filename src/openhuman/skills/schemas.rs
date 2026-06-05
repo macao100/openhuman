@@ -1171,7 +1171,6 @@ fn handle_dadou_skill_execute(params: Map<String, Value>) -> ControllerFuture {
             Vec::new(),
         ))
     })
-    })
 }
 
 /// Extract a required string parameter from the params map.
