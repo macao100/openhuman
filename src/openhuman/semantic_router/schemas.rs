@@ -7,8 +7,8 @@
 
 use std::collections::HashMap;
 
-use crate::core::types::{ControllerSchema, FieldSchema, RegisteredController};
-use crate::core::ControllerFuture;
+use crate::core::all::{ControllerFuture, RegisteredController};
+use crate::core::{ControllerSchema, FieldSchema};
 
 use super::ops;
 

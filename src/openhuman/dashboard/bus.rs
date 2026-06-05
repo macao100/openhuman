@@ -4,8 +4,7 @@
 //! and persists them to the SQLite event store so the dashboard UI can
 //! display a live timeline.
 
-use crate::core::event_bus::events::DomainEvent;
-use crate::core::event_bus::subscriber::EventHandler;
+use crate::core::event_bus::{DomainEvent, EventHandler};
 
 use super::store;
 

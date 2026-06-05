@@ -3,7 +3,7 @@
 use std::sync::{Arc, OnceLock};
 use std::time::Instant;
 
-use crate::openhuman::embeddings::provider_trait::EmbeddingProvider;
+use crate::openhuman::embeddings::EmbeddingProvider;
 use crate::openhuman::memory_store::vectors::store::cosine_similarity;
 use crate::openhuman::skills::store::SkillsStore;
 

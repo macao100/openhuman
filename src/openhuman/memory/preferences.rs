@@ -16,7 +16,7 @@ use std::sync::Arc;
 
 use super::contradiction::{check_for_contradictions, ContradictionReport};
 use super::provenance::{ConfidenceLevel, MemorySource, Provenance};
-use super::Memory;
+use super::{Memory, MemoryCategory};
 
 use crate::core::event_bus::{publish_global, DomainEvent};
 

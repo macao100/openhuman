@@ -3,8 +3,7 @@
 //! Provides [`GuardianBlockingSubscriber`] which logs every N1 block decision
 //! so operators can monitor which tools are being blocked and why.
 
-use crate::core::event_bus::events::DomainEvent;
-use crate::core::event_bus::subscriber::EventHandler;
+use crate::core::event_bus::{DomainEvent, EventHandler};
 
 /// Logs Guardian N1 blocking events.
 ///

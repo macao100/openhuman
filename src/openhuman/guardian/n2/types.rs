@@ -147,8 +147,8 @@ impl N2EngineConfig {
     }
 }
 
-impl From<crate::openhuman::config::schema::types::GuardianN2Config> for N2EngineConfig {
-    fn from(cfg: crate::openhuman::config::schema::types::GuardianN2Config) -> Self {
+impl From<crate::openhuman::config::schema::GuardianN2Config> for N2EngineConfig {
+    fn from(cfg: crate::openhuman::config::schema::GuardianN2Config) -> Self {
         Self {
             block_threshold: cfg.block_threshold,
             escalate_threshold: cfg.escalate_threshold,

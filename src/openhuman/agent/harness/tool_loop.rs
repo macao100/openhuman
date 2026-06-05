@@ -19,7 +19,7 @@ use super::parse::{build_native_assistant_history, parse_structured_tool_calls, 
 use super::payload_summarizer::PayloadSummarizer;
 use crate::openhuman::context::guard::{ContextCheckResult, ContextGuard};
 use crate::openhuman::inference::model_context::context_window_for_model;
-use crate::openhuman::guardian::types::StructuredPlan;
+use crate::openhuman::guardian::StructuredPlan;
 
 use super::token_budget::trim_chat_messages_to_budget;
 
@@ -999,7 +999,7 @@ pub(crate) async fn run_tool_call_loop(
                         // Publish the appropriate event based on which level blocked.
                         match pipeline_result.blocked_by.as_str() {
                             "n1" => {
-                                crate::core::event_bus::bus::publish_global(
+                                crate::core::event_bus::publish_global(
                                     crate::core::event_bus::DomainEvent::GuardianBlocked {
                                         tool_name: call.name.clone(),
                                         reason: reason.clone(),
@@ -1013,7 +1013,7 @@ pub(crate) async fn run_tool_call_loop(
                                     .as_ref()
                                     .map(|n2| serde_json::to_string(&n2.scores).unwrap_or_default())
                                     .unwrap_or_default();
-                                crate::core::event_bus::bus::publish_global(
+                                crate::core::event_bus::publish_global(
                                     crate::core::event_bus::DomainEvent::N2Blocked {
                                         tool_name: call.name.clone(),
                                         reason: reason.clone(),
@@ -1031,7 +1031,7 @@ pub(crate) async fn run_tool_call_loop(
                                     .as_ref()
                                     .map(|r| format!("{:?}", r.verdict))
                                     .unwrap_or_default();
-                                crate::core::event_bus::bus::publish_global(
+                                crate::core::event_bus::publish_global(
                                     crate::core::event_bus::DomainEvent::N3Result {
                                         tool_name: call.name.clone(),
                                         verdict,
@@ -1068,7 +1068,7 @@ pub(crate) async fn run_tool_call_loop(
                     if let Some(ref n2) = pipeline_result.n2 {
                         if n2.escalate {
                             let scores_json = serde_json::to_string(&n2.scores).unwrap_or_default();
-                            crate::core::event_bus::bus::publish_global(
+                            crate::core::event_bus::publish_global(
                                 crate::core::event_bus::DomainEvent::N2Escalated {
                                     tool_name: call.name.clone(),
                                     scores_json,
@@ -1360,7 +1360,7 @@ pub(crate) async fn run_tool_call_loop(
                     );
 
                     // Publish event for dashboard / audit logging.
-                    crate::core::event_bus::bus::publish_global(
+                    crate::core::event_bus::publish_global(
                         crate::core::event_bus::DomainEvent::InjectionBlocked {
                             tool_name: call.name.clone(),
                             reason: validation.summary.clone(),

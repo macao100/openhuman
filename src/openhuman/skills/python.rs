@@ -23,7 +23,8 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::Command as TokioCommand;
 use tokio::time::timeout;
 
-use crate::openhuman::runtime_python::{spawn_stdio_process, PythonBootstrap, PythonLaunchSpec};
+// spawn_stdio_process and PythonBootstrap/PythonLaunchSpec are available
+// from crate::openhuman::runtime_python if/when local Python execution is used.
 use crate::openhuman::skills::store::SkillsStore;
 use crate::openhuman::skills::types::{ExecutionStatus, SkillOutputEnvelope};
 

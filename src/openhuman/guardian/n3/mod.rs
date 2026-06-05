@@ -33,8 +33,6 @@ use parking_lot::Mutex;
 use tokio::time::{timeout, Duration};
 
 use self::cache::LruCache;
-use self::prompt::N3PromptBuilder;
-use self::types::{N3Config, N3Result, N3Verdict};
 
 pub use self::prompt::N3PromptBuilder;
 pub use self::types::{N3Config, N3Result, N3Verdict};

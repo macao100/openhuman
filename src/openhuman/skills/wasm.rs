@@ -138,7 +138,7 @@ impl Default for WasmEngine {
 ///
 /// The caller must ensure `data_dir` exists (or call [`create_dir_all`] before
 /// passing it in).
-pub fn build_wasi_ctx(data_dir: &Path) -> anyhow::Result<wasmtime_wasi::WasiCtx> {
+pub fn build_wasi_ctx(data_dir: &Path) -> anyhow::Result<wasmtime_wasi::preview1::WasiP1Ctx> {
     use wasmtime_wasi::{DirPerms, FilePerms, WasiCtxBuilder};
 
     // Canonicalize so (a) path-traversal from inside the module is blocked
@@ -168,7 +168,7 @@ pub fn build_wasi_ctx(data_dir: &Path) -> anyhow::Result<wasmtime_wasi::WasiCtx>
     //   - No `.socket()`     → no network.
     //   - No `.random()`     → no random source.
 
-    Ok(builder.build())
+    Ok(builder.build_p1())
 }
 
 // ---------------------------------------------------------------------------
@@ -241,8 +241,8 @@ pub fn execute_wasm(
     store.set_epoch_deadline(defaults::EXECUTION_TIMEOUT_SECS);
 
     // 4. Build linker with WASI preview 1 bindings.
-    let mut linker = Linker::<wasmtime_wasi::WasiCtx>::new(engine);
-    wasmtime_wasi::add_to_linker(&mut linker, |ctx| ctx)?;
+    let mut linker = Linker::<wasmtime_wasi::preview1::WasiP1Ctx>::new(engine);
+    wasmtime_wasi::preview1::add_to_linker_sync(&mut linker, |ctx| ctx)?;
 
     // 5. Instantiate.
     let instance = linker
@@ -570,8 +570,8 @@ mod tests {
         let mut store = Store::new(engine.engine(), wasi_ctx);
         store.set_epoch_deadline(1);
 
-        let mut linker = Linker::<wasmtime_wasi::WasiCtx>::new(engine.engine());
-        wasmtime_wasi::add_to_linker(&mut linker, |ctx| ctx).expect("add WASI");
+        let mut linker = Linker::<wasmtime_wasi::preview1::WasiP1Ctx>::new(engine.engine());
+        wasmtime_wasi::preview1::add_to_linker_sync(&mut linker, |ctx| ctx).expect("add WASI");
         let module = Module::new(engine.engine(), &wasm).expect("compile");
         let instance = linker
             .instantiate(&mut store, &module)
@@ -618,11 +618,11 @@ mod tests {
     }
 
     /// Build a minimal WASI context for tests that don't touch the filesystem.
-    fn build_wasi_ctx_for_test() -> wasmtime_wasi::WasiCtx {
+    fn build_wasi_ctx_for_test() -> wasmtime_wasi::preview1::WasiP1Ctx {
         use wasmtime_wasi::WasiCtxBuilder;
         let mut builder = WasiCtxBuilder::new();
         builder.inherit_stderr();
-        builder.build()
+        builder.build_p1()
     }
 
     // -----------------------------------------------------------------------
@@ -652,8 +652,8 @@ mod tests {
         let wasi_ctx = build_wasi_ctx_for_test();
         let mut store = Store::new(engine.engine(), wasi_ctx);
 
-        let mut linker = Linker::<wasmtime_wasi::WasiCtx>::new(engine.engine());
-        wasmtime_wasi::add_to_linker(&mut linker, |ctx| ctx).expect("add WASI");
+        let mut linker = Linker::<wasmtime_wasi::preview1::WasiP1Ctx>::new(engine.engine());
+        wasmtime_wasi::preview1::add_to_linker_sync(&mut linker, |ctx| ctx).expect("add WASI");
 
         let module = Module::new(engine.engine(), &wasm).expect("compile");
 
@@ -720,8 +720,8 @@ mod tests {
         .expect("valid WAT");
 
         let mut store = Store::new(shared_engine().engine(), ctx);
-        let mut linker = Linker::<wasmtime_wasi::WasiCtx>::new(shared_engine().engine());
-        wasmtime_wasi::add_to_linker(&mut linker, |ctx| ctx).expect("add WASI");
+        let mut linker = Linker::<wasmtime_wasi::preview1::WasiP1Ctx>::new(shared_engine().engine());
+        wasmtime_wasi::preview1::add_to_linker_sync(&mut linker, |ctx| ctx).expect("add WASI");
         let module = Module::new(shared_engine().engine(), &wasm).expect("compile");
 
         let result = linker.instantiate(&mut store, &module);

@@ -8,9 +8,8 @@
 
 use std::collections::HashMap;
 
-use crate::core::types::{ControllerSchema, FieldSchema, RegisteredController, TypeSchema};
-use crate::core::ControllerFuture;
-use crate::rpc::RpcOutcome;
+use crate::core::all::{ControllerFuture, RegisteredController};
+use crate::core::{ControllerSchema, FieldSchema, TypeSchema};
 
 use super::store;
 use super::types::{DashboardStats, SkillSummary, StoredDashboardEvent};

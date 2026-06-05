@@ -13,6 +13,7 @@ use crate::core::{ControllerSchema, FieldSchema, TypeSchema};
 use crate::openhuman::memory::contradiction::{
     check_for_contradictions, resolve_contradiction, ContradictionAction, ContradictionResolution,
 };
+use crate::openhuman::memory::Memory;
 use crate::rpc::RpcOutcome;
 
 /// Default vector similarity threshold for contradiction detection (0.6).

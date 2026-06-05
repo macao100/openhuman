@@ -19,7 +19,7 @@ use tokio::sync::broadcast;
 use tokio_stream::wrappers::BroadcastStream;
 use tokio_stream::StreamExt;
 
-use crate::core::event_bus::events::DomainEvent;
+use crate::core::event_bus::DomainEvent;
 use crate::openhuman::config::Config;
 
 use super::store;
@@ -232,7 +232,7 @@ async fn sse_handler() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     // Grab the raw broadcast receiver from the event bus.
     // The EventBus provides a method for external consumers.
     // We filter to dashboard-relevant domains.
-    let stream = if let Some(bus) = crate::core::event_bus::bus::global() {
+    let stream = if let Some(bus) = crate::core::event_bus::global() {
         let rx = bus.raw_receiver();
         BroadcastStream::new(rx).filter_map(|result| {
             let event = match result {

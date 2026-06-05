@@ -22,7 +22,7 @@ use anyhow::Context;
 use chrono::Utc;
 use tempfile::TempDir;
 
-use crate::openhuman::skills::manifest::{parse_manifest, SkillManifest};
+use crate::openhuman::skills::manifest::{parse_manifest, ManifestError, SkillManifest};
 use crate::openhuman::skills::static_analysis::{scan_skill, AnalysisResult, AnalysisVerdict};
 use crate::openhuman::skills::store::{InstalledSkill, SkillsStore};
 use crate::openhuman::skills::verify::{

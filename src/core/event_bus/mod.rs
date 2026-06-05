@@ -53,10 +53,10 @@
 //! let resp: MyResp = request_native_global("my_domain.do_thing", MyReq { /* ... */ }).await?;
 //! ```
 
-mod bus;
-mod events;
+pub mod bus;
+pub mod events;
 mod native_request;
-mod subscriber;
+pub mod subscriber;
 pub mod testing;
 mod tracing;
 

@@ -462,7 +462,7 @@ impl GuardianPipeline {
 
         // Publish the PlanValidated event so subscribers (logging, UI,
         // observability) can track plan validation outcomes.
-        crate::core::event_bus::bus::publish_global(
+        crate::core::event_bus::publish_global(
             crate::core::event_bus::DomainEvent::PlanValidated {
                 goal: plan.goal.clone(),
                 allowed: result.allowed,

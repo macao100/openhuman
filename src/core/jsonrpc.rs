@@ -1625,11 +1625,14 @@ async fn run_server_inner(
     // Start the DADOU observability dashboard on its own port (default :7790).
     // Runs as a background task alongside the main RPC server.
     // The dashboard store is already initialised in register_domain_subscribers.
-    if cfg.dashboard.enabled {
+    let dashboard_config = crate::openhuman::config::Config::load_or_init()
+        .await
+        .unwrap_or_default();
+    if dashboard_config.dashboard.enabled {
         let dashboard_shutdown = shutdown_token
             .clone()
             .unwrap_or_else(CancellationToken::new);
-        let dashboard_cfg = cfg.dashboard.clone();
+        let dashboard_cfg = dashboard_config.dashboard.clone();
         tokio::spawn(async move {
             log::info!(
                 "[dashboard] starting server on http://{}:{}",

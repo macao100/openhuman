@@ -171,7 +171,7 @@ impl Drop for JailedChild {
                 if !raw.is_null() {
                     // INFINITE wait ensures the process has exited before
                     // the handle is closed, avoiding a zombie.
-                    let _ = WaitForSingleObject(raw as isize, INFINITE);
+                    let _ = win::WaitForSingleObject(raw as isize, win::INFINITE);
                 }
             }
         }

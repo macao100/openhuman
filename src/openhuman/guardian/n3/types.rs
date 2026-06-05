@@ -104,8 +104,8 @@ impl Default for N3Config {
     }
 }
 
-impl From<crate::openhuman::config::schema::types::GuardianN3Config> for N3Config {
-    fn from(cfg: crate::openhuman::config::schema::types::GuardianN3Config) -> Self {
+impl From<crate::openhuman::config::schema::GuardianN3Config> for N3Config {
+    fn from(cfg: crate::openhuman::config::schema::GuardianN3Config) -> Self {
         Self {
             enabled: cfg.enabled,
             max_tokens: cfg.max_tokens,

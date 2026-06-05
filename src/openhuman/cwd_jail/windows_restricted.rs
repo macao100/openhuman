@@ -31,10 +31,9 @@ use std::os::windows::io::{FromRawHandle, OwnedHandle};
 use std::process::Command;
 use std::ptr;
 
-use windows_sys::Win32::Foundation::CloseHandle;
+use windows_sys::Win32::Foundation::{CloseHandle, LocalFree, HLOCAL};
 use windows_sys::Win32::Security::FreeSid;
-use windows_sys::Win32::Foundation::HLOCAL;
-use windows_sys::Win32::System::Memory::{LocalAlloc, LocalFree, LPTR};
+use windows_sys::Win32::System::Memory::{LocalAlloc, LPTR};
 use windows_sys::Win32::System::Threading::{
     DeleteProcThreadAttributeList, InitializeProcThreadAttributeList,
     ResumeThread, UpdateProcThreadAttribute, CREATE_SUSPENDED,
