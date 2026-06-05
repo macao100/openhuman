@@ -112,7 +112,7 @@ impl HiddenPayloadsDetector {
             // ── 0.6: Encoded string argument (long base64/hex in flags) ──
             PayloadPattern::new(
                 "encoded_arg",
-                r"--\w+\s*['\"]?(?:[A-Za-z0-9+/=]{40,}|\\x[0-9a-f]{2})",
+                r##"--\w+\s*['"]?(?:[A-Za-z0-9+/=]{40,}|\\x[0-9a-f]{2})"##,
                 0.6,
                 "Long encoded string passed as tool argument",
             ),
@@ -126,7 +126,7 @@ impl HiddenPayloadsDetector {
             // ── 0.4: Encoded string continuation detection ──────────
             PayloadPattern::new(
                 "encoded_continuation",
-                r"echo\s+['\"][A-Za-z0-9+/=]{40,}['\"]\s*(?:>>|>)\s*\S+\.(?:py|sh)",
+                r##"echo\s+['"][A-Za-z0-9+/=]{40,}['"]\s*(?:>>|>)\s*\S+\.(?:py|sh)"##,
                 0.4,
                 "Potential encoded payload written to script file incrementally",
             ),
