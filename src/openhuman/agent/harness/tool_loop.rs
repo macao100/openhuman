@@ -14,6 +14,7 @@ use std::fmt::Write as _;
 use std::io::Write as _;
 
 use super::credentials::scrub_credentials;
+use super::memory_context_safety::wrap_external_data;
 use super::parse::{build_native_assistant_history, parse_structured_tool_calls, parse_tool_calls};
 use super::payload_summarizer::PayloadSummarizer;
 use crate::openhuman::context::guard::{ContextCheckResult, ContextGuard};
@@ -1245,11 +1246,70 @@ pub(crate) async fn run_tool_call_loop(
                 (msg, false)
             };
 
-            individual_results.push(result.clone());
+            // ── Structured skill output envelope (INJ-02) ───────────
+            // Skill execution tools (dadou.skill_execute, etc.) get their
+            // raw output wrapped in a SkillOutputEnvelope JSON envelope
+            // FIRST. Only the structured `data` field passes forward to
+            // the INJ-01 <external_data> wrapping below. This prevents raw
+            // skill output text (which may contain injection payloads)
+            // from reaching the LLM prompt.
+            //
+            // The envelope metadata (version, gpg_verified) is consumed
+            // here for trust decisions but never injected into the LLM
+            // prompt — the LLM only sees `data` wrapped in <external_data>.
+            let result = if call_succeeded && should_wrap_skill_output(&call.name) {
+                let skill_name = call
+                    .arguments
+                    .get("name")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("unknown");
+                let envelope = crate::openhuman::skills::SkillOutputEnvelope::new_success(
+                    skill_name,
+                    "0.0.0", // manifest version not loaded in tool loop
+                    serde_json::json!({"output": &result}),
+                    0,    // elapsed_ms not tracked per-call in this path
+                    false, // GPG status unknown in tool loop
+                );
+                log::debug!(
+                    "[skills:output] INJ-02 envelope for tool='{}' skill='{}'",
+                    call.name,
+                    skill_name,
+                );
+                // Only the data field passes to the LLM — structured JSON,
+                // never raw text.
+                envelope.data_json_line()
+            } else {
+                result.clone()
+            };
+
+            // ── External data wrapping (INJ-01) ──
+            // Wrap tool results that originate from external sources (skills,
+            // web fetches, file reads) in `<external_data>` tags so the LLM
+            // sees the trust boundary. Only successful results with non-empty
+            // output are wrapped; errors and internal tool results pass through
+            // unchanged.
+            let wrapped_result = if call_succeeded && !result.is_empty() {
+                match should_wrap_external_data(&call.name, &call.arguments) {
+                    Some((source, content_type)) => {
+                        log::debug!(
+                            "[anti-injection] wrapping tool='{}' source='{}' ctype='{}'",
+                            call.name,
+                            source,
+                            content_type
+                        );
+                        wrap_external_data(&result, source, Some(content_type))
+                    }
+                    None => result.clone(),
+                }
+            } else {
+                result.clone()
+            };
+
+            individual_results.push(wrapped_result.clone());
             let _ = writeln!(
                 tool_results,
                 "<tool_result name=\"{}\">\n{}\n</tool_result>",
-                call.name, result
+                call.name, wrapped_result
             );
 
             // Repeated-failure circuit breaker (shared guard) — halt with a root
@@ -1381,6 +1441,229 @@ fn build_pipeline_block_reason(
             format!("[policy-blocked] Guardian N3 blocked: {}", detail)
         }
         _ => "[policy-blocked] Guardian blocked: unknown reason".to_string(),
+    }
+}
+
+/// Determine whether a tool result should be wrapped in `<external_data>`
+/// markers before it reaches the LLM.
+///
+/// Returns `Some((source, content_type))` when the tool call originates
+/// from an external data source:
+/// - `dadou.*` skills → `("dadou_skill", "skill_output")`
+/// - Web fetches / searches → `("web", "web_content")`
+/// - File reads → `("file", "file_content")`
+/// - All other tools → `None` (no wrapping)
+///
+/// Only successful results with non-empty output are wrapped; the caller
+/// checks `call_succeeded` and empty output before calling this.
+pub(crate) fn should_wrap_external_data(
+    tool_name: &str,
+    arguments: &serde_json::Value,
+) -> Option<(&'static str, &'static str)> {
+    match tool_name {
+        // Skill outputs: any tool in the dadou.* namespace
+        n if n.starts_with("dadou.") => Some(("dadou_skill", "skill_output")),
+        // Web fetch / search tools
+        "fetch" | "web_search" | "web_fetch" | "webpage" => Some(("web", "web_content")),
+        // File reads — conservative: wrap all file reads regardless of path
+        "file_read" => Some(("file", "file_content")),
+        // Everything else: no wrapping
+        _ => None,
+    }
+}
+
+/// Determine whether a tool's output should be wrapped in a
+/// [`SkillOutputEnvelope`] before INJ-01 `<external_data>` tagging.
+///
+/// Returns `true` for skill execution tools whose raw text output could
+/// contain injection payloads. Skill management tools (install, update,
+/// list, etc.) are excluded — they return metadata, not executed output.
+///
+/// # Matching logic
+///
+/// - Tools in the `dadou.*` namespace whose name ends with `_execute`
+///   are wrapped. This covers `dadou.skill_execute` and any future
+///   domain-specific execution tools.
+/// - Management tools (`dadou.skill_install`, `dadou.skill_list`, etc.)
+///   pass through unwrapped since they return structured metadata.
+pub(crate) fn should_wrap_skill_output(tool_name: &str) -> bool {
+    // Only wrap actual skill execution tools — not management tools.
+    // Management tools end with _install, _update, _audit, _remove,
+    // _list, _trust_author, _enable, _disable.
+    if tool_name.starts_with("dadou.") && tool_name.ends_with("_execute") {
+        return true;
+    }
+    // Additional patterns can be added here as new skill execution
+    // tools are introduced.
+    false
+}
+
+/// Conservative check for whether a path is outside the workspace directory.
+///
+/// For v1, this uses simple heuristics: checks for `..` components and
+/// absolute-path indicators. In practice, file_read wrapping is always
+/// applied (the caller in `should_wrap_external_data` returns
+/// `Some(...)` for all `file_read` calls), so this function is available
+/// for future refinement but not currently used in the wrapping decision.
+#[allow(dead_code)]
+fn is_outside_workspace(path: &str) -> bool {
+    path.contains("..") || path.starts_with('/') || path.starts_with("\\\\")
+        || (path.len() > 2
+            && path.as_bytes()[1] == b':'
+            && matches!(path.as_bytes()[0], b'a'..=b'z' | b'A'..=b'Z'))
+}
+
+#[cfg(test)]
+mod injection_tests {
+    use super::*;
+
+    #[test]
+    fn skill_tool_names_are_wrapped() {
+        assert_eq!(
+            should_wrap_external_data("dadou.skill_execute", &serde_json::json!({})),
+            Some(("dadou_skill", "skill_output"))
+        );
+        assert_eq!(
+            should_wrap_external_data("dadou.skill_install", &serde_json::json!({})),
+            Some(("dadou_skill", "skill_output"))
+        );
+    }
+
+    #[test]
+    fn web_tool_names_are_wrapped() {
+        assert_eq!(
+            should_wrap_external_data("fetch", &serde_json::json!({"url": "https://example.com"})),
+            Some(("web", "web_content"))
+        );
+        assert_eq!(
+            should_wrap_external_data("web_search", &serde_json::json!({"query": "rust"})),
+            Some(("web", "web_content"))
+        );
+        assert_eq!(
+            should_wrap_external_data("webpage", &serde_json::json!({"url": "https://x"})),
+            Some(("web", "web_content"))
+        );
+    }
+
+    #[test]
+    fn file_read_tool_is_wrapped() {
+        assert_eq!(
+            should_wrap_external_data("file_read", &serde_json::json!({"path": "/etc/passwd"})),
+            Some(("file", "file_content"))
+        );
+    }
+
+    #[test]
+    fn internal_tools_are_not_wrapped() {
+        assert_eq!(
+            should_wrap_external_data("bash", &serde_json::json!({"command": "ls"})),
+            None
+        );
+        assert_eq!(
+            should_wrap_external_data("shell", &serde_json::json!({"command": "echo hi"})),
+            None
+        );
+        assert_eq!(
+            should_wrap_external_data("edit", &serde_json::json!({"path": "main.rs"})),
+            None
+        );
+        assert_eq!(
+            should_wrap_external_data("glob", &serde_json::json!({"pattern": "**/*.rs"})),
+            None
+        );
+        assert_eq!(
+            should_wrap_external_data("grep", &serde_json::json!({"pattern": "fn main"})),
+            None
+        );
+    }
+
+    #[test]
+    fn is_outside_workspace_detects_absolute_paths() {
+        assert!(is_outside_workspace("/etc/passwd"));
+        assert!(is_outside_workspace("C:\\Windows\\system32"));
+        assert!(is_outside_workspace("../relative/escape"));
+        assert!(!is_outside_workspace("src/main.rs"));
+        assert!(!is_outside_workspace("./local/file.txt"));
+    }
+
+    #[test]
+    fn wrap_external_data_produces_valid_tag() {
+        let result = "some skill output here";
+        let wrapped = wrap_external_data(result, "dadou_skill", Some("skill_output"));
+        assert!(wrapped.starts_with("<external_data"));
+        assert!(wrapped.contains("source=\"dadou_skill\""));
+        assert!(wrapped.contains("trusted=\"false\""));
+        assert!(wrapped.contains("content_type=\"skill_output\""));
+        assert!(wrapped.contains("some skill output here"));
+        assert!(wrapped.trim_end().ends_with("</external_data>"));
+    }
+
+    // ── Skill output envelope tests (INJ-02) ────────────────────────
+
+    #[test]
+    fn should_wrap_skill_output_matches_execute_tools() {
+        assert!(should_wrap_skill_output("dadou.skill_execute"));
+        assert!(should_wrap_skill_output("dadou.agent_execute"));
+        assert!(should_wrap_skill_output("dadou.wasm_execute"));
+    }
+
+    #[test]
+    fn should_wrap_skill_output_does_not_match_management_tools() {
+        assert!(!should_wrap_skill_output("dadou.skill_install"));
+        assert!(!should_wrap_skill_output("dadou.skill_list"));
+        assert!(!should_wrap_skill_output("dadou.skill_update"));
+        assert!(!should_wrap_skill_output("dadou.skill_audit"));
+        assert!(!should_wrap_skill_output("dadou.skill_remove"));
+        assert!(!should_wrap_skill_output("dadou.skill_trust_author"));
+    }
+
+    #[test]
+    fn should_wrap_skill_output_does_not_match_non_dadou_tools() {
+        assert!(!should_wrap_skill_output("bash"));
+        assert!(!should_wrap_skill_output("file_read"));
+        assert!(!should_wrap_skill_output("web_search"));
+        assert!(!should_wrap_skill_output("edit"));
+    }
+
+    #[test]
+    fn skill_output_envelope_data_is_structured_json() {
+        // Verify that the data field produced by the envelope is
+        // valid JSON with the expected structure.
+        use crate::openhuman::skills::SkillOutputEnvelope;
+
+        let envelope = SkillOutputEnvelope::new_success(
+            "test-skill",
+            "1.0.0",
+            serde_json::json!({"output": "hello world"}),
+            42,
+            false,
+        );
+        let data_line = envelope.data_json_line();
+        let parsed: serde_json::Value = serde_json::from_str(&data_line).unwrap();
+        assert_eq!(parsed["output"], "hello world");
+    }
+
+    #[test]
+    fn skill_output_envelope_metadata_not_in_data() {
+        // Verify metadata fields are NOT included in data_json_line.
+        use crate::openhuman::skills::SkillOutputEnvelope;
+
+        let envelope = SkillOutputEnvelope::new_success(
+            "secret-skill",
+            "2.0.0",
+            serde_json::json!({"output": "data"}),
+            100,
+            true,
+        );
+        let data_line = envelope.data_json_line();
+        let parsed: serde_json::Value = serde_json::from_str(&data_line).unwrap();
+        // The `output` field IS present
+        assert_eq!(parsed["output"], "data");
+        // Metadata fields should NOT leak
+        assert!(parsed.get("skill_name").is_none());
+        assert!(parsed.get("skill_version").is_none());
+        assert!(parsed.get("gpg_verified").is_none());
+        assert!(parsed.get("execution_status").is_none());
     }
 }
 

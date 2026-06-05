@@ -1,4 +1,4 @@
-use super::memory_context_safety::{is_potentially_untrusted, wrap_untrusted_for_agent};
+use super::memory_context_safety::{is_external_data, wrap_external_data};
 use crate::openhuman::memory::Memory;
 use crate::openhuman::util::provenance_tag;
 use std::collections::HashSet;
@@ -59,9 +59,9 @@ pub(crate) async fn build_context(
             context.push_str("[Memory context]\n");
             for entry in &relevant {
                 seen_keys.insert(entry.key.clone());
-                let rendered_content = if is_potentially_untrusted(entry) {
+                let rendered_content = if is_external_data(entry) {
                     let hint = entry.namespace.as_deref().unwrap_or("connector");
-                    wrap_untrusted_for_agent(&entry.content, hint)
+                    wrap_external_data(&entry.content, hint, Some("memory"))
                 } else {
                     entry.content.clone()
                 };
