@@ -1639,7 +1639,7 @@ fn extract_structured_plan(text: &str) -> Option<StructuredPlan> {
 
     // Strategy 3: Extract from markdown code block containing "plan" key.
     // Matches ```json\n{"plan": {...}}\n``` or ```\n{"plan": {...}}\n```
-    let re = regex::Regex::new(r"```(?:json)?\s*\n(\{[^`]*"plan"[^`]*\})\s*\n```").ok()?;
+    let re = regex::Regex::new(r#"```(?:json)?\s*\n(\{(?:[^`]|`[^"])*"plan"(?:[^`]|`[^"])*\})\s*\n```"#).ok()?;
     if let Some(caps) = re.captures(text) {
         // Try parsing the extracted JSON as a wrapped plan.
         if let Ok(wrapped) =

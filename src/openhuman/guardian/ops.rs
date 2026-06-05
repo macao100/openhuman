@@ -13,6 +13,7 @@ use crate::openhuman::guardian::rules;
 use crate::openhuman::guardian::n2::types::N2EngineConfig;
 use crate::openhuman::guardian::n2::GuardianN2;
 use crate::openhuman::guardian::n3::GuardianN3;
+use crate::openhuman::guardian::types::StructuredPlan;
 use crate::rpc::RpcOutcome;
 
 /// Default path for YAML rules: `~/.dadou/guardian-rules.yaml`.
@@ -148,5 +149,36 @@ pub async fn pipeline_status() -> Result<RpcOutcome<Value>, String> {
         },
         "pipeline_order": ["n1", "n2", "n3"],
     });
+    Ok(RpcOutcome::new(payload, vec![]))
+}
+
+/// Validate a structured plan through the Guardian pipeline.
+///
+/// Parses the plan from a JSON value, runs it through
+/// `GuardianPipeline::evaluate_plan()`, and returns the result. This is the
+/// operation function backing the `guardian.plan_validate` RPC endpoint.
+pub async fn validate_plan(plan_value: Value) -> Result<RpcOutcome<Value>, String> {
+    log::debug!("[guardian:plan] validate_plan enter");
+    let plan: StructuredPlan = serde_json::from_value(plan_value).map_err(|e| {
+        log::warn!("[guardian:plan] Invalid plan JSON: {e}");
+        format!("Invalid plan JSON: {e}")
+    })?;
+
+    let pipeline =
+        crate::openhuman::guardian::GuardianPipeline::try_global().ok_or_else(|| {
+            log::warn!("[guardian:plan] GuardianPipeline not initialized");
+            "GuardianPipeline not initialized".to_string()
+        })?;
+
+    let result = pipeline.evaluate_plan(&plan).await;
+
+    let payload = json!({
+        "allowed": result.allowed,
+        "blocked_by": result.blocked_by,
+        "reasoning": result.reasoning,
+        "rejected_steps": result.rejected_steps,
+        "step_count": result.step_results.len(),
+    });
+
     Ok(RpcOutcome::new(payload, vec![]))
 }

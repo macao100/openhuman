@@ -22,7 +22,8 @@ use crate::openhuman::guardian::n3::GuardianN3;
 use crate::openhuman::guardian::n3::types::N3Config;
 use crate::openhuman::guardian::rules::RuleSet;
 use crate::openhuman::guardian::types::{
-    GuardianPipelineResult, N1Result, N2Result, RuleAction, RuleContext, RuleResult,
+    GuardianPipelineResult, N1Result, N2Result, PlanValidationResult, PlanStep, RuleAction,
+    RuleContext, RuleResult, StructuredPlan,
 };
 use crate::openhuman::security::policy::SecurityPolicy;
 
@@ -335,6 +336,144 @@ impl GuardianPipeline {
             n3: n3_result,
         }
     }
+
+    /// Evaluate a structured action plan through the full Guardian pipeline.
+    ///
+    /// Validation flow:
+    /// 1. **Structure check** — Verify the plan JSON has all required fields
+    /// 2. **Step-by-step check** — Run each step through N1→N2→N3 pipeline
+    ///
+    /// Returns `PlanValidationResult` with `allowed: false` and `blocked_by`
+    /// set to the first rejection level.
+    pub async fn evaluate_plan(&self, plan: &StructuredPlan) -> PlanValidationResult {
+        // ── Stage 1: Structure check ──
+        if plan.goal.trim().is_empty() {
+            log::info!("[guardian:plan] Plan rejected: empty goal");
+            return PlanValidationResult {
+                allowed: false,
+                blocked_by: "structure".into(),
+                reasoning: "Plan goal is empty".into(),
+                rejected_steps: vec![],
+                step_results: vec![],
+            };
+        }
+
+        // Cap the plan at 20 steps to prevent abuse.
+        const MAX_STEPS: usize = 20;
+        if plan.steps.len() > MAX_STEPS {
+            log::warn!(
+                "[guardian:plan] Plan rejected: {} steps exceeds max of {}",
+                plan.steps.len(),
+                MAX_STEPS
+            );
+            return PlanValidationResult {
+                allowed: false,
+                blocked_by: "structure".into(),
+                reasoning: format!(
+                    "Plan exceeds maximum step count ({} step(s), max {})",
+                    plan.steps.len(),
+                    MAX_STEPS
+                ),
+                rejected_steps: (MAX_STEPS..plan.steps.len()).collect(),
+                step_results: vec![],
+            };
+        }
+
+        // Check for steps with empty tool names.
+        for (i, step) in plan.steps.iter().enumerate() {
+            if step.tool.trim().is_empty() {
+                log::info!("[guardian:plan] Step {} rejected: empty tool name", i);
+                return PlanValidationResult {
+                    allowed: false,
+                    blocked_by: "structure".into(),
+                    reasoning: format!("Step {} has an empty tool name", i),
+                    rejected_steps: vec![i],
+                    step_results: vec![],
+                };
+            }
+        }
+
+        // ── Stage 2: Step-by-step validation via N1→N2→N3 pipeline ──
+        let mut step_results = Vec::with_capacity(plan.steps.len());
+        let mut rejected_steps = Vec::new();
+
+        for (i, step) in plan.steps.iter().enumerate() {
+            let command = if step.tool == "bash" || step.tool == "shell" {
+                step.args.get("command").and_then(|v| v.as_str())
+            } else {
+                None
+            };
+
+            let file_path = match step.tool.as_str() {
+                "file_write" | "edit" | "file_read" | "glob" | "grep" | "list_files"
+                | "glob_search" | "read_diff" | "run_linter" | "run_tests" => {
+                    step.args.get("path").and_then(|v| v.as_str())
+                }
+                _ => None,
+            };
+
+            let result = self
+                .evaluate(&step.tool, &step.args, command, file_path)
+                .await;
+            step_results.push(result.clone());
+
+            if !result.allowed {
+                log::info!(
+                    "[guardian:plan] Step {} blocked by {}: tool={}",
+                    i,
+                    result.blocked_by,
+                    step.tool
+                );
+                rejected_steps.push(i);
+            }
+        }
+
+        // ── Stage 3: Final decision ──
+        let all_allowed = rejected_steps.is_empty();
+        let blocked_by = if all_allowed {
+            "none".into()
+        } else {
+            // Use the first rejection level, prefixed with "step_"
+            format!("step_{}", step_results[rejected_steps[0]].blocked_by)
+        };
+
+        let reasoning = if all_allowed {
+            format!(
+                "Plan '{}' validated: {} step(s) all passed Guardian pipeline",
+                plan.goal.chars().take(80).collect::<String>(),
+                plan.steps.len()
+            )
+        } else {
+            format!(
+                "Plan '{}' blocked at {}: step(s) {:?} rejected",
+                plan.goal.chars().take(80).collect::<String>(),
+                blocked_by,
+                rejected_steps
+            )
+        };
+
+        let result = PlanValidationResult {
+            allowed: all_allowed,
+            blocked_by,
+            reasoning,
+            rejected_steps,
+            step_results,
+        };
+
+        // Publish the PlanValidated event so subscribers (logging, UI,
+        // observability) can track plan validation outcomes.
+        crate::core::event_bus::bus::publish_global(
+            crate::core::event_bus::DomainEvent::PlanValidated {
+                goal: plan.goal.clone(),
+                allowed: result.allowed,
+                blocked_by: result.blocked_by.clone(),
+                step_count: plan.steps.len(),
+                rejected_step_indices: result.rejected_steps.clone(),
+            },
+        );
+
+        result
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -582,5 +721,145 @@ rules:
         assert_eq!(result.blocked_by, "none");
         assert!(result.n2.is_some(), "N2 should have been evaluated");
         assert!(result.n3.is_none(), "N3 should not be called when N2 does not escalate");
+    }
+
+    // ── evaluate_plan tests (INJ-04) ──
+
+    #[tokio::test]
+    async fn evaluate_plan_empty_goal_rejected() {
+        let pipeline = test_pipeline(0.7, 0.3, true);
+        let plan = StructuredPlan {
+            goal: "".into(),
+            steps: vec![],
+        };
+        let result = pipeline.evaluate_plan(&plan).await;
+        assert!(!result.allowed, "empty goal should be rejected");
+        assert_eq!(result.blocked_by, "structure");
+        assert!(result.reasoning.contains("empty"), "reason should mention empty");
+    }
+
+    #[tokio::test]
+    async fn evaluate_plan_empty_steps_passes() {
+        let pipeline = test_pipeline(0.7, 0.3, true);
+        let plan = StructuredPlan {
+            goal: "Read a file".into(),
+            steps: vec![],
+        };
+        let result = pipeline.evaluate_plan(&plan).await;
+        assert!(result.allowed, "empty steps should pass structure check");
+        assert_eq!(result.blocked_by, "none");
+    }
+
+    #[tokio::test]
+    async fn evaluate_plan_exceeds_max_steps() {
+        let pipeline = test_pipeline(0.7, 0.3, true);
+        let steps: Vec<PlanStep> = (0..25)
+            .map(|i| PlanStep {
+                tool: "file_read".into(),
+                args: json!({"path": format!("file_{}.md", i)}),
+                rationale: "test".into(),
+            })
+            .collect();
+        let plan = StructuredPlan {
+            goal: "Too many steps".into(),
+            steps,
+        };
+        let result = pipeline.evaluate_plan(&plan).await;
+        assert!(!result.allowed, "plan with 25 steps should be rejected");
+        assert_eq!(result.blocked_by, "structure");
+        assert_eq!(result.rejected_steps.len(), 5, "should reject steps 20-24");
+    }
+
+    #[tokio::test]
+    async fn evaluate_plan_empty_tool_name_rejected() {
+        let pipeline = test_pipeline(0.7, 0.3, true);
+        let plan = StructuredPlan {
+            goal: "Test empty tool".into(),
+            steps: vec![PlanStep {
+                tool: "".into(),
+                args: json!({}),
+                rationale: "empty tool test".into(),
+            }],
+        };
+        let result = pipeline.evaluate_plan(&plan).await;
+        assert!(!result.allowed, "empty tool name should be rejected");
+        assert_eq!(result.blocked_by, "structure");
+    }
+
+    #[tokio::test]
+    async fn evaluate_plan_all_safe_steps_passes() {
+        let pipeline = test_pipeline(1.0, 1.0, true);
+        let plan = StructuredPlan {
+            goal: "Read workspace files".into(),
+            steps: vec![
+                PlanStep {
+                    tool: "file_read".into(),
+                    args: json!({"path": "workspace/readme.md"}),
+                    rationale: "Read the readme".into(),
+                },
+                PlanStep {
+                    tool: "file_read".into(),
+                    args: json!({"path": "workspace/src/main.rs"}),
+                    rationale: "Check main source".into(),
+                },
+            ],
+        };
+        let result = pipeline.evaluate_plan(&plan).await;
+        assert!(result.allowed, "safe plan should be allowed");
+        assert_eq!(result.blocked_by, "none");
+        assert_eq!(result.step_results.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn evaluate_plan_blocked_step_rejected() {
+        let pipeline = test_pipeline(0.7, 0.3, true);
+        let plan = StructuredPlan {
+            goal: "Malicious plan".into(),
+            steps: vec![
+                PlanStep {
+                    tool: "shell".into(),
+                    args: json!({"command": "rm -rf /etc"}),
+                    rationale: "Clean up system".into(),
+                },
+                PlanStep {
+                    tool: "file_read".into(),
+                    args: json!({"path": "workspace/readme.md"}),
+                    rationale: "Read the readme".into(),
+                },
+            ],
+        };
+        let result = pipeline.evaluate_plan(&plan).await;
+        assert!(!result.allowed, "plan with rm -rf should be blocked");
+        assert_eq!(result.rejected_steps, vec![0], "step 0 should be rejected");
+        assert!(result.blocked_by.starts_with("step_"));
+    }
+
+    #[tokio::test]
+    async fn evaluate_plan_rejected_steps_indices_correct() {
+        let pipeline = test_pipeline(0.7, 0.3, true);
+        let plan = StructuredPlan {
+            goal: "Mixed plan".into(),
+            steps: vec![
+                PlanStep {
+                    tool: "shell".into(),
+                    args: json!({"command": "rm -rf /etc"}),
+                    rationale: "Clean system".into(),
+                },
+                PlanStep {
+                    tool: "file_read".into(),
+                    args: json!({"path": "workspace/readme.md"}),
+                    rationale: "Read readme".into(),
+                },
+                PlanStep {
+                    tool: "shell".into(),
+                    args: json!({"command": "echo 'SGVsbG8gV29ybGQ='"}),  // base64 in command triggers N2
+                    rationale: "Echo test".into(),
+                },
+            ],
+        };
+        let result = pipeline.evaluate_plan(&plan).await;
+        assert!(!result.allowed, "plan with bad steps should be blocked");
+        // Step 0 should be blocked by N1 (rm -rf)
+        assert!(result.rejected_steps.contains(&0), "step 0 should be rejected (rm -rf)");
     }
 }

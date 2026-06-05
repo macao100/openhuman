@@ -115,6 +115,33 @@ impl N3PromptBuilder {
         // First 16 hex characters = 8 bytes = sufficiently unique for cache.
         hex::encode(&result[..8])
     }
+
+    /// Return the system prompt for plan-level intent validation.
+    ///
+    /// This prompt asks the LLM to evaluate the overall intent of a
+    /// structured plan — not individual steps, but whether the goal
+    /// itself is malicious.
+    pub fn plan_intent_system_prompt() -> &'static str {
+        "You are a security validator. Evaluate whether the INTENT of the following action plan is malicious. \
+         Consider: Is the goal trying to bypass security controls? Is it trying to exfiltrate data? \
+         Is it trying to escalate privileges beyond what the agent should have?\n\n\
+         Respond in JSON: {\"verdict\": \"allow\"|\"block\", \"reason\": \"...\"}"
+    }
+
+    /// Build the user prompt for plan-level intent validation.
+    ///
+    /// Includes the plan's goal and each step's tool, args, and rationale.
+    pub fn plan_intent_user_prompt(plan: &crate::openhuman::guardian::types::StructuredPlan) -> String {
+        use crate::openhuman::guardian::types::StructuredPlan;
+        format!(
+            "Plan goal: {}\nSteps:\n{}",
+            plan.goal,
+            plan.steps.iter().enumerate().map(|(i, s)| {
+                format!("  {}. tool={}, args={}, rationale={}",
+                    i + 1, s.tool, s.args, s.rationale)
+            }).collect::<Vec<_>>().join("\n")
+        )
+    }
 }
 
 #[cfg(test)]

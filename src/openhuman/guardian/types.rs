@@ -104,6 +104,52 @@ pub trait GuardianRule: Send + Sync {
     fn evaluate(&self, ctx: &RuleContext) -> RuleResult;
 }
 
+// ── Structured Plan types (INJ-04) ────────────────────────────────────────────
+
+/// A structured action plan emitted by the LLM and validated by the Guardian
+/// before any step executes.
+///
+/// The LLM emits this as JSON before making multi-step tool calls. The Guardian
+/// validates the complete plan structure, caps the step count, and runs each
+/// step through the N1 -> N2 -> N3 pipeline.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StructuredPlan {
+    /// High-level description of what the plan aims to achieve.
+    pub goal: String,
+    /// Ordered list of steps to execute.
+    pub steps: Vec<PlanStep>,
+}
+
+/// A single step within a structured plan.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PlanStep {
+    /// Tool name to invoke (e.g. "file_read", "shell", "web_fetch").
+    pub tool: String,
+    /// Arguments to pass to the tool (as a JSON object).
+    pub args: serde_json::Value,
+    /// Why this step is necessary (for the Guardian's intent check).
+    pub rationale: String,
+}
+
+/// Result of validating a `StructuredPlan` through the Guardian pipeline.
+///
+/// Contains the final allow/block decision, which validation stage rejected it,
+/// and per-step pipeline results.
+#[derive(Debug, Clone, Serialize)]
+pub struct PlanValidationResult {
+    /// Whether the plan is approved for execution.
+    pub allowed: bool,
+    /// Which level rejected the plan:
+    /// `"structure"`, `"step_n1"`, `"step_n2"`, `"step_n3"`, or `"none"`.
+    pub blocked_by: String,
+    /// Human-readable explanation of the validation outcome.
+    pub reasoning: String,
+    /// Indices of rejected steps (if any).
+    pub rejected_steps: Vec<usize>,
+    /// Per-step pipeline results (only evaluated steps).
+    pub step_results: Vec<GuardianPipelineResult>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -156,5 +202,107 @@ mod tests {
         assert!(!result.allowed);
         assert_eq!(result.rule_results.len(), 1);
         assert_eq!(result.latency_us, 42);
+    }
+
+    // ── StructuredPlan tests (INJ-04) ──
+
+    #[test]
+    fn structured_plan_serde_roundtrip() {
+        let plan = StructuredPlan {
+            goal: "Read project documentation".into(),
+            steps: vec![
+                PlanStep {
+                    tool: "file_read".into(),
+                    args: json!({"path": "README.md"}),
+                    rationale: "Understand the project structure".into(),
+                },
+                PlanStep {
+                    tool: "glob".into(),
+                    args: json!({"pattern": "src/**/*.rs"}),
+                    rationale: "List all Rust source files".into(),
+                },
+            ],
+        };
+        let json = serde_json::to_string(&plan).unwrap();
+        let parsed: StructuredPlan = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed.goal, "Read project documentation");
+        assert_eq!(parsed.steps.len(), 2);
+        assert_eq!(parsed.steps[0].tool, "file_read");
+        assert_eq!(parsed.steps[1].tool, "glob");
+        assert_eq!(parsed.steps[0].rationale, "Understand the project structure");
+    }
+
+    #[test]
+    fn structured_plan_empty_steps() {
+        let plan = StructuredPlan {
+            goal: "Empty plan test".into(),
+            steps: vec![],
+        };
+        let json = serde_json::to_string(&plan).unwrap();
+        let parsed: StructuredPlan = serde_json::from_str(&json).unwrap();
+        assert!(parsed.steps.is_empty());
+        assert_eq!(parsed.goal, "Empty plan test");
+    }
+
+    #[test]
+    fn structured_plan_max_steps() {
+        let steps: Vec<PlanStep> = (0..10)
+            .map(|i| PlanStep {
+                tool: "file_read".into(),
+                args: json!({"path": format!("file_{}.md", i)}),
+                rationale: "Test step".into(),
+            })
+            .collect();
+        let plan = StructuredPlan {
+            goal: "Ten step plan".into(),
+            steps,
+        };
+        let json = serde_json::to_string(&plan).unwrap();
+        let parsed: StructuredPlan = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed.steps.len(), 10);
+    }
+
+    #[test]
+    fn plan_validation_result_allowed() {
+        let result = PlanValidationResult {
+            allowed: true,
+            blocked_by: "none".into(),
+            reasoning: "All steps passed".into(),
+            rejected_steps: vec![],
+            step_results: vec![],
+        };
+        assert!(result.allowed);
+        assert_eq!(result.blocked_by, "none");
+        assert!(result.rejected_steps.is_empty());
+    }
+
+    #[test]
+    fn plan_validation_result_blocked() {
+        let result = PlanValidationResult {
+            allowed: false,
+            blocked_by: "step_n1".into(),
+            reasoning: "Step 0 blocked by N1".into(),
+            rejected_steps: vec![0],
+            step_results: vec![],
+        };
+        assert!(!result.allowed);
+        assert_eq!(result.blocked_by, "step_n1");
+        assert_eq!(result.rejected_steps, vec![0]);
+    }
+
+    #[test]
+    fn plan_validation_result_serde() {
+        let result = PlanValidationResult {
+            allowed: true,
+            blocked_by: "none".into(),
+            reasoning: "All good".into(),
+            rejected_steps: vec![],
+            step_results: vec![],
+        };
+        let json = serde_json::to_string(&result).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed["allowed"], true);
+        assert_eq!(parsed["blocked_by"], "none");
+        assert_eq!(parsed["reasoning"], "All good");
     }
 }

@@ -59,7 +59,7 @@ pub mod n2;
 pub mod n3;
 
 pub use rules::{compile_ruleset, default_rust_rules, load_yaml_rules, BlocklistRule, PathWhitelistRule, RegexPatternRule, RuleSet};
-pub use types::{GuardianPipelineResult, GuardianRule, N1Result, RuleAction, RuleContext, RuleResult};
+pub use types::{GuardianPipelineResult, GuardianRule, N1Result, PlanStep, PlanValidationResult, RuleAction, RuleContext, RuleResult, StructuredPlan};
 pub use pipeline::{GuardianN1, GuardianPipeline};
 
 pub use schemas::{

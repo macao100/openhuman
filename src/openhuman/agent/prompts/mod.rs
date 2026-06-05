@@ -44,6 +44,7 @@ impl SystemPromptBuilder {
                 // the static default chain.
                 Box::new(UserMemorySection),
                 Box::new(ToolsSection),
+                Box::new(ExecutionProtocolSection),
                 Box::new(SafetySection),
                 Box::new(AntiInjectionSection),
                 Box::new(WorkspaceSection),
@@ -97,6 +98,7 @@ impl SystemPromptBuilder {
         // its own (filtered) tool catalogue.
         sections.push(Box::new(ToolsSection));
         if !omit_safety_preamble {
+            sections.push(Box::new(ExecutionProtocolSection));
             sections.push(Box::new(SafetySection));
             sections.push(Box::new(AntiInjectionSection));
         }
@@ -388,6 +390,13 @@ pub struct SafetySection;
 /// commands. See the module-level doc in `memory_context_safety.rs` for
 /// the full tag format.
 pub struct AntiInjectionSection;
+/// System-prompt section that instructs the LLM to emit structured JSON
+/// plans before executing multi-step actions.
+///
+/// The Guardian validates the complete plan before any step executes.
+/// This section explains the plan format, constraints (max 20 steps),
+/// and the validation flow so the LLM knows what to expect.
+pub struct ExecutionProtocolSection;
 // `SkillsSection` and `ConnectedIntegrationsSection` previously lived
 // here and branched on `ctx.agent_id` to pick between the skill-
 // executor and delegator voice. They've been removed — each agent's
@@ -633,6 +642,16 @@ impl PromptSection for AntiInjectionSection {
     }
 }
 
+impl PromptSection for ExecutionProtocolSection {
+    fn name(&self) -> &str {
+        "execution_protocol"
+    }
+
+    fn build(&self, _ctx: &PromptContext<'_>) -> Result<String> {
+        Ok("## Execution Protocol\n\nWhen you need to perform **multiple tool calls** to accomplish a goal, first emit a structured JSON plan:\n\n```json\n{\"plan\": {\"goal\": \"what you intend to accomplish\", \"steps\": [{\"tool\": \"tool_name\", \"args\": {...}, \"rationale\": \"why this step\"}]}}\n```\n\nThe Guardian will validate your plan before any step executes. If a step is rejected, you will receive a rejection reason — revise the step and re-submit.\n\n- Every step must have a clear `rationale` describing why it is needed.\n- The `goal` must describe what you are trying to achieve at a high level.\n- Plans are limited to 20 steps. Split complex goals into sub-plans.\n- You may execute tools without a plan for single-step actions.".into())
+    }
+}
+
 impl PromptSection for WorkspaceSection {
     fn name(&self) -> &str {
         "workspace"
@@ -860,6 +879,13 @@ pub fn render_anti_injection() -> String {
     AntiInjectionSection
         .build(&empty_prompt_context_for_static_sections())
         .expect("AntiInjectionSection::build is infallible")
+}
+
+/// Render the `## Execution Protocol` block (structured JSON plan format).
+pub fn render_execution_protocol() -> String {
+    ExecutionProtocolSection
+        .build(&empty_prompt_context_for_static_sections())
+        .expect("ExecutionProtocolSection::build is infallible")
 }
 
 // `render_skills` and `render_connected_integrations` helpers are

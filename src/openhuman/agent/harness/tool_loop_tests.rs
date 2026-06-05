@@ -1307,3 +1307,63 @@ async fn auto_approved_external_effect_tool_runs_through_loop_without_parking() 
         "auto-approved external-effect tool must execute (gate must not park it)"
     );
 }
+
+// ── Plan extraction tests (INJ-04) ──
+
+#[test]
+fn extract_plan_from_direct_json() {
+    let text = r#"{"goal": "Read project files", "steps": [{"tool": "file_read", "args": {"path": "README.md"}, "rationale": "Understand the project"}]}"#;
+    let plan = extract_structured_plan(text);
+    assert!(plan.is_some(), "should extract plan from direct JSON");
+    let plan = plan.unwrap();
+    assert_eq!(plan.goal, "Read project files");
+    assert_eq!(plan.steps.len(), 1);
+    assert_eq!(plan.steps[0].tool, "file_read");
+}
+
+#[test]
+fn extract_plan_from_wrapped_json() {
+    let text = r#"{"plan": {"goal": "Search codebase", "steps": [{"tool": "grep", "args": {"pattern": "TODO"}, "rationale": "Find todos"}]}}"#;
+    let plan = extract_structured_plan(text);
+    assert!(plan.is_some(), "should extract plan from wrapped JSON");
+    let plan = plan.unwrap();
+    assert_eq!(plan.goal, "Search codebase");
+    assert_eq!(plan.steps.len(), 1);
+}
+
+#[test]
+fn extract_plan_from_code_block() {
+    let text = "Let me analyze this step by step.\n\n```json\n{\"plan\": {\"goal\": \"Analyze code\", \"steps\": [{\"tool\": \"file_read\", \"args\": {\"path\": \"src/main.rs\"}, \"rationale\": \"Read main entry point\"}]}}\n```\n\nFirst, I'll read the main file.";
+    let plan = extract_structured_plan(text);
+    assert!(plan.is_some(), "should extract plan from code block");
+    let plan = plan.unwrap();
+    assert_eq!(plan.goal, "Analyze code");
+    assert_eq!(plan.steps.len(), 1);
+}
+
+#[test]
+fn extract_plan_returns_none_for_no_plan() {
+    let text = "I'll just read the file directly.";
+    let plan = extract_structured_plan(text);
+    assert!(plan.is_none(), "should return None for non-plan text");
+}
+
+#[test]
+fn extract_plan_from_code_block_no_lang() {
+    let text = "```\n{\"plan\": {\"goal\": \"Test\", \"steps\": [{\"tool\": \"file_read\", \"args\": {\"path\": \"test.txt\"}, \"rationale\": \"test\"}]}}\n```";
+    let plan = extract_structured_plan(text);
+    assert!(plan.is_some(), "should extract plan from code block without language tag");
+}
+
+#[test]
+fn extract_plan_returns_none_for_malformed_json() {
+    let text = "{\"plan\": {\"goal\": \"Broken\"}";
+    let plan = extract_structured_plan(text);
+    assert!(plan.is_none(), "should return None for malformed JSON");
+}
+
+#[test]
+fn extract_plan_returns_none_for_empty_string() {
+    let plan = extract_structured_plan("");
+    assert!(plan.is_none(), "should return None for empty string");
+}

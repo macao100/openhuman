@@ -14,6 +14,7 @@ pub fn all_controller_schemas() -> Vec<ControllerSchema> {
         schemas("n2_evaluate"),
         schemas("n3_status"),
         schemas("pipeline_status"),
+        schemas("plan_validate"),
     ]
 }
 
@@ -42,6 +43,10 @@ pub fn all_registered_controllers() -> Vec<RegisteredController> {
         RegisteredController {
             schema: schemas("pipeline_status"),
             handler: handle_pipeline_status,
+        },
+        RegisteredController {
+            schema: schemas("plan_validate"),
+            handler: handle_plan_validate,
         },
     ]
 }
@@ -175,6 +180,23 @@ pub fn schemas(function: &str) -> ControllerSchema {
                 required: true,
             }],
         },
+        "plan_validate" => ControllerSchema {
+            namespace: "guardian",
+            function: "plan_validate",
+            description: "Validate a structured JSON plan through the full Guardian pipeline (N1+N2+N3).",
+            inputs: vec![FieldSchema {
+                name: "plan",
+                ty: TypeSchema::Json,
+                comment: "StructuredPlan JSON with goal and steps.",
+                required: true,
+            }],
+            outputs: vec![FieldSchema {
+                name: "result",
+                ty: TypeSchema::Json,
+                comment: "PlanValidationResult with allowed, blocked_by, reasoning, rejected_steps.",
+                required: true,
+            }],
+        },
         _ => ControllerSchema {
             namespace: "guardian",
             function: "unknown",
@@ -293,6 +315,26 @@ fn handle_pipeline_status(_params: Map<String, Value>) -> ControllerFuture {
             }
             Err(err) => {
                 log::warn!("[guardian][rpc] pipeline_status failed: {err}");
+                Err(err)
+            }
+        }
+    })
+}
+
+fn handle_plan_validate(params: Map<String, Value>) -> ControllerFuture {
+    Box::pin(async {
+        log::debug!("[guardian][rpc] plan_validate enter");
+        let plan_value = params
+            .get("plan")
+            .cloned()
+            .unwrap_or(Value::Null);
+        match crate::openhuman::guardian::ops::validate_plan(plan_value).await {
+            Ok(outcome) => {
+                log::debug!("[guardian][rpc] plan_validate ok");
+                to_json(outcome)
+            }
+            Err(err) => {
+                log::warn!("[guardian][rpc] plan_validate failed: {err}");
                 Err(err)
             }
         }
