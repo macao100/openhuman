@@ -631,6 +631,487 @@ fn to_json<T: serde::Serialize>(outcome: RpcOutcome<T>) -> Result<Value, String>
     outcome.into_cli_compatible_json()
 }
 
+// ---------------------------------------------------------------------------
+// DADOU WASM skill lifecycle controllers (namespace: "dadou")
+// ---------------------------------------------------------------------------
+
+/// Schema lookup for a `dadou.*` controller by its internal key.
+pub fn dadou_skills_schemas(function: &str) -> ControllerSchema {
+    match function {
+        "dadou_skill_install" => ControllerSchema {
+            namespace: "dadou",
+            function: "skill_install",
+            description: "Install a WASM skill from a Git repository: clone, verify manifest, GPG-check tag, static analysis, register in store.",
+            inputs: vec![FieldSchema {
+                name: "url",
+                ty: TypeSchema::String,
+                comment: "Git repository URL (https:// or git@). Cloned with --depth 1.",
+                required: true,
+            }],
+            outputs: vec![
+                FieldSchema {
+                    name: "name",
+                    ty: TypeSchema::String,
+                    comment: "Skill name from manifest.",
+                    required: true,
+                },
+                FieldSchema {
+                    name: "version",
+                    ty: TypeSchema::String,
+                    comment: "Installed version string.",
+                    required: true,
+                },
+                FieldSchema {
+                    name: "gpg_status",
+                    ty: TypeSchema::String,
+                    comment: "GPG verification status: verified, untrusted, no_signature, or skipped.",
+                    required: true,
+                },
+                FieldSchema {
+                    name: "analysis_verdict",
+                    ty: TypeSchema::String,
+                    comment: "Static analysis verdict: Pass, Warn, or Block.",
+                    required: true,
+                },
+                FieldSchema {
+                    name: "findings_count",
+                    ty: TypeSchema::U64,
+                    comment: "Number of static analysis findings.",
+                    required: true,
+                },
+                FieldSchema {
+                    name: "path",
+                    ty: TypeSchema::String,
+                    comment: "Canonical path to the installed skill directory.",
+                    required: true,
+                },
+            ],
+        },
+        "dadou_skill_update" => ControllerSchema {
+            namespace: "dadou",
+            function: "skill_update",
+            description: "Update an installed WASM skill by re-cloning and re-verifying.",
+            inputs: vec![FieldSchema {
+                name: "name",
+                ty: TypeSchema::String,
+                comment: "Name of the installed skill to update.",
+                required: true,
+            }],
+            outputs: vec![
+                FieldSchema {
+                    name: "name",
+                    ty: TypeSchema::String,
+                    comment: "Skill name.",
+                    required: true,
+                },
+                FieldSchema {
+                    name: "version",
+                    ty: TypeSchema::String,
+                    comment: "Updated version string.",
+                    required: true,
+                },
+                FieldSchema {
+                    name: "gpg_status",
+                    ty: TypeSchema::String,
+                    comment: "GPG verification status.",
+                    required: true,
+                },
+                FieldSchema {
+                    name: "analysis_verdict",
+                    ty: TypeSchema::String,
+                    comment: "Static analysis verdict.",
+                    required: true,
+                },
+                FieldSchema {
+                    name: "findings_count",
+                    ty: TypeSchema::U64,
+                    comment: "Number of findings.",
+                    required: true,
+                },
+                FieldSchema {
+                    name: "path",
+                    ty: TypeSchema::String,
+                    comment: "Canonical path to the installed skill directory.",
+                    required: true,
+                },
+            ],
+        },
+        "dadou_skill_audit" => ControllerSchema {
+            namespace: "dadou",
+            function: "skill_audit",
+            description: "Re-run static analysis on an installed skill and update audit timestamp in the store.",
+            inputs: vec![FieldSchema {
+                name: "name",
+                ty: TypeSchema::String,
+                comment: "Name of the installed skill to audit.",
+                required: true,
+            }],
+            outputs: vec![
+                FieldSchema {
+                    name: "name",
+                    ty: TypeSchema::String,
+                    comment: "Skill name.",
+                    required: true,
+                },
+                FieldSchema {
+                    name: "verdict",
+                    ty: TypeSchema::String,
+                    comment: "Static analysis verdict: Pass, Warn, or Block.",
+                    required: true,
+                },
+                FieldSchema {
+                    name: "findings",
+                    ty: TypeSchema::Json,
+                    comment: "Array of AnalysisFinding objects (severity, file, line, pattern, snippet).",
+                    required: true,
+                },
+                FieldSchema {
+                    name: "last_audit_at",
+                    ty: TypeSchema::String,
+                    comment: "ISO 8601 timestamp of this audit.",
+                    required: true,
+                },
+            ],
+        },
+        "dadou_skill_remove" => ControllerSchema {
+            namespace: "dadou",
+            function: "skill_remove",
+            description: "Uninstall a WASM skill: remove from store and delete skill directory.",
+            inputs: vec![FieldSchema {
+                name: "name",
+                ty: TypeSchema::String,
+                comment: "Name of the installed skill to remove.",
+                required: true,
+            }],
+            outputs: vec![
+                FieldSchema {
+                    name: "name",
+                    ty: TypeSchema::String,
+                    comment: "Skill name that was removed.",
+                    required: true,
+                },
+                FieldSchema {
+                    name: "removed",
+                    ty: TypeSchema::Bool,
+                    comment: "Whether the skill was actually deleted.",
+                    required: true,
+                },
+                FieldSchema {
+                    name: "path",
+                    ty: TypeSchema::String,
+                    comment: "Optional path that was deleted.",
+                    required: false,
+                },
+            ],
+        },
+        "dadou_skill_list" => ControllerSchema {
+            namespace: "dadou",
+            function: "skill_list",
+            description: "List all installed WASM skills with their current state from the local TOML store.",
+            inputs: vec![],
+            outputs: vec![FieldSchema {
+                name: "skills",
+                ty: TypeSchema::Json,
+                comment: "Array of InstalledSkill objects (name, version, enabled, gpg_fingerprint, installed_at, last_audit_at, audit_result).",
+                required: true,
+            }],
+        },
+        "dadou_skill_trust_author" => ControllerSchema {
+            namespace: "dadou",
+            function: "skill_trust_author",
+            description: "Import a GPG public key into the local trust store for verifying skill signatures.",
+            inputs: vec![FieldSchema {
+                name: "pubkey_pem",
+                ty: TypeSchema::String,
+                comment: "ASCII-armored PGP public key block (PEM format).",
+                required: true,
+            }],
+            outputs: vec![
+                FieldSchema {
+                    name: "name",
+                    ty: TypeSchema::String,
+                    comment: "Display name extracted from the key (first User ID).",
+                    required: true,
+                },
+                FieldSchema {
+                    name: "key_id",
+                    ty: TypeSchema::String,
+                    comment: "Long GPG key ID (16 hex digits).",
+                    required: true,
+                },
+                FieldSchema {
+                    name: "fingerprint",
+                    ty: TypeSchema::String,
+                    comment: "Full v4 fingerprint (40 hex characters).",
+                    required: true,
+                },
+            ],
+        },
+        _ => ControllerSchema {
+            namespace: "dadou",
+            function: "unknown",
+            description: "Unknown dadou skills controller.",
+            inputs: vec![],
+            outputs: vec![FieldSchema {
+                name: "error",
+                ty: TypeSchema::String,
+                comment: "Lookup error details.",
+                required: true,
+            }],
+        },
+    }
+}
+
+/// All DADOU skill controller schemas for registration.
+pub fn all_dadou_skills_controller_schemas() -> Vec<ControllerSchema> {
+    vec![
+        dadou_skills_schemas("dadou_skill_install"),
+        dadou_skills_schemas("dadou_skill_update"),
+        dadou_skills_schemas("dadou_skill_audit"),
+        dadou_skills_schemas("dadou_skill_remove"),
+        dadou_skills_schemas("dadou_skill_list"),
+        dadou_skills_schemas("dadou_skill_trust_author"),
+    ]
+}
+
+/// All DADOU skill registered controllers (schemas + handlers).
+pub fn all_dadou_skills_registered_controllers() -> Vec<RegisteredController> {
+    vec![
+        RegisteredController {
+            schema: dadou_skills_schemas("dadou_skill_install"),
+            handler: handle_dadou_skill_install,
+        },
+        RegisteredController {
+            schema: dadou_skills_schemas("dadou_skill_update"),
+            handler: handle_dadou_skill_update,
+        },
+        RegisteredController {
+            schema: dadou_skills_schemas("dadou_skill_audit"),
+            handler: handle_dadou_skill_audit,
+        },
+        RegisteredController {
+            schema: dadou_skills_schemas("dadou_skill_remove"),
+            handler: handle_dadou_skill_remove,
+        },
+        RegisteredController {
+            schema: dadou_skills_schemas("dadou_skill_list"),
+            handler: handle_dadou_skill_list,
+        },
+        RegisteredController {
+            schema: dadou_skills_schemas("dadou_skill_trust_author"),
+            handler: handle_dadou_skill_trust_author,
+        },
+    ]
+}
+
+// ── DADOU skill handlers ──────────────────────────────────────────────
+
+fn handle_dadou_skill_install(params: Map<String, Value>) -> ControllerFuture {
+    Box::pin(async move {
+        let url = get_string_param(&params, "url")?;
+        tracing::info!("[dadou-skills][rpc] install from {url}");
+
+        let store = crate::openhuman::skills::store::SkillsStore::load()
+            .map_err(|e| format!("failed to load skills store: {e}"))?;
+        let trust_store = crate::openhuman::skills::verify::TrustStore::load()
+            .map_err(|e| format!("failed to load trust store: {e}"))?;
+        let wasm_engine = std::sync::Arc::new(
+            crate::openhuman::skills::wasm::WasmEngine::new()
+                .map_err(|e| format!("failed to create WASM engine: {e}"))?,
+        );
+
+        let installer = crate::openhuman::skills::wasm_install::GitSkillInstaller::new(
+            store, trust_store, wasm_engine,
+        )
+        .map_err(|e| format!("failed to create installer: {e}"))?;
+
+        match installer.install_skill(&url).await {
+            Ok(outcome) => to_json(RpcOutcome::new(outcome, Vec::new())),
+            Err(e) => Err(format!("skill install failed: {e}")),
+        }
+    })
+}
+
+fn handle_dadou_skill_update(params: Map<String, Value>) -> ControllerFuture {
+    Box::pin(async move {
+        let name = get_string_param(&params, "name")?;
+        tracing::info!("[dadou-skills][rpc] update '{name}'");
+
+        let store = crate::openhuman::skills::store::SkillsStore::load()
+            .map_err(|e| format!("failed to load skills store: {e}"))?;
+        let trust_store = crate::openhuman::skills::verify::TrustStore::load()
+            .map_err(|e| format!("failed to load trust store: {e}"))?;
+        let wasm_engine = std::sync::Arc::new(
+            crate::openhuman::skills::wasm::WasmEngine::new()
+                .map_err(|e| format!("failed to create WASM engine: {e}"))?,
+        );
+
+        let mut installer = crate::openhuman::skills::wasm_install::GitSkillInstaller::new(
+            store, trust_store, wasm_engine,
+        )
+        .map_err(|e| format!("failed to create installer: {e}"))?;
+
+        match installer.update_skill(&name).await {
+            Ok(outcome) => to_json(RpcOutcome::new(outcome, Vec::new())),
+            Err(e) => Err(format!("skill update failed: {e}")),
+        }
+    })
+}
+
+fn handle_dadou_skill_audit(params: Map<String, Value>) -> ControllerFuture {
+    Box::pin(async move {
+        let name = get_string_param(&params, "name")?;
+        tracing::info!("[dadou-skills][rpc] audit '{name}'");
+
+        let mut store = crate::openhuman::skills::store::SkillsStore::load()
+            .map_err(|e| format!("failed to load skills store: {e}"))?;
+
+        let skill_dir = crate::openhuman::skills::store::SkillsStore::default_skills_dir()
+            .ok_or_else(|| "cannot resolve skills directory".to_string())?
+            .join(&name);
+
+        if !skill_dir.exists() {
+            return Err(format!("skill '{name}' is not installed (directory not found)"));
+        }
+
+        // Read manifest for permissions
+        let manifest_path = skill_dir.join("dadou-skill.yaml");
+        let permissions = if manifest_path.exists() {
+            let content = std::fs::read_to_string(&manifest_path)
+                .map_err(|e| format!("failed to read manifest: {e}"))?;
+            let m = crate::openhuman::skills::manifest::parse_manifest(&content)
+                .map_err(|e| format!("invalid manifest: {e}"))?;
+            m.permissions
+        } else {
+            Default::default()
+        };
+
+        let analysis = crate::openhuman::skills::static_analysis::scan_skill(&skill_dir, &permissions)
+            .map_err(|e| format!("static analysis failed: {e}"))?;
+
+        let result_str = match analysis.verdict {
+            crate::openhuman::skills::static_analysis::AnalysisVerdict::Pass => "pass",
+            crate::openhuman::skills::static_analysis::AnalysisVerdict::Warn => "warn",
+            crate::openhuman::skills::static_analysis::AnalysisVerdict::Block => "fail",
+        };
+
+        store.record_audit(&name, result_str)
+            .map_err(|e| format!("failed to record audit: {e}"))?;
+
+        let verdict_str = format!("{:?}", analysis.verdict);
+        let findings_json = serde_json::to_value(&analysis.findings)
+            .unwrap_or(serde_json::Value::Null);
+        let now = chrono::Utc::now().to_rfc3339();
+
+        let result = serde_json::json!({
+            "name": name,
+            "verdict": verdict_str,
+            "findings": findings_json,
+            "last_audit_at": now,
+        });
+
+        to_json(RpcOutcome::new(result, Vec::new()))
+    })
+}
+
+fn handle_dadou_skill_remove(params: Map<String, Value>) -> ControllerFuture {
+    Box::pin(async move {
+        let name = get_string_param(&params, "name")?;
+        tracing::info!("[dadou-skills][rpc] remove '{name}'");
+
+        let mut store = crate::openhuman::skills::store::SkillsStore::load()
+            .map_err(|e| format!("failed to load skills store: {e}"))?;
+
+        let existed = store.get(&name).is_some();
+        if !existed {
+            return Err(format!("skill '{name}' is not installed"));
+        }
+
+        store.remove(&name)
+            .map_err(|e| format!("failed to remove from store: {e}"))?;
+
+        let skills_dir = crate::openhuman::skills::store::SkillsStore::default_skills_dir()
+            .ok_or_else(|| "cannot resolve skills directory".to_string())?;
+        let skill_dir = skills_dir.join(&name);
+        let path_str = if skill_dir.exists() {
+            std::fs::remove_dir_all(&skill_dir)
+                .map_err(|e| format!("failed to remove skill directory: {e}"))?;
+            Some(skill_dir.to_string_lossy().to_string())
+        } else {
+            None
+        };
+
+        let result = serde_json::json!({
+            "name": name,
+            "removed": true,
+            "path": path_str,
+        });
+
+        tracing::info!("[dadou-skills][rpc] removed skill '{name}'");
+        to_json(RpcOutcome::new(result, Vec::new()))
+    })
+}
+
+fn handle_dadou_skill_list(_params: Map<String, Value>) -> ControllerFuture {
+    Box::pin(async move {
+        tracing::info!("[dadou-skills][rpc] list");
+
+        let store = crate::openhuman::skills::store::SkillsStore::load()
+            .map_err(|e| format!("failed to load skills store: {e}"))?;
+
+        let skills: Vec<serde_json::Value> = store
+            .list()
+            .into_iter()
+            .map(|s| {
+                serde_json::json!({
+                    "name": s.name,
+                    "version": s.version,
+                    "commit_hash": s.commit_hash,
+                    "enabled": s.enabled,
+                    "gpg_fingerprint": s.gpg_fingerprint,
+                    "installed_at": s.installed_at,
+                    "last_audit_at": s.last_audit_at,
+                    "audit_result": s.audit_result,
+                })
+            })
+            .collect();
+
+        let result = serde_json::json!({ "skills": skills });
+        to_json(RpcOutcome::new(result, Vec::new()))
+    })
+}
+
+fn handle_dadou_skill_trust_author(params: Map<String, Value>) -> ControllerFuture {
+    Box::pin(async move {
+        let pubkey_pem = get_string_param(&params, "pubkey_pem")?;
+        tracing::info!("[dadou-skills][rpc] trust_author");
+
+        let trust_store = crate::openhuman::skills::verify::TrustStore::load()
+            .map_err(|e| format!("failed to load trust store: {e}"))?;
+
+        match trust_store.add_author(&pubkey_pem) {
+            Ok(author) => {
+                let result = serde_json::json!({
+                    "name": author.name,
+                    "key_id": author.key_id,
+                    "fingerprint": author.fingerprint,
+                });
+                to_json(RpcOutcome::new(result, Vec::new()))
+            }
+            Err(e) => Err(format!("failed to add trusted author: {e}")),
+        }
+    })
+}
+
+/// Extract a required string parameter from the params map.
+fn get_string_param(params: &Map<String, Value>, key: &str) -> Result<String, String> {
+    params
+        .get(key)
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string())
+        .ok_or_else(|| format!("missing required param '{key}'"))
+}
+
 #[cfg(test)]
 #[path = "schemas_tests.rs"]
 mod tests;

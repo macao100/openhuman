@@ -180,6 +180,8 @@ fn build_registered_controllers() -> Vec<RegisteredController> {
     controllers.extend(crate::openhuman::javascript::all_javascript_registered_controllers());
     // Discovered SKILL.md skills and their bundled resources
     controllers.extend(crate::openhuman::skills::all_skills_registered_controllers());
+    // DADOU WASM skill lifecycle — install, update, audit, remove, list
+    controllers.extend(crate::openhuman::skills::all_dadou_skills_registered_controllers());
     // User workspace and file management
     controllers.extend(crate::openhuman::workspace::all_workspace_registered_controllers());
     // Knowledge vaults — folder-of-files mirrored into memory
@@ -339,6 +341,8 @@ fn build_declared_controller_schemas() -> Vec<ControllerSchema> {
     schemas.extend(crate::openhuman::socket::all_socket_controller_schemas());
     schemas.extend(crate::openhuman::javascript::all_javascript_controller_schemas());
     schemas.extend(crate::openhuman::skills::all_skills_controller_schemas());
+    // DADOU WASM skill lifecycle schemas
+    schemas.extend(crate::openhuman::skills::all_dadou_skills_controller_schemas());
     schemas.extend(crate::openhuman::workspace::all_workspace_controller_schemas());
     schemas.extend(crate::openhuman::vault::all_vault_controller_schemas());
     schemas.extend(crate::openhuman::tools::all_tools_controller_schemas());
@@ -529,6 +533,9 @@ pub fn namespace_description(namespace: &str) -> Option<&'static str> {
         ),
         "dadou_session_context" => Some(
             "DADOU session context — cross-session continuity save/restore for project, phase, and topic.",
+        ),
+        "dadou" => Some(
+            "DADOU WASM skill lifecycle management (install, update, audit, remove, list, trust-author).",
         ),
         _ => None,
     }

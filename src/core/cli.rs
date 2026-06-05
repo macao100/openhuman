@@ -82,6 +82,8 @@ pub fn run_from_cli_args(args: &[String]) -> Result<()> {
         }
         "undo" => run_undo_command(&args[1..]),
         "sentry-test" => run_sentry_test_command(&args[1..]),
+        // DADOU skill lifecycle subcommand: `openhuman-core skill install <url>`
+        "skill" => run_dadou_skill_command(&args[1..]),
         // Generic namespace dispatcher: `openhuman <namespace> <function> ...`
         namespace => run_namespace_command(namespace, &args[1..], &grouped),
     }
@@ -152,6 +154,209 @@ fn run_undo_command(args: &[String]) -> Result<()> {
         }
         other => {
             eprintln!("Unknown undo option: {other}. Use --last, --before <timestamp>, or --list");
+            std::process::exit(1);
+        }
+    }
+}
+
+/// Handles the `skill` subcommand for DADOU WASM skill lifecycle management.
+///
+/// This provides a user-friendly CLI interface for installing, updating,
+/// auditing, removing, and listing WASM skills.
+///
+/// # Usage
+///
+/// ```text
+/// openhuman-core skill install <git-url>
+/// openhuman-core skill update <name>
+/// openhuman-core skill audit <name>
+/// openhuman-core skill remove <name>
+/// openhuman-core skill list
+/// openhuman-core skill trust-author <pubkey_file>
+/// ```
+fn run_dadou_skill_command(args: &[String]) -> Result<()> {
+    if args.is_empty() || is_help(&args[0]) {
+        println!("Usage: openhuman-core skill <subcommand> [options]");
+        println!();
+        println!("Subcommands:");
+        println!("  install <git-url>       Install a skill from a Git repository");
+        println!("  update <name>           Update an installed skill to latest version");
+        println!("  audit <name>            Run static analysis on an installed skill");
+        println!("  remove <name>           Uninstall a skill");
+        println!("  list                    List installed skills with their state");
+        println!("  trust-author <pubkey>   Add a GPG public key fingerprint to trusted authors");
+        println!();
+        println!("Examples:");
+        println!("  openhuman-core skill install https://github.com/author/skill-repo.git");
+        println!("  openhuman-core skill audit my-skill");
+        println!("  openhuman-core skill list");
+        return Ok(());
+    }
+
+    match args[0].as_str() {
+        "install" => {
+            if args.len() < 2 {
+                return Err(anyhow::anyhow!("Usage: openhuman-core skill install <git-url>"));
+            }
+
+            let rt = tokio::runtime::Runtime::new()?;
+            rt.block_on(async {
+                let url = &args[1];
+                tracing::info!("[cli] dadou skill install {url}");
+                match crate::openhuman::skills::wasm_install::install_skill(url).await {
+                    Ok(outcome) => {
+                        println!("Installed skill: {} v{}", outcome.name, outcome.version);
+                        println!("  GPG: {}", outcome.gpg_status);
+                        println!("  Static analysis: {:?}", outcome.analysis_verdict);
+                        println!("  Findings: {}", outcome.findings_count);
+                        println!("  Path: {}", outcome.path.display());
+                        Ok(())
+                    }
+                    Err(e) => {
+                        eprintln!("Error installing skill: {e}");
+                        std::process::exit(1);
+                    }
+                }
+            })
+        }
+        "update" => {
+            if args.len() < 2 {
+                return Err(anyhow::anyhow!("Usage: openhuman-core skill update <name>"));
+            }
+
+            let rt = tokio::runtime::Runtime::new()?;
+            rt.block_on(async {
+                let name = &args[1];
+                tracing::info!("[cli] dadou skill update {name}");
+
+                let store = crate::openhuman::skills::store::SkillsStore::load()
+                    .map_err(|e| anyhow::anyhow!("failed to load store: {e}"))?;
+                let trust_store = crate::openhuman::skills::verify::TrustStore::load()
+                    .map_err(|e| anyhow::anyhow!("failed to load trust store: {e}"))?;
+                let wasm_engine = std::sync::Arc::new(
+                    crate::openhuman::skills::wasm::WasmEngine::new()
+                        .map_err(|e| anyhow::anyhow!("failed to create engine: {e}"))?,
+                );
+
+                let mut installer =
+                    crate::openhuman::skills::wasm_install::GitSkillInstaller::new(
+                        store, trust_store, wasm_engine,
+                    )
+                    .map_err(|e| anyhow::anyhow!("failed to create installer: {e}"))?;
+
+                match installer.update_skill(name).await {
+                    Ok(outcome) => {
+                        println!("Updated skill: {} v{}", outcome.name, outcome.version);
+                        println!("  GPG: {}", outcome.gpg_status);
+                        println!("  Static analysis: {:?}", outcome.analysis_verdict);
+                        Ok(())
+                    }
+                    Err(e) => {
+                        eprintln!("Error updating skill: {e}");
+                        std::process::exit(1);
+                    }
+                }
+            })
+        }
+        "audit" => {
+            if args.len() < 2 {
+                return Err(anyhow::anyhow!("Usage: openhuman-core skill audit <name>"));
+            }
+            let name = &args[1];
+            tracing::info!("[cli] dadou skill audit {name}");
+            match crate::openhuman::skills::wasm_install::audit_skill(name) {
+                Ok(outcome) => {
+                    println!("Audit result for {}: {:?}", outcome.name, outcome.verdict);
+                    for finding in &outcome.findings {
+                        println!(
+                            "  [{:?}] {}:{} -- {}",
+                            finding.severity, finding.file, finding.line, finding.pattern
+                        );
+                    }
+                    if outcome.findings.is_empty() {
+                        println!("  No suspicious patterns detected.");
+                    }
+                    Ok(())
+                }
+                Err(e) => {
+                    eprintln!("Error auditing skill: {e}");
+                    std::process::exit(1);
+                }
+            }
+        }
+        "remove" => {
+            if args.len() < 2 {
+                return Err(anyhow::anyhow!("Usage: openhuman-core skill remove <name>"));
+            }
+            let name = &args[1];
+            tracing::info!("[cli] dadou skill remove {name}");
+            match crate::openhuman::skills::wasm_install::remove_skill(name) {
+                Ok(outcome) => {
+                    if outcome.removed {
+                        println!("Removed skill: {}", outcome.name);
+                    } else {
+                        println!("Skill '{}' was not installed.", outcome.name);
+                    }
+                    Ok(())
+                }
+                Err(e) => {
+                    eprintln!("Error removing skill: {e}");
+                    std::process::exit(1);
+                }
+            }
+        }
+        "list" => {
+            tracing::info!("[cli] dadou skill list");
+            let store = crate::openhuman::skills::store::SkillsStore::load()
+                .map_err(|e| anyhow::anyhow!("failed to load store: {e}"))?;
+            let skills = store.list();
+            if skills.is_empty() {
+                println!("No skills installed.");
+            } else {
+                println!("Installed skills:");
+                for skill in skills {
+                    let status = if skill.enabled { "enabled" } else { "disabled" };
+                    print!("  {} v{} [{}]", skill.name, skill.version, status);
+                    if let Some(gpg) = &skill.gpg_fingerprint {
+                        print!(" GPG:{}", &gpg[..gpg.len().min(16)]);
+                    }
+                    if let Some(audit) = &skill.audit_result {
+                        print!(" audit:{}", audit);
+                    }
+                    println!();
+                }
+            }
+            Ok(())
+        }
+        "trust-author" => {
+            if args.len() < 2 {
+                return Err(anyhow::anyhow!(
+                    "Usage: openhuman-core skill trust-author <pubkey_fingerprint>"
+                ));
+            }
+            let pubkey_pem = &args[1];
+            tracing::info!("[cli] dadou skill trust-author");
+            let trust_store = crate::openhuman::skills::verify::TrustStore::load()
+                .map_err(|e| anyhow::anyhow!("failed to load trust store: {e}"))?;
+            match trust_store.add_author(pubkey_pem) {
+                Ok(author) => {
+                    println!(
+                        "Added trusted author: {} (key_id: {}, fingerprint: {})",
+                        author.name, author.key_id, author.fingerprint
+                    );
+                    Ok(())
+                }
+                Err(e) => {
+                    eprintln!("Error adding trusted author: {e}");
+                    std::process::exit(1);
+                }
+            }
+        }
+        _ => {
+            eprintln!(
+                "Unknown skill subcommand: {}. Run 'openhuman-core skill --help' for usage.",
+                args[0]
+            );
             std::process::exit(1);
         }
     }
@@ -607,6 +812,8 @@ fn print_general_help(grouped: &BTreeMap<String, Vec<ControllerSchema>>) {
     println!("  openhuman agent <subcommand> [options]    (inspect agent definitions & prompts)");
     println!("  openhuman voice [--hotkey <combo>] [--mode <tap|push>]  (voice dictation server)");
     println!("  openhuman tree-summarizer <subcommand> [options]  (summary tree CLI)");
+    println!("  openhuman undo [--last|--before <ts>|--list]      (rollback file changes)");
+    println!("  openhuman skill <subcommand> [options]             (DADOU WASM skill lifecycle)");
     println!("  openhuman sentry-test [--message <text>] [--panic]  (verify Sentry wiring)");
     println!("  openhuman <namespace> <function> [--param value ...]\n");
     println!("Available namespaces:");

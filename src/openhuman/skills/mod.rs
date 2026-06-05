@@ -16,6 +16,7 @@ pub mod store;
 pub mod types;
 pub mod verify;
 pub mod wasm;
+pub mod wasm_install;
 
 pub use manifest::{
     parse_manifest, Dependency, FilesystemPerms, GpgConfig, ManifestError, Permissions,
@@ -23,7 +24,9 @@ pub use manifest::{
 };
 pub use ops::*;
 pub use schemas::{
-    all_skills_controller_schemas, all_skills_registered_controllers, skills_schemas,
+    all_dadou_skills_controller_schemas, all_dadou_skills_registered_controllers,
+    all_skills_controller_schemas, all_skills_registered_controllers,
+    dadou_skills_schemas, skills_schemas,
 };
 pub use store::{InstalledSkill, SkillsStore};
 
