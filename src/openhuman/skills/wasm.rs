@@ -151,7 +151,7 @@ pub fn build_wasi_ctx(data_dir: &Path) -> anyhow::Result<wasmtime_wasi::preview1
 
     // Preopen for write access (permitted if the caller allows writes).
     builder
-        .preopened_dir(&canonical, "/data", DirPerms::READ_WRITE, FilePerms::WRITE)
+        .preopened_dir(&canonical, "/data", DirPerms::READ | DirPerms::MUTATE, FilePerms::WRITE)
         .context("failed to preopen skill data directory for write")?;
     // Always preopen for read access.
     builder
@@ -276,7 +276,8 @@ pub fn execute_wasm(
             })?;
 
             // Write input bytes at the agreed input offset.
-            memory.write(&mut store, defaults::INPUT_OFFSET as usize, input)?;
+            memory.write(&mut store, defaults::INPUT_OFFSET as usize, input)
+                .map_err(|e| WasmExecutionError::Trap(e.to_string()))?;
 
             tracing::debug!(
                 "[skills:wasm] calling (i32,i32)→i32 entry '{entry_fn}' with \
@@ -310,7 +311,8 @@ pub fn execute_wasm(
                 Vec::new()
             } else {
                 let mut output = vec![0u8; output_len];
-                memory.read(&store, defaults::OUTPUT_OFFSET as usize, &mut output)?;
+                memory.read(&store, defaults::OUTPUT_OFFSET as usize, &mut output)
+                    .map_err(|e| WasmExecutionError::Trap(e.to_string()))?;
                 output
             }
         }
@@ -463,7 +465,7 @@ fn classify_trap(err: wasmtime::Error) -> WasmExecutionError {
 /// [`WasmExecutionError::Timeout`] instead.
 fn call_with_timeout(
     func: &wasmtime::Func,
-    store: impl wasmtime::AsContextMut<Data = wasmtime_wasi::WasiCtx>,
+    store: impl wasmtime::AsContextMut<Data = wasmtime_wasi::preview1::WasiP1Ctx>,
     params: &[wasmtime::Val],
     results: &mut [wasmtime::Val],
     _timeout_secs: u64,

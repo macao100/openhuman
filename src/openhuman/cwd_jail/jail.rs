@@ -184,6 +184,7 @@ impl Drop for JailedChild {
 #[cfg(target_os = "windows")]
 mod win {
     use std::io;
+    use std::os::windows::process::ExitStatusExt;
 
     pub const INFINITE: u32 = 0xFFFF_FFFF;
     pub const WAIT_OBJECT_0: u32 = 0;
@@ -191,9 +192,9 @@ mod win {
 
     #[link(name = "kernel32")]
     extern "system" {
-        fn WaitForSingleObject(hHandle: isize, dwMilliseconds: u32) -> u32;
-        fn GetExitCodeProcess(hProcess: isize, lpExitCode: *mut u32) -> i32;
-        fn TerminateProcess(hProcess: isize, uExitCode: u32) -> i32;
+        pub fn WaitForSingleObject(hHandle: isize, dwMilliseconds: u32) -> u32;
+        pub fn GetExitCodeProcess(hProcess: isize, lpExitCode: *mut u32) -> i32;
+        pub fn TerminateProcess(hProcess: isize, uExitCode: u32) -> i32;
     }
 
     /// Wait until the process exits and return its exit status.

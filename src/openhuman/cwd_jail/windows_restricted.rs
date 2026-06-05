@@ -325,16 +325,16 @@ unsafe fn spawn_restricted(_jail: &Jail, _cmd: Command) -> io::Result<JailedChil
     set_low_integrity_level(restricted_token)?;
 
     // 7. Close the original token (no longer needed).
-    CloseHandle(process_token);
+    CloseHandle(process_token as *mut _);
 
     // 8. Spawn the child process with the restricted token.
     let (process_handle, thread_handle, pid) = spawn_with_token(restricted_token, _cmd)?;
 
     // 9. Resume the suspended thread.
-    ResumeThread(thread_handle);
+    ResumeThread(thread_handle as *mut _);
 
     // 10. Close the thread handle — we don't need it.
-    CloseHandle(thread_handle);
+    CloseHandle(thread_handle as *mut _);
 
     // 11. Wrap the process handle in `JailedChild::Custom`.
     let owned = OwnedHandle::from_raw_handle(process_handle as _);
@@ -552,7 +552,7 @@ unsafe fn spawn_with_token(
         return Err(io::Error::last_os_error());
     }
 
-    Ok((pi.hProcess, pi.hThread, pi.dwProcessId))
+    Ok((pi.hProcess as isize, pi.hThread as isize, pi.dwProcessId))
 }
 
 // ── Command-line builder ───────────────────────────────────────────

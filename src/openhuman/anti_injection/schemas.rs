@@ -103,7 +103,7 @@ pub fn schemas(function: &str) -> ControllerSchema {
 // ── Handlers ──────────────────────────────────────────────────────────
 
 fn handle_validate(params: Map<String, Value>) -> ControllerFuture {
-    Box::pin(async {
+    Box::pin(async move {
         log::debug!("[anti-injection][rpc] validate enter");
 
         let text = params
@@ -132,7 +132,7 @@ fn handle_validate(params: Map<String, Value>) -> ControllerFuture {
 }
 
 fn handle_config(params: Map<String, Value>) -> ControllerFuture {
-    Box::pin(async {
+    Box::pin(async move {
         log::debug!("[anti-injection][rpc] config enter");
 
         if let Some(mode_str) = params.get("mode").and_then(|v| v.as_str()) {
@@ -176,7 +176,7 @@ fn handle_rules_list(_params: Map<String, Value>) -> ControllerFuture {
     Box::pin(async {
         log::debug!("[anti-injection][rpc] rules_list enter");
 
-        let rules = super::validator::rules::ALL_INJECTION_RULES;
+        let rules = &super::validator::rules::ALL_INJECTION_RULES;
         let rule_descriptors: Vec<serde_json::Value> = rules
             .iter()
             .map(|r| {

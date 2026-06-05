@@ -137,9 +137,9 @@ impl RollbackStore {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare("SELECT * FROM rollback_history LIMIT 0")?;
         let cols: Vec<String> = stmt
-            .columns()
-            .iter()
-            .map(|c| c.name().to_string())
+            .column_names()
+            .into_iter()
+            .map(|c| c.to_string())
             .collect();
         Ok(cols)
     }
@@ -543,6 +543,7 @@ impl RollbackStore {
             diff_filename: format!("{}.diff", action_id),
             tool_name: tool_name.into(),
             metadata,
+            rolled_back_at: None,
         };
         self.save_entry(&entry)?;
         Ok(entry)
@@ -581,6 +582,7 @@ impl RollbackStore {
             diff_filename: format!("{}.diff", action_id),
             tool_name: tool_name.into(),
             metadata,
+            rolled_back_at: None,
         };
         self.save_entry(&entry)?;
         Ok(entry)
@@ -715,7 +717,8 @@ impl RollbackStore {
                                 .take(CONTEXT)
                                 .cloned()
                                 .collect();
-                            *current_hunk = tail.into_iter().rev().collect();
+                            current_hunk.clear();
+                            current_hunk.extend(tail.into_iter().rev());
                         }
                     }
                     last_eq_idx = Some(idx);

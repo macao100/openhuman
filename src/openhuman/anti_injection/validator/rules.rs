@@ -54,7 +54,7 @@ pub struct InjectionRule {
     /// Category grouping (e.g. "instruction_override", "encoded_payload").
     pub category: &'static str,
     /// Compiled regex pattern for detection.
-    pub pattern: &'static OnceLock<Regex>,
+    pub pattern: OnceLock<Regex>,
 }
 
 impl InjectionRule {
@@ -101,35 +101,35 @@ impl InjectionRule {
 }
 
 /// All registered injection detection rules (16 rules).
-pub static ALL_INJECTION_RULES: &[InjectionRule] = &[
+pub static ALL_INJECTION_RULES: [InjectionRule; 17] = [
     // ── Critical instruction overrides ──────────────────────────────
     InjectionRule {
         name: "ignore_previous_instructions",
         description: "Attempts to ignore or discard previous system instructions.",
         severity: FindingSeverity::High,
         category: "instruction_override",
-        pattern: &OnceLock::new(),
+        pattern: OnceLock::new(),
     },
     InjectionRule {
         name: "system_prompt_override",
         description: "Attempts to define a new system persona or override the system prompt.",
         severity: FindingSeverity::High,
         category: "instruction_override",
-        pattern: &OnceLock::new(),
+        pattern: OnceLock::new(),
     },
     InjectionRule {
         name: "role_switch",
         description: "Role-playing or persona-switch attempts ('pretend you are', 'act as if').",
         severity: FindingSeverity::High,
         category: "instruction_override",
-        pattern: &OnceLock::new(),
+        pattern: OnceLock::new(),
     },
     InjectionRule {
         name: "forget_all_instructions",
         description: "Forget or disregard all previous instructions/directives.",
         severity: FindingSeverity::High,
         category: "instruction_override",
-        pattern: &OnceLock::new(),
+        pattern: OnceLock::new(),
     },
     // ── Tool abuse ──────────────────────────────────────────────────
     InjectionRule {
@@ -137,14 +137,14 @@ pub static ALL_INJECTION_RULES: &[InjectionRule] = &[
         description: "Instructions to invoke tools or functions in output context.",
         severity: FindingSeverity::High,
         category: "tool_abuse",
-        pattern: &OnceLock::new(),
+        pattern: OnceLock::new(),
     },
     InjectionRule {
         name: "code_execution_request",
         description: "Requests to execute, run, or eval code snippets.",
         severity: FindingSeverity::High,
         category: "tool_abuse",
-        pattern: &OnceLock::new(),
+        pattern: OnceLock::new(),
     },
     // ── Data exfiltration ───────────────────────────────────────────
     InjectionRule {
@@ -152,14 +152,14 @@ pub static ALL_INJECTION_RULES: &[InjectionRule] = &[
         description: "Instructions to send, post, or upload data externally.",
         severity: FindingSeverity::High,
         category: "exfiltration",
-        pattern: &OnceLock::new(),
+        pattern: OnceLock::new(),
     },
     InjectionRule {
         name: "credential_request",
         description: "Requests for passwords, API keys, tokens, or secrets.",
         severity: FindingSeverity::High,
         category: "exfiltration",
-        pattern: &OnceLock::new(),
+        pattern: OnceLock::new(),
     },
     // ── Security bypass ─────────────────────────────────────────────
     InjectionRule {
@@ -167,21 +167,21 @@ pub static ALL_INJECTION_RULES: &[InjectionRule] = &[
         description: "Attempts to bypass security, guardian, or oversight mechanisms.",
         severity: FindingSeverity::High,
         category: "security_bypass",
-        pattern: &OnceLock::new(),
+        pattern: OnceLock::new(),
     },
     InjectionRule {
         name: "reverse_injection",
         description: "Reverse injection — commands to ignore the original system prompt.",
         severity: FindingSeverity::High,
         category: "instruction_override",
-        pattern: &OnceLock::new(),
+        pattern: OnceLock::new(),
     },
     InjectionRule {
         name: "xml_tag_abuse",
         description: "Closing or forging of `<external_data>` or `<tool_result>` XML tags.",
         severity: FindingSeverity::High,
         category: "tag_abuse",
-        pattern: &OnceLock::new(),
+        pattern: OnceLock::new(),
     },
     // ── Medium severity ─────────────────────────────────────────────
     InjectionRule {
@@ -189,28 +189,28 @@ pub static ALL_INJECTION_RULES: &[InjectionRule] = &[
         description: "Instructions that specify a response format to coerce LLM output.",
         severity: FindingSeverity::Medium,
         category: "format_coercion",
-        pattern: &OnceLock::new(),
+        pattern: OnceLock::new(),
     },
     InjectionRule {
         name: "markdown_injection",
         description: "Markdown headings that could reshape the prompt context.",
         severity: FindingSeverity::Medium,
         category: "format_coercion",
-        pattern: &OnceLock::new(),
+        pattern: OnceLock::new(),
     },
     InjectionRule {
         name: "url_injection",
         description: "Instructions to visit or fetch content from a URL.",
         severity: FindingSeverity::Medium,
         category: "external_interaction",
-        pattern: &OnceLock::new(),
+        pattern: OnceLock::new(),
     },
     InjectionRule {
         name: "chain_injection",
         description: "Multi-step instructions that chain actions for injection.",
         severity: FindingSeverity::Medium,
         category: "chain_attack",
-        pattern: &OnceLock::new(),
+        pattern: OnceLock::new(),
     },
     // ── Low severity ────────────────────────────────────────────────
     InjectionRule {
@@ -218,14 +218,14 @@ pub static ALL_INJECTION_RULES: &[InjectionRule] = &[
         description: "Long base64-encoded string that could contain hidden instructions.",
         severity: FindingSeverity::Medium,
         category: "encoded_payload",
-        pattern: &OnceLock::new(),
+        pattern: OnceLock::new(),
     },
     InjectionRule {
         name: "hidden_hex",
         description: "Long hex string that could be an encoded payload.",
         severity: FindingSeverity::Low,
         category: "encoded_payload",
-        pattern: &OnceLock::new(),
+        pattern: OnceLock::new(),
     },
 ];
 
@@ -234,7 +234,7 @@ pub static ALL_INJECTION_RULES: &[InjectionRule] = &[
 /// Returns a list of findings (empty = no injection detected).
 pub fn check_injection_patterns(content: &str) -> Vec<InjectionFinding> {
     let mut findings = Vec::new();
-    for rule in ALL_INJECTION_RULES {
+    for rule in &ALL_INJECTION_RULES {
         if let Some(finding) = rule.evaluate(content) {
             findings.push(finding);
         }
@@ -526,7 +526,7 @@ fn main() {
 
     #[test]
     fn all_patterns_compile_successfully() {
-        for rule in ALL_INJECTION_RULES {
+        for rule in &ALL_INJECTION_RULES {
             let re = Regex::new(rule.pattern_str());
             assert!(re.is_ok(), "rule '{}' has invalid regex: {}", rule.name, re.unwrap_err());
         }

@@ -118,6 +118,7 @@ impl Memory for UnifiedMemory {
                 timestamp: Utc::now().to_rfc3339(),
                 session_id: None,
                 score: Some(r.score),
+                provenance: None,
             })
             .collect();
 
@@ -169,6 +170,7 @@ impl Memory for UnifiedMemory {
                     timestamp: ts_rfc3339,
                     session_id: Some(entry.session_id),
                     score: Some(match_score),
+                    provenance: None,
                 });
             }
         }
@@ -239,6 +241,7 @@ impl Memory for UnifiedMemory {
                     timestamp: ts_rfc3339,
                     session_id: Some(entry.session_id),
                     score: Some(match_score),
+                    provenance: None,
                 });
             }
         }
@@ -308,6 +311,7 @@ impl Memory for UnifiedMemory {
                 timestamp: timestamp_to_rfc3339(updated_at),
                 session_id: None,
                 score: None,
+                provenance: None,
             }),
         )
     }
@@ -352,6 +356,7 @@ impl Memory for UnifiedMemory {
                 timestamp: format!("idx-{idx}"),
                 session_id: None,
                 score: None,
+                provenance: None,
             });
         }
         Ok(out)

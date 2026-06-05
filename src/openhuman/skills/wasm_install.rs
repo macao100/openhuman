@@ -295,7 +295,7 @@ impl GitSkillInstaller {
             let reasons: Vec<String> = analysis
                 .findings
                 .iter()
-                .map(|f| format!("[{}] {}:{} — {}", f.severity, f.file, f.line, f.pattern))
+                .map(|f| format!("[{:?}] {}:{} — {}", f.severity, f.file, f.line, f.pattern))
                 .collect();
             return Err(InstallError::AnalysisBlocked(reasons.join("\n")));
         }
@@ -306,7 +306,7 @@ impl GitSkillInstaller {
             .with_context(|| format!("failed to create skill dir: {}", dest_dir.display()))?;
 
         // Copy WASM binary from repo to dest
-        let wasm_rel = manifest.wasm.path.clone();
+        let wasm_rel = manifest.wasm.as_ref().unwrap().path.clone();
         let wasm_src = clone_path.join(&wasm_rel);
         if wasm_src.exists() {
             let wasm_dest = dest_dir.join(&wasm_rel);
@@ -432,7 +432,7 @@ impl GitSkillInstaller {
             let reasons: Vec<String> = analysis
                 .findings
                 .iter()
-                .map(|f| format!("[{}] {}:{} — {}", f.severity, f.file, f.line, f.pattern))
+                .map(|f| format!("[{:?}] {}:{} — {}", f.severity, f.file, f.line, f.pattern))
                 .collect();
             return Err(InstallError::AnalysisBlocked(reasons.join("\n")));
         }
@@ -462,6 +462,7 @@ impl GitSkillInstaller {
             }
             None => ("no_signature".to_string(), None),
             Some(SignatureVerificationResult::Invalid { .. }) => unreachable!(),
+            Some(SignatureVerificationResult::NoSignature) => ("no_signature".to_string(), None),
         };
 
         let commit_hash = resolve_head_commit(clone_path)?;

@@ -101,7 +101,7 @@ pub fn llm_deep_check(
     let full_prompt = format!("{DEEP_CHECK_SYSTEM_PROMPT}\n\n{user_prompt}");
 
     // Run the LLM call in a blocking context with timeout.
-    let rt = tokio::runtime::Handle::try_current()?;
+    let rt = tokio::runtime::Handle::try_current().ok()?;
     let result = rt.block_on(async {
         tokio::time::timeout(
             std::time::Duration::from_millis(LLM_TIMEOUT_MS),

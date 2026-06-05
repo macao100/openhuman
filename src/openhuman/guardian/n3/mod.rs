@@ -211,11 +211,6 @@ impl GuardianN3 {
         self.config.enabled
     }
 
-    /// Returns a reference to the N3 configuration.
-    pub fn config(&self) -> &N3Config {
-        &self.config
-    }
-
     /// Reset the internal cache (useful for testing and config reload).
     pub fn reset_cache(&self) {
         let mut cache = self.cache.lock();

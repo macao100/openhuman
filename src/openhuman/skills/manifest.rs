@@ -135,7 +135,7 @@ pub struct Permissions {
 }
 
 /// Filesystem access patterns (glob-based).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct FilesystemPerms {
     /// Glob patterns for allowed read paths.
     #[serde(default)]

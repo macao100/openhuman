@@ -10,6 +10,17 @@ use serde_json::Map;
 
 use crate::core::all::{ControllerFuture, RegisteredController};
 use crate::core::{ControllerSchema, FieldSchema};
+use crate::openhuman::dashboard::store;
+
+/// Local wire-format for a skill displayed in the dashboard.
+#[derive(serde::Serialize)]
+struct SkillSummary {
+    name: String,
+    version: String,
+    enabled: bool,
+    gpg_verified: bool,
+    description: Option<String>,
+}
 
 // ── Schema helpers ────────────────────────────────────────────────────────
 

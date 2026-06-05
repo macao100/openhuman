@@ -4,6 +4,7 @@
 //! serving the self-contained dashboard HTML frontend and API endpoints.
 
 use std::net::SocketAddr;
+use std::pin::Pin;
 
 use axum::extract::Query;
 use axum::http::StatusCode;
@@ -231,43 +232,46 @@ async fn sse_handler() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     // Grab the raw broadcast receiver from the event bus.
     // The EventBus provides a method for external consumers.
     // We filter to dashboard-relevant domains.
-    let stream = if let Some(bus) = crate::core::event_bus::global() {
-        let rx = bus.raw_receiver();
-        BroadcastStream::new(rx).filter_map(|result| {
-            let event = match result {
-                Ok(e) => e,
-                Err(_) => return None,
-            };
+    let stream: Pin<Box<dyn Stream<Item = Result<Event, Infallible>> + Send>> =
+        if let Some(bus) = crate::core::event_bus::global() {
+            let rx = bus.raw_receiver();
+            Box::pin(BroadcastStream::new(rx).filter_map(|result| {
+                let event = match result {
+                    Ok(e) => e,
+                    Err(_) => return None,
+                };
 
-            // Only forward events from dashboard-relevant domains.
-            let domain = event.domain();
-            let relevant = matches!(
-                domain,
-                "guardian" | "tool" | "agent" | "skill" | "memory" | "channel" | "system"
-            );
-            if !relevant {
-                return None;
-            }
+                // Only forward events from dashboard-relevant domains.
+                let domain = event.domain();
+                let relevant = matches!(
+                    domain,
+                    "guardian" | "tool" | "agent" | "skill" | "memory" | "channel" | "system"
+                );
+                if !relevant {
+                    return None;
+                }
 
-            // Serialise to a compact JSON payload.
-            let payload = serde_json::json!({
-                "kind": event_name(&event),
-                "domain": domain,
-                "payload": event_payload(event),
-                "recorded_at": chrono::Utc::now().to_rfc3339(),
-            });
+                // Serialise to a compact JSON payload.
+                let payload = serde_json::json!({
+                    "kind": event_name(&event),
+                    "domain": domain,
+                    "payload": event_payload(event),
+                    "recorded_at": chrono::Utc::now().to_rfc3339(),
+                });
 
-            let data = payload.to_string();
-            Some(Ok(Event::default()
-                .event("dashboard_event")
-                .data(data)))
-        })
-    } else {
-        // No event bus — return an empty stream.
-        let (_, rx) = broadcast::channel::<DomainEvent>(1);
-        BroadcastStream::new(rx)
-            .filter_map(|_| None::<Result<Event, Infallible>>)
-    };
+                let data = payload.to_string();
+                Some(Ok(Event::default()
+                    .event("dashboard_event")
+                    .data(data)))
+            }))
+        } else {
+            // No event bus — return an empty stream.
+            let (_, rx) = broadcast::channel::<DomainEvent>(1);
+            Box::pin(
+                BroadcastStream::new(rx)
+                    .filter_map(|_| None::<Result<Event, Infallible>>),
+            )
+        };
 
     Sse::new(stream).keep_alive(KeepAlive::new().interval(std::time::Duration::from_secs(15)))
 }

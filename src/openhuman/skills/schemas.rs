@@ -817,32 +817,30 @@ pub fn dadou_skills_schemas(function: &str) -> ControllerSchema {
             }],
         },
         "dadou_skill_execute" => ControllerSchema {
-            namespace: "dadou".to_string(),
-            function: "skill_execute".to_string(),
-            description: "Execute an installed Python skill with the given arguments.".to_string(),
+            namespace: "dadou",
+            function: "skill_execute",
+            description: "Execute an installed Python skill with the given arguments.",
             inputs: vec![
                 FieldSchema {
-                    name: "name".to_string(),
+                    name: "name",
                     ty: TypeSchema::String,
-                    comment: "Name of the installed Python skill to execute.".to_string(),
+                    comment: "Name of the installed Python skill to execute.",
                     required: true,
                 },
                 FieldSchema {
-                    name: "args".to_string(),
+                    name: "args",
                     ty: TypeSchema::Json,
-                    comment: "Arguments passed to the skill's run() function.".to_string(),
+                    comment: "Arguments passed to the skill's run() function.",
                     required: false,
                 },
                 FieldSchema {
-                    name: "timeout_secs".to_string(),
+                    name: "timeout_secs",
                     ty: TypeSchema::U64,
-                    comment: "Optional timeout in seconds (default 120, max 600).".to_string(),
+                    comment: "Optional timeout in seconds (default 120, max 600).",
                     required: false,
                 },
             ],
             outputs: vec![],
-            input_type_hint: None,
-            output_type_hint: None,
         },
         "dadou_skill_trust_author" => ControllerSchema {
             namespace: "dadou",
@@ -953,7 +951,7 @@ fn handle_dadou_skill_install(params: Map<String, Value>) -> ControllerFuture {
                 .map_err(|e| format!("failed to create WASM engine: {e}"))?,
         );
 
-        let installer = crate::openhuman::skills::wasm_install::GitSkillInstaller::new(
+        let mut installer = crate::openhuman::skills::wasm_install::GitSkillInstaller::new(
             store, trust_store, wasm_engine,
         )
         .map_err(|e| format!("failed to create installer: {e}"))?;

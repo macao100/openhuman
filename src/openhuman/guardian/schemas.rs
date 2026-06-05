@@ -77,7 +77,7 @@ pub fn schemas(function: &str) -> ControllerSchema {
             }],
             outputs: vec![FieldSchema {
                 name: "loaded_count",
-                ty: TypeSchema::Int,
+                ty: TypeSchema::I64,
                 comment: "Number of YAML rules loaded after reload.",
                 required: true,
             }],
@@ -226,7 +226,7 @@ fn handle_rules_list(_params: Map<String, Value>) -> ControllerFuture {
 }
 
 fn handle_rules_reload(params: Map<String, Value>) -> ControllerFuture {
-    Box::pin(async {
+    Box::pin(async move {
         log::debug!("[guardian][rpc] rules_reload enter");
         let yaml_path = params.get("yaml_path").and_then(|v| v.as_str());
         match crate::openhuman::guardian::ops::reload_yaml_rules(yaml_path).await {
@@ -243,7 +243,7 @@ fn handle_rules_reload(params: Map<String, Value>) -> ControllerFuture {
 }
 
 fn handle_evaluate(params: Map<String, Value>) -> ControllerFuture {
-    Box::pin(async {
+    Box::pin(async move {
         log::debug!("[guardian][rpc] evaluate enter");
         let tool_name = params
             .get("tool_name")
@@ -267,7 +267,7 @@ fn handle_evaluate(params: Map<String, Value>) -> ControllerFuture {
 }
 
 fn handle_n2_evaluate(params: Map<String, Value>) -> ControllerFuture {
-    Box::pin(async {
+    Box::pin(async move {
         log::debug!("[guardian][rpc] n2_evaluate enter");
         let tool_name = params
             .get("tool_name")
@@ -322,7 +322,7 @@ fn handle_pipeline_status(_params: Map<String, Value>) -> ControllerFuture {
 }
 
 fn handle_plan_validate(params: Map<String, Value>) -> ControllerFuture {
-    Box::pin(async {
+    Box::pin(async move {
         log::debug!("[guardian][rpc] plan_validate enter");
         let plan_value = params
             .get("plan")
