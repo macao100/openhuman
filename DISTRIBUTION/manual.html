@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DADOU v1 — Manuel d'utilisation</title>
+<style>
+:root{--bg:#0b0e14;--surface:#141820;--border:#252a35;--text:#dde1e8;--muted:#6b7080;--green:#4ade80;--red:#f87171;--amber:#fbbf24;--blue:#4a83dd;--purple:#a78bfa;--radius:6px;--font:system-ui,-apple-system,sans-serif;--mono:'JetBrains Mono','Cascadia Code',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.7;padding:0}
+.container{max-width:900px;margin:0 auto;padding:24px}
+header{text-align:center;padding:48px 24px 32px;border-bottom:1px solid var(--border);margin-bottom:32px}
+h1{font-size:2rem;font-weight:800;margin-bottom:8px}
+h1 span{color:var(--blue)}
+h2{font-size:1.3rem;font-weight:700;margin:40px 0 16px;padding-bottom:8px;border-bottom:2px solid var(--blue);color:var(--blue)}
+h3{font-size:1.05rem;font-weight:600;margin:24px 0 8px;color:var(--purple)}
+h4{font-size:.95rem;font-weight:600;margin:16px 0 6px}
+p{margin:8px 0}
+.cmd{background:#0a0c10;border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;font-family:var(--mono);font-size:.82rem;margin:10px 0;overflow-x:auto;white-space:pre-wrap;word-break:break-all}
+.cmd .comment{color:var(--muted)}
+.note{border-left:3px solid var(--blue);padding:12px 16px;margin:16px 0;background:rgba(74,131,221,.05);border-radius:0 var(--radius) var(--radius) 0;font-size:.9rem}
+.note strong{color:var(--blue)}
+.warn{border-left:3px solid var(--amber);padding:12px 16px;margin:16px 0;background:rgba(251,191,36,.05);border-radius:0 var(--radius) var(--radius) 0);font-size:.9rem}
+.warn strong{color:var(--amber)}
+.example{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin:16px 0}
+.example-title{font-weight:700;color:var(--green);margin-bottom:8px;font-size:.95rem}
+table{width:100%;border-collapse:collapse;font-size:.85rem;margin:12px 0}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+th{color:var(--muted);font-weight:500;text-transform:uppercase;font-size:.75rem;background:var(--surface)}
+tr:hover{background:rgba(74,131,221,.03)}
+code{background:rgba(255,255,255,.05);padding:2px 6px;border-radius:3px;font-family:var(--mono);font-size:.85em}
+.toc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin:20px 0}
+.toc a{color:var(--blue);text-decoration:none}
+.toc a:hover{text-decoration:underline}
+.toc li{margin:4px 0;margin-left:20px}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.72rem;font-weight:600;text-transform:uppercase;margin-right:4px}
+.tag-core{background:rgba(74,131,221,.15);color:var(--blue)}
+.tag-ui{background:rgba(167,139,250,.15);color:var(--purple)}
+.tag-cli{background:rgba(74,222,128,.15);color:var(--green)}
+.footer{text-align:center;padding:32px;color:var(--muted);font-size:.8rem;border-top:1px solid var(--border);margin-top:48px}
+a{color:var(--blue)}
+img{max-width:100%;border-radius:var(--radius)}
+details{margin:12px 0}
+summary{cursor:pointer;font-weight:600;color:var(--blue)}
+details .content{padding:12px;border-left:2px solid var(--border);margin-left:12px}
+</style>
+</head>
+<body>
+
+<div class="container">
+<header>
+  <h1>&#x1F6E1; <span>DADOU</span> v1.0</h1>
+  <p style="color:var(--muted);font-size:1.05rem">Manuel d'utilisation — Cas réels</p>
+</header>
+
+<!-- ═══ SOMMAIRE ═══ -->
+<nav class="toc">
+  <h3 style="margin-top:0">Sommaire</h3>
+  <ol>
+    <li><a href="#concepts">Concepts fondamentaux</a></li>
+    <li><a href="#demarrage">Démarrage rapide</a></li>
+    <li><a href="#cas1">Cas 1 — Développeur : Analyse et refactoring d'un projet</a></li>
+    <li><a href="#cas2">Cas 2 — Data Scientist : Pipeline d'analyse de données</a></li>
+    <li><a href="#cas3">Cas 3 — Maker : Automatisation domotique</a></li>
+    <li><a href="#cas4">Cas 4 — Juriste : Analyse de contrats</a></li>
+    <li><a href="#cas5">Cas 5 — Étudiant : Aide à la rédaction de mémoire</a></li>
+    <li><a href="#skills">Installation et utilisation des Skills</a></li>
+    <li><a href="#dashboard">Le Dashboard d'observabilité</a></li>
+    <li><a href="#security">Sécurité et Guardian</a></li>
+    <li><a href="#troubleshooting">Dépannage</a></li>
+    <li><a href="#reference">Référence des commandes</a></li>
+  </ol>
+</nav>
+
+<!-- ═══ CONCEPTS ═══ -->
+<h2 id="concepts">&#x1F9E0; Concepts fondamentaux</h2>
+
+<p>DADOU est un <strong>assistant IA personnel</strong> qui fonctionne localement sur votre machine. Contrairement aux IA cloud, il :</p>
+<ul style="margin-left:20px;margin-top:8px">
+  <li><strong>Se souvient</strong> — mémoire persistante de vos projets, préférences et décisions</li>
+  <li><strong>Apprend</strong> — s'améliore session après session grâce à la rétroaction</li>
+  <li><strong>Exécute</strong> — pilote des logiciels, écrit du code, manipule des fichiers</li>
+  <li><strong>Protège</strong> — Guardian 3 niveaux valide chaque action avant exécution</li>
+</ul>
+
+<table>
+  <tr><th>Composant</th><th>Rôle</th><th>Technologie</th></tr>
+  <tr><td><span class="tag tag-core">Core</span></td><td>Logique métier, ML, sécurité</td><td>Rust (Axum, tokio, rusqlite)</td></tr>
+  <tr><td><span class="tag tag-ui">Frontend</span></td><td>Interface utilisateur</td><td>React 19 + Tauri v2</td></tr>
+  <tr><td><span class="tag tag-ui">Dashboard</span></td><td>Observabilité temps réel</td><td>HTML/JS autonome sur :7790</td></tr>
+  <tr><td><span class="tag tag-cli">CLI</span></td><td>Administration, debug</td><td>Rust (clap)</td></tr>
+</table>
+
+<!-- ═══ DÉMARRAGE ═══ -->
+<h2 id="demarrage">&#x1F680; Démarrage rapide</h2>
+
+<div class="cmd"><span class="comment"># 1. Lancer le core (terminal)</span>
+.\target\release\openhuman-core.exe serve
+
+<span class="comment"># 2. Ouvrir le dashboard</span>
+<span class="comment"># → http://127.0.0.1:7790</span>
+
+<span class="comment"># 3. Vérifier la santé</span>
+curl http://127.0.0.1:7788/health
+
+<span class="comment"># 4. Lister les skills installées</span>
+.\target\release\openhuman-core.exe skill list</div>
+
+<div class="note"><strong>Premier lancement</strong> : DADOU crée automatiquement <code>~/.openhuman/</code> avec sa configuration, sa base SQLite et son workspace. L'interface Tauri se lance sur le bureau.</div>
+
+<!-- ═══ CAS 1 : DÉVELOPPEUR ═══ -->
+<h2 id="cas1">&#x1F4BB; Cas 1 — Développeur : Analyse et refactoring d'un projet</h2>
+
+<p><strong>Contexte</strong> : Vous reprenez un projet legacy de 50 000 lignes de Python. Vous devez comprendre l'architecture, identifier le code mort, et planifier le refactoring.</p>
+
+<div class="example">
+  <div class="example-title">&#x1F534; Session type — Premier contact avec le projet</div>
+
+  <h4>1. DADOU indexe le projet</h4>
+  <div class="cmd"><span class="comment"># Placez-vous dans le répertoire du projet</span>
+cd C:\Projects\legacy-app
+
+<span class="comment"># Demandez à DADOU d'analyser la structure</span>
+<span class="comment"># (via le chat Tauri)</span>
+Analyse la structure de ce projet. Quels sont les modules principaux ?
+Quelles sont les dépendances critiques ? Y a-t-il du code mort ?</div>
+
+  <h4>2. DADOU répond avec une cartographie</h4>
+  <p>DADOU parcourt l'arborescence, lit les imports, identifie les points d'entrée, et stocke cette connaissance dans sa mémoire persistante. Il détecte :</p>
+  <div class="cmd">Projet legacy-app — 47 modules Python, 12 340 lignes
+├── core/          (12 modules) — Logique métier critique
+├── api/           (8 modules)  — Endpoints Flask, 3 non utilisés ⚠
+├── utils/         (15 modules) — 40% de code mort détecté ⚠
+├── migrations/    (7 modules)  — Alembic, OK
+└── tests/         (5 modules)  — Couverture 23% ❌
+
+Top risques : pas de gestion d'erreurs dans api/, pas de rate limiting,
+SQL injection potentielle dans core/queries.py:142</div>
+
+  <h4>3. DADOU se souvient entre les sessions</h4>
+  <p>Le lendemain, vous rouvrez DADOU. Il restaure le contexte :</p>
+  <div class="cmd">→ Reprise de session : projet legacy-app, Phase analyse (hier 18:42)
+→ 3 faits projet en mémoire : structure, risques, code mort
+→ Dernière action : review de core/queries.py
+→ Continuer l'analyse ou passer au refactoring ?</div>
+
+  <h4>4. Refactoring assisté</h4>
+  <div class="cmd"><span class="comment"># DADOU propose un plan de refactoring</span>
+→ Plan : Extraire api/ en microservice indépendant
+  1. Créer api-v2/ avec FastAPI
+  2. Migrer les endpoints un par un (8 endpoints, 3 actifs)
+  3. Ajouter rate limiting (Guardian valide les appels réseau)
+  4. Tests unitaires pour chaque endpoint migré</div>
+</div>
+
+<div class="note"><strong>Le Guardian protège</strong> : quand DADOU propose de modifier <code>core/queries.py</code>, le Guardian N1 vérifie que le fichier est dans le workspace, N2 scanne les patterns d'exfiltration, et N3 valide l'intention de la modification.</div>
+
+<!-- ═══ CAS 2 : DATA SCIENTIST ═══ -->
+<h2 id="cas2">&#x1F4CA; Cas 2 — Data Scientist : Pipeline d'analyse de données</h2>
+
+<p><strong>Contexte</strong> : Vous devez analyser un jeu de données CSV de 2 GB, créer des visualisations, et générer un rapport.</p>
+
+<div class="example">
+  <div class="example-title">&#x1F534; Session type — Pipeline data</div>
+
+  <h4>1. Installation d'un skill Python</h4>
+  <div class="cmd"><span class="comment"># Installer un skill d'analyse de données</span>
+openhuman-core skill install https://github.com/dadou/skill-pandas.git
+
+<span class="comment"># Vérifier l'installation</span>
+openhuman-core skill list
+→ pandas-analyzer  v1.2.0  [enabled]  GPG ✓  runtime: python</div>
+
+  <h4>2. Analyse interactive</h4>
+  <div class="cmd">Analyse ce fichier CSV : C:\Data\ventes-2025.csv
+→ Colonnes détectées : date, produit, quantité, prix, région
+→ 1 247 892 lignes, 0 valeurs nulles
+→ Période : 2025-01-01 → 2025-12-31
+
+Statistiques descriptives :
+  - CA total : 14 230 450 €
+  - Top région : Île-de-France (34% des ventes)
+  - Produit phare : REF-8842 (12 450 unités)
+  - Tendance : +8% vs 2024</div>
+
+  <h4>3. Génération de rapport</h4>
+  <div class="cmd">Génère un rapport PDF avec les visualisations clés.
+→ Rapport généré : C:\Data\rapport-ventes-2025.pdf (14 pages)
+→ Contenu : résumé exécutif, 6 graphiques, recommandations
+→ Fichiers source : analyse.py, data_cleaned.csv, charts/</div>
+</div>
+
+<div class="warn"><strong>Attention</strong> : l'exécution Python passe par le sidecar Docker (si installé). Sans Docker, le fallback local est utilisé — moins isolé mais fonctionnel. Docker Desktop est recommandé pour les données sensibles.</div>
+
+<!-- ═══ CAS 3 : MAKER ═══ -->
+<h2 id="cas3">&#x1F527; Cas 3 — Maker : Automatisation domotique</h2>
+
+<p><strong>Contexte</strong> : Vous gérez une maison connectée avec Home Assistant, des capteurs ESP32 et des scripts d'automatisation.</p>
+
+<div class="example">
+  <div class="example-title">&#x1F534; Session type — Automatisation</div>
+
+  <h4>1. Création d'un script d'automatisation</h4>
+  <div class="cmd">Crée un script Python qui :
+- Lit la température du capteur ESP32 (MQTT)
+- Si température > 26°C, allume la clim via Home Assistant
+- Si température < 19°C, allume le chauffage
+- Log toutes les actions dans un fichier CSV
+→ Script créé : C:\Projects\domotique\temp_control.py
+→ Testé avec des valeurs simulées
+→ Déploiement : cron toutes les 5 minutes</div>
+
+  <h4>2. DADOU gère le cron</h4>
+  <div class="cmd"><span class="comment"># Configurer une tâche périodique</span>
+openhuman-core cron add temp-check "*/5 * * * *" "python temp_control.py"
+
+<span class="comment"># Voir l'historique d'exécution</span>
+openhuman-core cron history
+→ temp-check | 14:05 | OK (340ms) | Temp: 24°C, Aucune action
+→ temp-check | 14:10 | OK (320ms) | Temp: 27°C, Clim allumée
+→ temp-check | 14:15 | OK (310ms) | Temp: 25°C, Clim éteinte</div>
+
+  <h4>3. Dashboard temps réel</h4>
+  <p>Ouvrez <code>http://127.0.0.1:7790</code> pour voir :</p>
+  <ul style="margin-left:20px">
+    <li>Le Guardian qui valide chaque appel MQTT (N1: allow, N2: allow, N3: skip)</li>
+    <li>Les skills actives (<code>mqtt-client</code>, <code>home-assistant</code>)</li>
+    <li>L'historique des actions (354 exécutions, 0 erreur)</li>
+    <li>La consommation mémoire (127 MB, stable)</li>
+  </ul>
+</div>
+
+<!-- ═══ CAS 4 : JURISTE ═══ -->
+<h2 id="cas4">&#x2696; Cas 4 — Juriste : Analyse de contrats</h2>
+
+<p><strong>Contexte</strong> : Vous devez analyser un contrat de 40 pages, identifier les clauses sensibles, et comparer avec un contrat de référence.</p>
+
+<div class="example">
+  <div class="example-title">&#x1F534; Session type — Analyse juridique</div>
+
+  <h4>1. DADOU lit et structure</h4>
+  <div class="cmd">Analyse ce contrat : C:\Contrats\Partenariat-2025.pdf
+→ Pages : 42 | Type : Partenariat commercial
+→ Parties : Société A (France) ↔ Société B (Allemagne)
+→ Droit applicable : Français
+
+Clauses identifiées :
+  Art 4.2 — Clause de non-concurrence (24 mois, France)
+  Art 7.1 — Responsabilité limitée à 50 000 €
+  Art 12.3 — Résiliation unilatérale (préavis 90 jours)
+  Art 15.0 — Attribution de juridiction (Tribunal de Commerce de Paris)</div>
+
+  <h4>2. Détection des clauses à risque</h4>
+  <div class="cmd">Compare avec le contrat-type "Partenariat Standard v3".
+→ 3 divergences détectées :
+  ⚠ Art 4.2 : Non-concurrence 24 mois (standard : 12 mois)
+  ⚠ Art 7.1 : Plafond de responsabilité 50 K€ (standard : 200 K€)
+  ⚠ Art 15.0 : Juridiction Paris (standard : arbitrage CCI)
+
+→ Recommandation : renégocier Art 4.2 et 7.1 avant signature</div>
+</div>
+
+<div class="note"><strong>Confidentialité</strong> : Toute l'analyse se fait <strong>localement</strong>. Les documents ne quittent jamais votre machine. Le Guardian bloque toute tentative d'exfiltration réseau. Les fichiers sont stockés avec provenance et contrôle d'accès.</div>
+
+<!-- ═══ CAS 5 : ÉTUDIANT ═══ -->
+<h2 id="cas5">&#x1F393; Cas 5 — Étudiant : Aide à la rédaction de mémoire</h2>
+
+<p><strong>Contexte</strong> : Vous rédigez un mémoire de Master en économie sur l'impact du télétravail en Afrique de l'Ouest.</p>
+
+<div class="example">
+  <div class="example-title">&#x1F534; Session type — Recherche académique</div>
+
+  <h4>1. Recherche documentaire</h4>
+  <div class="cmd">Trouve des sources académiques sur l'impact du télétravail
+en Afrique de l'Ouest, focalisé Sénégal et Côte d'Ivoire.
+Privilégie les articles post-2022.
+
+→ 12 sources identifiées (Google Scholar, HAL, Cairn)
+→ Top 3 :
+  1. Diop et al. (2024) — "Télétravail à Dakar : une étude longitudinale"
+  2. Banque Mondiale (2023) — "Digital Jobs in West Africa"
+  3. Koné M. (2024) — "Impact du COVID-19 sur l'emploi en Côte d'Ivoire"
+
+→ Résumé généré pour chaque source (200 mots)
+→ BibTeX généré automatiquement</div>
+
+  <h4>2. Plan du mémoire</h4>
+  <div class="cmd">Propose un plan de mémoire en 3 parties.
+→ Partie I — État de l'art : télétravail et développement
+→ Partie II — Étude de cas : Sénégal et Côte d'Ivoire
+→ Partie III — Recommandations pour les politiques publiques</div>
+
+  <h4>3. Révision et correction</h4>
+  <div class="cmd">Relis mon chapitre 2 et corrige les fautes, améliore la clarté.
+→ 14 fautes d'orthographe corrigées
+→ 6 phrases reformulées pour plus de clarté
+→ 3 suggestions d'amélioration de la structure argumentative
+→ Note : le ton académique est bien maintenu</div>
+</div>
+
+<!-- ═══ SKILLS ═══ -->
+<h2 id="skills">&#x1F9E9; Installation et utilisation des Skills</h2>
+
+<p>Les skills sont des modules externes (WASM ou Python) que DADOU peut installer depuis Git.</p>
+
+<h3>Installer un skill</h3>
+<div class="cmd"><span class="comment"># Depuis un repo Git (WASM)</span>
+openhuman-core skill install https://github.com/dadou/skill-filesystem.git
+
+<span class="comment"># Depuis un repo Git (Python)</span>
+openhuman-core skill install https://github.com/dadou/skill-pandas.git
+
+<span class="comment"># Lister les skills installées</span>
+openhuman-core skill list
+
+<span class="comment"># Mettre à jour</span>
+openhuman-core skill update skill-filesystem
+
+<span class="comment"># Auditer (ré-analyse statique)</span>
+openhuman-core skill audit skill-filesystem
+
+<span class="comment"># Désinstaller</span>
+openhuman-core skill remove skill-filesystem</div>
+
+<h3>Structure d'un skill (dadou-skill.yaml)</h3>
+<div class="cmd"><span class="comment"># Skill WASM</span>
+name: mon-skill
+version: 0.1.0
+wasm:
+  path: build/output.wasm
+  entry: run
+permissions:
+  network: false
+  filesystem:
+    read: ["/tmp/**"]
+
+<span class="comment"># Skill Python</span>
+name: mon-skill-python
+version: 0.2.0
+python:
+  entry: main.py
+  requirements:
+    - pandas>=2.0
+    - requests
+  runtime: docker
+permissions:
+  network: true</div>
+
+<h3>Cycle de vie d'un skill</h3>
+<table>
+  <tr><th>Étape</th><th>WASM</th><th>Python</th></tr>
+  <tr><td>1. Clone</td><td>git clone (temp)</td><td>git clone (temp)</td></tr>
+  <tr><td>2. Manifest</td><td>parse dadou-skill.yaml</td><td>parse dadou-skill.yaml</td></tr>
+  <tr><td>3. GPG</td><td>git verify-tag + trust store</td><td>git verify-tag + trust store</td></tr>
+  <tr><td>4. Analyse</td><td>22 règles statiques</td><td>22 règles statiques</td></tr>
+  <tr><td>5. Copie</td><td>WASM → ~/.openhuman/skills/</td><td>src/ → ~/.openhuman/skills/</td></tr>
+  <tr><td>6. Exécution</td><td>wasmtime (WASI sandbox)</td><td>Docker (ou Python local)</td></tr>
+</table>
+
+<!-- ═══ DASHBOARD ═══ -->
+<h2 id="dashboard">&#x1F4CA; Le Dashboard d'observabilité</h2>
+
+<p>Accessible sur <code>http://127.0.0.1:7790</code>, le dashboard affiche en temps réel :</p>
+
+<h3>Vue Guardian</h3>
+<p>Chaque action de DADOU est évaluée par le Guardian à 3 niveaux :</p>
+<table>
+  <tr><th>Niveau</th><th>Type</th><th>Latence</th><th>Rôle</th></tr>
+  <tr><td>N1</td><td>Règles déterministes</td><td>&lt;1ms</td><td>Bloque chemins interdits, patterns malveillants</td></tr>
+  <tr><td>N2</td><td>Heuristiques (entropie, exfiltration)</td><td>&lt;10ms</td><td>Détecte patterns suspects, escalade si doute</td></tr>
+  <tr><td>N3</td><td>LLM validator</td><td>&lt;500ms</td><td>Valide l'intention des actions ambiguës</td></tr>
+</table>
+
+<div class="cmd">Exemple — Timeline Guardian :
+14:05:23 | N1 ALLOW | file_read | path within workspace
+14:05:23 | N2 ALLOW | file_read | entropy: 0.12 (safe)
+14:05:24 | N1 ALLOW | shell     | command: git status
+14:05:24 | N2 ALLOW | shell     | no exfil pattern detected
+14:05:25 | N1 BLOCK | file_write| path: C:\Windows\System32 ❌
+14:05:25 | N2 —     | —         | (N1 already blocked, early exit)</div>
+
+<h3>Semantic Router</h3>
+<p>Le dashboard permet de tester la découverte de skills par similarité sémantique :</p>
+<div class="cmd">> Requête : "analyser des données CSV"
+→ git-helper    0.23  (keyword)
+→ pandas-runner  0.78  (cosine)
+→ web-scraper    0.12  (keyword)</div>
+
+<!-- ═══ SÉCURITÉ ═══ -->
+<h2 id="security">&#x1F6E1; Sécurité et Guardian</h2>
+
+<h3>Défense en profondeur</h3>
+<table>
+  <tr><th>Couche</th><th>Mécanisme</th><th>Protège contre</th></tr>
+  <tr><td>N1 — Règles</td><td>Regex + path whitelist + blocklist YAML</td><td>Chemins système, commandes dangereuses</td></tr>
+  <tr><td>N2 — Heuristiques</td><td>Entropie Shannon + 13 regex exfiltration + payloads cachés</td><td>Vol de données, reverse shells, encodage suspect</td></tr>
+  <tr><td>N3 — LLM</td><td>Validation sémantique avec cache LRU</td><td>Ingénierie sociale, intentions malveillantes</td></tr>
+  <tr><td>Sandbox</td><td>WASI / Docker / Restricted Token</td><td>Échappement de conteneur, accès OS non autorisé</td></tr>
+  <tr><td>Rollback</td><td>Diff SQLite + undo</td><td>Modifications destructives accidentelles</td></tr>
+  <tr><td>Anti-Injection</td><td>17 règles + LLM deep-check + SkillOutputEnvelope</td><td>Prompt injection via données externes</td></tr>
+  <tr><td>Mémoire</td><td>Provenance (Verified > Inferred > External) + decay</td><td>Empoisonnement de la mémoire</td></tr>
+</table>
+
+<h3>Configuration Guardian</h3>
+<div class="cmd"><span class="comment"># config.toml</span>
+[guardian_n2]
+enabled = true
+block_threshold = 0.7
+escalate_threshold = 0.3
+
+[guardian_n3]
+enabled = true
+cache_size = 100
+timeout_ms = 450</div>
+
+<h3>Mode d'accès</h3>
+<table>
+  <tr><th>Mode</th><th>Lecture</th><th>Écriture</th><th>Réseau</th><th>Installation</th></tr>
+  <tr><td><code>readonly</code></td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr>
+  <tr><td><code>supervised</code></td><td>✅</td><td>🟡 Prompt</td><td>🟡 Prompt</td><td>🟡 Prompt</td></tr>
+  <tr><td><code>full</code></td><td>✅</td><td>✅</td><td>🟡 Prompt</td><td>🟡 Prompt</td></tr>
+</table>
+
+<!-- ═══ DÉPANNAGE ═══ -->
+<h2 id="troubleshooting">&#x1F527; Dépannage</h2>
+
+<h3>Problèmes courants</h3>
+
+<details>
+  <summary>Le core ne démarre pas (port 7788 occupé)</summary>
+  <div class="content">
+    <p>Changez le port dans la config :</p>
+    <div class="cmd">set OPENHUMAN_CORE_PORT=7799
+openhuman-core serve</div>
+  </div>
+</details>
+
+<details>
+  <summary>Le dashboard n'affiche rien (port 7790)</summary>
+  <div class="content">
+    <p>Vérifiez que le dashboard est activé :</p>
+    <div class="cmd"><span class="comment"># config.toml</span>
+[dashboard]
+enabled = true
+port = 7790</div>
+    <p>Si le port 7790 est occupé, DADOU essaie automatiquement 7791-7794.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Erreur "cmake not found" lors du build</summary>
+  <div class="content">
+    <div class="cmd"><span class="comment"># Vérifier cmake</span>
+cmake --version
+
+<span class="comment"># Installer si absent</span>
+winget install Kitware.CMake</div>
+  </div>
+</details>
+
+<details>
+  <summary>Erreur "libclang.dll not found"</summary>
+  <div class="content">
+    <div class="cmd"><span class="comment"># PowerShell (admin)</span>
+winget install LLVM.LLVM
+[System.Environment]::SetEnvironmentVariable("LIBCLANG_PATH","C:\Program Files\LLVM\bin","User")</div>
+  </div>
+</details>
+
+<details>
+  <summary>Docker non disponible pour les skills Python</summary>
+  <div class="content">
+    <p>DADOU bascule automatiquement sur Python local. Un avertissement est loggé :</p>
+    <div class="cmd">[python-skill] Docker is not installed. Python skills will run using
+your local Python interpreter, which has less isolation.</div>
+  </div>
+</details>
+
+<details>
+  <summary>Le Guardian bloque une action légitime</summary>
+  <div class="content">
+    <p>Vérifiez les logs et ajustez la config :</p>
+    <div class="cmd"><span class="comment"># Voir les décisions Guardian dans le dashboard
+→ http://127.0.0.1:7790
+
+# Ou via les logs
+type ~\.openhuman\workspace\dashboard\dashboard.db
+sqlite3 ~\.openhuman\workspace\dashboard\dashboard.db \
+  "SELECT * FROM dashboard_events WHERE kind='guardian_blocked' ORDER BY recorded_at DESC LIMIT 10"</div>
+  </div>
+</details>
+
+<!-- ═══ RÉFÉRENCE ═══ -->
+<h2 id="reference">&#x1F4DC; Référence des commandes</h2>
+
+<h3>CLI Core</h3>
+<div class="cmd"><span class="comment"># Démarrer le serveur</span>
+openhuman-core serve [--port 7788] [--host 127.0.0.1]
+
+<span class="comment"># Dashboard standalone</span>
+openhuman-core dashboard [--port 7790]
+
+<span class="comment"># Appeler une méthode RPC directement</span>
+openhuman-core call &lt;namespace&gt; &lt;function&gt; [params...]
+
+<span class="comment"># Mode agent (chat CLI)</span>
+openhuman-core agent [--model &lt;model&gt;] [--prompt &lt;text&gt;]
+
+<span class="comment"># Annuler la dernière modification</span>
+openhuman-core undo --last</div>
+
+<h3>RPC (JSON-RPC 2.0)</h3>
+<table>
+  <tr><th>Namespace</th><th>Fonction</th><th>Description</th></tr>
+  <tr><td>dadou</td><td>skill_install</td><td>Installer un skill depuis Git</td></tr>
+  <tr><td>dadou</td><td>skill_list</td><td>Lister les skills installées</td></tr>
+  <tr><td>dadou</td><td>skill_execute</td><td>Exécuter un skill Python</td></tr>
+  <tr><td>dadou</td><td>skill_audit</td><td>Auditer un skill installé</td></tr>
+  <tr><td>dashboard</td><td>get_stats</td><td>Statistiques agrégées</td></tr>
+  <tr><td>dashboard</td><td>get_recent_events</td><td>Événements récents</td></tr>
+  <tr><td>semantic_router</td><td>route_query</td><td>Recherche sémantique de skills</td></tr>
+  <tr><td>guardian</td><td>rules_list</td><td>Règles Guardian actives</td></tr>
+  <tr><td>guardian</td><td>pipeline_status</td><td>Statut du pipeline N1/N2/N3</td></tr>
+  <tr><td>memory</td><td>context_recall</td><td>Rappel de contexte projet</td></tr>
+  <tr><td>cron</td><td>add</td><td>Ajouter une tâche planifiée</td></tr>
+  <tr><td>rollback</td><td>history_list</td><td>Historique des modifications</td></tr>
+</table>
+
+<div class="footer">
+  <p>DADOU v1.0 — Licence GPL-3.0</p>
+  <p><a href="install.html">Installation</a> · <a href="https://github.com/tinyhumansai/openhuman">GitHub</a></p>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DADOU v1 — Installation</title>
+<style>
+:root{--bg:#0b0e14;--surface:#141820;--border:#252a35;--text:#dde1e8;--muted:#6b7080;--green:#4ade80;--red:#f87171;--amber:#fbbf24;--blue:#4a83dd;--purple:#a78bfa;--radius:6px;--font:system-ui,-apple-system,sans-serif;--mono:'JetBrains Mono','Cascadia Code',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.6;padding:0}
+.container{max-width:900px;margin:0 auto;padding:24px}
+header{text-align:center;padding:48px 24px 32px;border-bottom:1px solid var(--border);margin-bottom:32px}
+h1{font-size:2rem;font-weight:800;margin-bottom:8px}
+h1 span{color:var(--blue)}
+h2{font-size:1.2rem;font-weight:600;margin:32px 0 12px;color:var(--blue);display:flex;align-items:center;gap:8px}
+h3{font-size:1rem;font-weight:600;margin:20px 0 8px}
+.step{border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px;background:var(--surface)}
+.step-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.step-num{background:var(--blue);color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;flex-shrink:0}
+.step-title{font-weight:700;font-size:1.05rem}
+.check-row{display:flex;align-items:center;gap:8px;padding:6px 0;font-family:var(--mono);font-size:.85rem}
+.check-icon{font-size:1rem;flex-shrink:0}
+.check-ok{color:var(--green)}.check-fail{color:var(--red)}.check-warn{color:var(--amber)}
+.cmd{background:#0a0c10;border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;font-family:var(--mono);font-size:.82rem;margin:8px 0;overflow-x:auto;white-space:pre-wrap;word-break:break-all}
+.cmd .comment{color:var(--muted)}
+button,pushbutton{background:var(--blue);color:#fff;border:none;border-radius:var(--radius);padding:10px 20px;font-size:.9rem;font-weight:600;cursor:pointer;font-family:var(--font)}
+button:hover{opacity:.9}
+.btn-sm{padding:6px 12px;font-size:.8rem}
+.btn-outline{background:transparent;border:1px solid var(--blue);color:var(--blue)}
+.progress{height:4px;background:var(--border);border-radius:2px;margin:16px 0;overflow:hidden}
+.progress-bar{height:100%;background:var(--green);transition:width .3s}
+.status-box{border-radius:var(--radius);padding:12px 16px;margin:12px 0;font-size:.85rem}
+.status-ok{background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);color:var(--green)}
+.status-fail{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:var(--red)}
+.status-info{background:rgba(74,131,221,.08);border:1px solid rgba(74,131,221,.2);color:var(--blue)}
+.log{background:#0a0c10;border:1px solid var(--border);border-radius:var(--radius);padding:12px;font-family:var(--mono);font-size:.78rem;max-height:200px;overflow-y:auto;white-space:pre-wrap}
+.spin{animation:spin 2s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.hidden{display:none}
+.footer{text-align:center;padding:32px;color:var(--muted);font-size:.8rem;border-top:1px solid var(--border);margin-top:48px}
+a{color:var(--blue)}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)}
+th{color:var(--muted);font-weight:500;text-transform:uppercase;font-size:.75rem}
+</style>
+</head>
+<body>
+
+<div class="container">
+<header>
+  <h1>&#x1f6e1; <span>DADOU</span> v1.0</h1>
+  <p style="color:var(--muted);font-size:1rem">Assistant IA personnel — Installation automatisée</p>
+  <div class="progress"><div class="progress-bar" id="global-progress" style="width:0%"></div></div>
+  <p style="font-size:.8rem;color:var(--muted)" id="progress-label">Prêt à vérifier les prérequis</p>
+</header>
+
+<!-- ═══ ÉTAPE 1 : Prérequis ═══ -->
+<div class="step" id="step1">
+  <div class="step-header"><span class="step-num">1</span><span class="step-title">Vérification des prérequis</span></div>
+  <p style="color:var(--muted);font-size:.85rem;margin-bottom:12px">DADOU nécessite Rust, Node.js, pnpm, CMake et LLVM. Docker est optionnel (skills Python).</p>
+
+  <h3>Système d'exploitation</h3>
+  <div class="check-row"><span class="check-icon" id="os-icon">&#x23F3;</span> <span id="os-text">Détection...</span></div>
+
+  <h3>Outils requis</h3>
+  <div id="checks-container">
+    <div class="check-row"><span class="check-icon">&#x23F3;</span> Rust (rustc + cargo) — <span id="check-rust">vérification...</span></div>
+    <div class="check-row"><span class="check-icon">&#x23F3;</span> Node.js ≥ 24 — <span id="check-node">vérification...</span></div>
+    <div class="check-row"><span class="check-icon">&#x23F3;</span> pnpm ≥ 10 — <span id="check-pnpm">vérification...</span></div>
+    <div class="check-row"><span class="check-icon">&#x23F3;</span> CMake — <span id="check-cmake">vérification...</span></div>
+    <div class="check-row"><span class="check-icon">&#x23F3;</span> LLVM + libclang — <span id="check-llvm">vérification...</span></div>
+    <div class="check-row"><span class="check-icon">&#x23F3;</span> Git — <span id="check-git">vérification...</span></div>
+    <div class="check-row"><span class="check-icon">&#x23F3;</span> Docker (optionnel) — <span id="check-docker">vérification...</span></div>
+  </div>
+
+  <div class="status-box hidden" id="prereq-status"></div>
+  <button onclick="runPrereqChecks()" id="btn-check">&#x1F50D; Vérifier les prérequis</button>
+  <button onclick="autoInstallMissing()" id="btn-install-missing" class="btn-outline hidden">&#x2699; Installer les outils manquants</button>
+</div>
+
+<!-- ═══ ÉTAPE 2 : Configuration ═══ -->
+<div class="step hidden" id="step2">
+  <div class="step-header"><span class="step-num">2</span><span class="step-title">Configuration de l'environnement</span></div>
+  <p style="color:var(--muted);font-size:.85rem;margin-bottom:12px">Variables d'environnement nécessaires à la compilation et l'exécution.</p>
+
+  <h3>Variables détectées</h3>
+  <table id="env-table">
+    <tr><th>Variable</th><th>Valeur actuelle</th><th>Statut</th></tr>
+    <tr><td>LIBCLANG_PATH</td><td id="env-libclang">—</td><td id="env-libclang-status">&#x23F3;</td></tr>
+    <tr><td>OPENHUMAN_CORE_PORT</td><td id="env-port">—</td><td id="env-port-status">&#x23F3;</td></tr>
+    <tr><td>RUST_LOG</td><td id="env-rustlog">—</td><td id="env-rustlog-status">&#x23F3;</td></tr>
+  </table>
+
+  <div class="cmd" id="env-commands">
+<span class="comment"># Ajouter au profil PowerShell ($PROFILE) ou aux variables système</span>
+$env:LIBCLANG_PATH = "C:\Program Files\LLVM\bin"
+$env:OPENHUMAN_CORE_PORT = "7788"
+$env:RUST_LOG = "info"
+  </div>
+
+  <button onclick="checkEnv()" class="btn-sm">&#x1F504; Revérifier</button>
+  <button onclick="applyEnv()" class="btn-sm btn-outline">&#x1F4BE; Appliquer (session courante)</button>
+</div>
+
+<!-- ═══ ÉTAPE 3 : Build ═══ -->
+<div class="step hidden" id="step3">
+  <div class="step-header"><span class="step-num">3</span><span class="step-title">Compilation et installation</span></div>
+  <p style="color:var(--muted);font-size:.85rem;margin-bottom:12px">Compilation du core Rust et du frontend Tauri.</p>
+
+  <h3>Étape 3a — Dépendances frontend</h3>
+  <div class="cmd"><span class="comment"># Installation des packages npm</span>
+pnpm install</div>
+  <button onclick="runCommand('pnpm-install','pnpm install')" class="btn-sm">&#x25B6; Exécuter</button>
+  <div class="log hidden" id="log-pnpm-install"></div>
+
+  <h3>Étape 3b — Compilation Rust</h3>
+  <div class="cmd"><span class="comment"># Vérification du core Rust</span>
+cargo check --manifest-path Cargo.toml</div>
+  <button onclick="runCommand('cargo-check','cargo check --manifest-path Cargo.toml')" class="btn-sm">&#x25B6; Exécuter</button>
+  <div class="log hidden" id="log-cargo-check"></div>
+
+  <h3>Étape 3c — Build production</h3>
+  <div class="cmd"><span class="comment"># Build complet (core + UI)</span>
+cargo build --manifest-path Cargo.toml --bin openhuman-core --release
+pnpm build</div>
+  <button onclick="runCommand('full-build','cargo build --manifest-path Cargo.toml --bin openhuman-core --release')" class="btn-sm">&#x25B6; Build Core</button>
+  <div class="log hidden" id="log-full-build"></div>
+</div>
+
+<!-- ═══ ÉTAPE 4 : Lancement ═══ -->
+<div class="step hidden" id="step4">
+  <div class="step-header"><span class="step-num">4</span><span class="step-title">Premier lancement</span></div>
+  <p style="color:var(--muted);font-size:.85rem;margin-bottom:12px">Démarrez DADOU et ouvrez le dashboard.</p>
+
+  <h3>Lancer le core</h3>
+  <div class="cmd">.\target\release\openhuman-core.exe serve</div>
+
+  <h3>Dashboard</h3>
+  <p>Ouvrez <a href="http://127.0.0.1:7790" target="_blank">http://127.0.0.1:7790</a> dans votre navigateur.</p>
+
+  <div class="status-box status-ok" style="margin-top:16px">
+    &#x2705; DADOU est prêt ! Consultez le <a href="manual.html">manuel d'utilisation</a> pour vos premiers pas.
+  </div>
+</div>
+
+<div class="footer">
+  DADOU v1.0 — Licence GPL-3.0 — <a href="manual.html">Manuel d'utilisation</a>
+</div>
+</div>
+
+<script>
+// ── Prerequisite checker ─────────────────────────────────────────────
+const PREREQS = [
+  {id:'rust',cmd:'rustc --version',min:'1.93',extract:v=>{let m=v.match(/rustc (\d+\.\d+)/);return m?m[1]:null}},
+  {id:'node',cmd:'node --version',min:'24',extract:v=>{let m=v.match(/v(\d+)/);return m?m[1]:null}},
+  {id:'pnpm',cmd:'pnpm --version',min:'10',extract:v=>v.trim()},
+  {id:'cmake',cmd:'cmake --version',min:'3',extract:v=>{let m=v.match(/cmake version (\d+\.\d+)/);return m?m[1]:null}},
+  {id:'llvm',cmd:'clang --version',min:'18',extract:v=>{let m=v.match(/clang version (\d+)/);return m?m[1]:null}},
+  {id:'git',cmd:'git --version',min:'2',extract:v=>{let m=v.match(/git version (\d+\.\d+)/);return m?m[1]:null}},
+  {id:'docker',cmd:'docker --version',min:'20',extract:v=>{let m=v.match(/Docker version (\d+)/);return m?m[1]:null}},
+];
+
+let checkResults = {};
+let completedChecks = 0;
+
+async function runPrereqChecks() {
+  completedChecks = 0;
+  document.getElementById('btn-check').disabled = true;
+  document.getElementById('btn-check').textContent = 'Vérification en cours...';
+
+  // OS detection
+  const osEl = document.getElementById('os-icon');
+  const osText = document.getElementById('os-text');
+  const ua = navigator.userAgent;
+  if (ua.includes('Windows')) { osEl.textContent = '\u{1F4BB}'; osText.textContent = 'Windows — compatible'; osEl.className='check-icon check-ok'; }
+  else if (ua.includes('Linux')) { osEl.textContent = '\u{1F427}'; osText.textContent = 'Linux — compatible'; osEl.className='check-icon check-ok'; }
+  else if (ua.includes('Mac')) { osEl.textContent = '\u{1F34E}'; osText.textContent = 'macOS — compatible'; osEl.className='check-icon check-ok'; }
+  else { osEl.textContent = '❓'; osText.textContent = 'OS non détecté — risqué'; osEl.className='check-icon check-warn'; }
+
+  // Check each prerequisite via PowerShell
+  for (const prereq of PREREQS) {
+    try {
+      const result = await invokePS(`${prereq.cmd} 2>&1`);
+      const version = prereq.extract(result.stdout || result.stderr || '');
+      const el = document.getElementById(`check-${prereq.id}`);
+      const icon = el.previousElementSibling;
+      if (version && compareVersions(version, prereq.min) >= 0) {
+        el.textContent = `v${version} — OK`;
+        el.style.color = 'var(--green)';
+        icon.textContent = '✅';
+        icon.className = 'check-icon check-ok';
+        checkResults[prereq.id] = {ok:true,version};
+      } else if (version) {
+        el.textContent = `v${version} — version trop ancienne (min ${prereq.min})`;
+        el.style.color = 'var(--amber)';
+        icon.textContent = '⚠';
+        icon.className = 'check-icon check-warn';
+        checkResults[prereq.id] = {ok:false,version};
+      } else {
+        el.textContent = 'Non trouvé';
+        el.style.color = 'var(--red)';
+        icon.textContent = '❌';
+        icon.className = 'check-icon check-fail';
+        checkResults[prereq.id] = {ok:false};
+      }
+    } catch(e) {
+      const el = document.getElementById(`check-${prereq.id}`);
+      const icon = el.previousElementSibling;
+      el.textContent = 'Erreur de vérification';
+      el.style.color = 'var(--red)';
+      icon.textContent = '❌';
+      icon.className = 'check-icon check-fail';
+      checkResults[prereq.id] = {ok:false};
+    }
+    completedChecks++;
+    updateProgress();
+  }
+
+  document.getElementById('btn-check').disabled = false;
+  document.getElementById('btn-check').textContent = '\u{1F504} Revérifier';
+
+  // Show status box
+  const required = ['rust','node','pnpm','cmake','llvm','git'];
+  const allOk = required.every(r => checkResults[r] && checkResults[r].ok);
+  const statusBox = document.getElementById('prereq-status');
+  statusBox.classList.remove('hidden');
+  if (allOk) {
+    statusBox.className = 'status-box status-ok';
+    statusBox.textContent = '✅ Tous les prérequis sont satisfaits. Vous pouvez passer à la configuration.';
+    document.getElementById('step2').classList.remove('hidden');
+    document.getElementById('step3').classList.remove('hidden');
+    document.getElementById('step4').classList.remove('hidden');
+  } else {
+    statusBox.className = 'status-box status-fail';
+    const missing = required.filter(r => !checkResults[r] || !checkResults[r].ok).join(', ');
+    statusBox.textContent = `❌ Prérequis manquants : ${missing}. Installez-les avant de continuer.`;
+    document.getElementById('btn-install-missing').classList.remove('hidden');
+  }
+  updateProgress();
+}
+
+function autoInstallMissing() {
+  const instructions = {
+    rust: 'winget install Rustlang.Rustup',
+    node: 'winget install OpenJS.NodeJS.LTS',
+    pnpm: 'npm install -g pnpm',
+    cmake: 'winget install Kitware.CMake',
+    llvm: 'winget install LLVM.LLVM',
+    git: 'winget install Git.Git'
+  };
+  const missing = Object.entries(checkResults).filter(([,v])=>!v.ok).map(([k])=>k);
+  let script = missing.map(k => instructions[k] || `echo "Installation manuelle requise pour ${k}"`).join('\n');
+  alert('Commandes à exécuter dans PowerShell (admin) :\n\n' + script);
+}
+
+function compareVersions(a, b) {
+  const pa = a.split('.').map(Number);
+  const pb = b.split('.').map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const va = pa[i] || 0;
+    const vb = pb[i] || 0;
+    if (va > vb) return 1;
+    if (va < vb) return -1;
+  }
+  return 0;
+}
+
+function updateProgress() {
+  const total = PREREQS.length + 3;
+  let done = completedChecks;
+  if (checkResults.rust?.ok) done++;
+  const pct = Math.round((done/total)*100);
+  document.getElementById('global-progress').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = `${pct}% — ${pct>=100 ? 'Prêt !' : 'En cours...'}`;
+}
+
+// ── Environment check ───────────────────────────────────────────────
+async function checkEnv() {
+  const vars = ['LIBCLANG_PATH','OPENHUMAN_CORE_PORT','RUST_LOG'];
+  for (const v of vars) {
+    try {
+      const result = await invokePS(`echo $env:${v}`);
+      const val = (result.stdout || '').trim();
+      document.getElementById(`env-${v.toLowerCase().replace(/_/g,'')}`).textContent = val || '(non défini)';
+      document.getElementById(`env-${v.toLowerCase().replace(/_/g,'')}-status`).textContent = val ? '✅' : '⚠';
+    } catch(e) {
+      document.getElementById(`env-${v.toLowerCase().replace(/_/g,'')}-status`).textContent = '❌';
+    }
+  }
+}
+
+function applyEnv() {
+  const cmds = [
+    '$env:LIBCLANG_PATH = "C:\\Program Files\\LLVM\\bin"',
+    '$env:OPENHUMAN_CORE_PORT = "7788"',
+    '$env:RUST_LOG = "info"'
+  ];
+  alert('Exécutez ces commandes dans PowerShell :\n\n' + cmds.join('\n') + '\n\nOu ajoutez-les à votre $PROFILE pour persistance.');
+}
+
+// ── Command runner ──────────────────────────────────────────────────
+async function runCommand(id, cmd) {
+  const log = document.getElementById(`log-${id}`);
+  log.classList.remove('hidden');
+  log.textContent = `> ${cmd}\nEn cours d'exécution...\n`;
+  try {
+    const result = await invokePS(`cd "${projectDir()}"; ${cmd} 2>&1`);
+    log.textContent = `> ${cmd}\n${result.stdout || ''}\n${result.stderr || ''}\nExit: ${result.exitCode}`;
+    if (result.exitCode === 0) log.style.borderLeft = '2px solid var(--green)';
+    else log.style.borderLeft = '2px solid var(--red)';
+  } catch(e) {
+    log.textContent = `> ${cmd}\nERREUR: ${e.message}`;
+    log.style.borderLeft = '2px solid var(--red)';
+  }
+}
+
+function projectDir() {
+  return document.location.pathname.replace(/\/DISTRIBUTION\/.*$/,'').replace(/^\//,'').replace(/\//g,'\\') || '.';
+}
+
+// ── PowerShell bridge ───────────────────────────────────────────────
+// Note: in a browser without a local web server, this will not work.
+// When served from the dashboard (port 7790), commands can be relayed
+// through the /api endpoints.
+async function invokePS(cmd) {
+  // For a real implementation, this would use the Tauri invoke bridge
+  // or a local HTTP endpoint. For the HTML-only version, we show the
+  // commands for manual execution.
+  return {
+    stdout: `[Simulation] Commande à exécuter : ${cmd}`,
+    stderr: '',
+    exitCode: 0
+  };
+}
+
+// ── Init ───────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  if (navigator.userAgent.includes('Windows')) {
+    document.getElementById('env-commands').innerHTML =
+      '<span class="comment"># PowerShell — exécuter une fois :</span>\n' +
+      '[System.Environment]::SetEnvironmentVariable("LIBCLANG_PATH","C:\\Program Files\\LLVM\\bin","User")\n' +
+      '[System.Environment]::SetEnvironmentVariable("OPENHUMAN_CORE_PORT","7788","User")';
+  }
+});
+</script>
+</body>
+</html>
