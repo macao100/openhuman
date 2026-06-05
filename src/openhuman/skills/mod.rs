@@ -11,8 +11,10 @@ pub mod ops_install;
 pub mod ops_parse;
 pub mod ops_types;
 pub mod schemas;
+pub mod static_analysis;
 pub mod store;
 pub mod types;
+pub mod wasm;
 
 pub use manifest::{
     parse_manifest, Dependency, FilesystemPerms, GpgConfig, ManifestError, Permissions,
@@ -23,6 +25,13 @@ pub use schemas::{
     all_skills_controller_schemas, all_skills_registered_controllers, skills_schemas,
 };
 pub use store::{InstalledSkill, SkillsStore};
+
+pub use static_analysis::{
+    scan_file, scan_file_for_writes, scan_skill, AnalysisFinding, AnalysisResult, AnalysisRule,
+    AnalysisVerdict, FindingSeverity, SUPPORTED_EXTENSIONS, default_rules,
+};
+
+pub use wasm::{execute_wasm, skill_data_dir, WasmEngine, WasmExecutionError, build_wasi_ctx};
 
 /// Integration test: manifest parsing -> store persistence -> reload roundtrip.
 #[cfg(test)]
