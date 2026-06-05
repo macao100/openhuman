@@ -129,7 +129,13 @@ Plans:
 3. Every skill response undergoes semantic validation (second model or rule-based) before being re-injected into the conversation
 4. The LLM emits structured JSON plans — the Guardian validates these plans against policy before any tool execution begins
 
-**Plans**: TBD
+**Plans**: 4 plans in 2 waves
+
+Plans:
+- [ ] 05-01-PLAN.md — External data tagging `<external_data>` + AntiInjectionSection system prompt (INJ-01)
+- [ ] 05-02-PLAN.md — Structured JSON output envelope for skill results, never raw concat (INJ-02)
+- [ ] 05-03-PLAN.md — Semantic output validation: 15+ injection pattern rules + optional LLM check (INJ-03)
+- [ ] 05-04-PLAN.md — JSON plan validation by Guardian pipeline: StructuredPlan, evaluate_plan, ExecutionProtocolSection (INJ-04)
 
 ### Phase 6: Dashboard & Semantic Router
 
@@ -174,7 +180,7 @@ Plans:
 | 2. Memory & Continuity | 0/4 | Not started | - |
 | 3. Guardian N2+N3 | 0/4 | Planning complete | - |
 | 4. Skills WASM | 0/5 | Planning complete | - |
-| 5. Anti-Injection | 0/0 | Not started | - |
+| 5. Anti-Injection | 0/4 | Planning complete | - |
 | 6. Dashboard & Semantic Router | 0/0 | Not started | - |
 | 7. Python Skills | 0/0 | Not started | - |
 

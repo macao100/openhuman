@@ -1,8 +1,8 @@
 # DADOU — Project State
 
 **Last updated:** 2026-06-05
-**Current phase:** 3 (Guardian N2+N3) — PLANNED
-**Next phase:** 4 (Skills WASM) — PLANNED
+**Current phase:** 5 (Anti-Injection) — PLANNED
+**Next phase:** 6 (Dashboard)
 **Milestone:** v1
 
 ---
@@ -11,12 +11,12 @@
 
 **Core value:** Un assistant qui apprend. DADOU construit et maintient un modele mental persistant du monde numerique de l'utilisateur - projets, preferences, erreurs passees, succes.
 
-**Current focus:** Phase 3 planifiee (4 plans, 2 waves). Phase 4 planifiee (5 plans, 2 waves).
+**Current focus:** Phase 5 planifiee (4 plans, 2 waves). Phase 6 a planifier ensuite.
 
 **Key decisions:**
 - Fork independant OpenHuman (pas contribution upstream) - ACTIVE
 - Architecture hybride : base OpenHuman + couche DADOU - ACTIVE
-- Guardian 3 niveaux (N1 + N2 + N3) - N1 DONE, N2+N3 PLANNED
+- Guardian 3 niveaux (N1 + N2 + N3) - N1 DONE, N2+N3 DONE
 - WASM + Python pour les skills (pas Python uniquement) - Phase 4/7
 - Mono-utilisateur local-first - ACTIVE
 - Memoire a provenance et confiance - DONE (Phase 2)
@@ -28,18 +28,27 @@
 - Contexte projet + preferences persistantes - DONE
 - Detection de contradictions + evenements - DONE
 - Continuite inter-session (save/restore) - DONE
-- N2 classifieur local (exfiltration, entropie, payloads caches) - D-32 a D-34
-- N3 validateur LLM leger avec cache LRU - D-35 a D-38
-- Pipeline etendu N1->N2->N3 avec early exit et blocked_by - D-39 a D-40
-- Config guardian_n2 et guardian_n3 dans config.toml - D-41
-- Evenements N2Blocked, N2Escalated, N3Result - D-43
-- **Dadou-skill.yaml manifest**: format YAML avec nom, version, auteur, GPG, permissions, WASM config - D-44
-- **Store TOML**: SkillsStore dans `~/.openhuman/skills/store.toml` - D-45
-- **Wasmtime in-process**: WASI deny-by-default avec epoch-based timeout 30s - D-46
-- **GPG verification**: sequoia-openpgp, git verify-tag --raw + trust store - D-47
-- **Static analysis**: 15+ regles (eval, subprocess, socket, network, filesystem) - D-48
-- **CLI**: `dadou skill install|update|audit|remove|list|trust-author` - D-49
-- **Controllers**: 5 nouveaux controleurs prefixe `dadou.*` - D-50
+- N2 classifieur local (exfiltration, entropie, payloads caches) - DONE
+- N3 validateur LLM leger avec cache LRU - DONE
+- Pipeline etendu N1->N2->N3 avec early exit et blocked_by - DONE
+- Config guardian_n2 et guardian_n3 dans config.toml - DONE
+- Evenements N2Blocked, N2Escalated, N3Result - DONE
+- **Dadou-skill.yaml manifest**: format YAML avec nom, version, auteur, GPG, permissions, WASM - DONE
+- **Store TOML**: SkillsStore dans `~/.openhuman/skills/store.toml` - DONE
+- **Wasmtime in-process**: WASI deny-by-default avec epoch-based timeout 30s - DONE
+- **GPG verification**: sequoia-openpgp, git verify-tag --raw + trust store - DONE
+- **Static analysis**: 15+ regles (eval, subprocess, socket, network, filesystem) - DONE
+- **CLI**: `dadou skill install|update|audit|remove|list|trust-author` - DONE
+- **Controllers**: 6 controleurs prefixe `dadou.*` - DONE
+- **Format `<external_data>`**: remplace `<untrusted-source>`, attributs `source` + `trusted` + `content_type` - D-51
+- **AntiInjectionSection**: section system prompt expliquant le contrat de confiance - D-52
+- **Couverture exhaustive**: memoire, skills WASM, web, fichiers lus - D-53
+- **SkillOutputEnvelope**: JSON structure {skill_name, version, content_type, trusted, output} - D-54
+- **SemanticOutputValidator**: module anti_injection/validator/ avec regles + LLM check - D-55
+- **Interception sortie skills**: dans tool_loop.rs apres execute() avant tool_results - D-56
+- **StructuredPlan**: goal + steps[{tool, args, rationale}] - D-57
+- **evaluate_plan()**: extension GuardianPipeline pour plans multi-etapes - D-58
+- **ExecutionProtocolSection**: format plan JSON explique dans le system prompt - D-59
 
 ---
 
@@ -48,11 +57,11 @@
 | Dimension | Value |
 |-----------|-------|
 | Milestone | v1 |
-| Phase | 3 - Guardian N2+N3 |
-| Status | Planning completed (Phase 4 aussi planifiee) |
-| Progress | [##########                        ] 25% |
+| Phase | 5 - Anti-Injection |
+| Status | Planning completed |
+| Progress | [#############                       ] 37% |
 
-**Next action:** Executer la Phase 3 (`/gsd:execute-phase 03-guardian-n2n3`) puis Phase 4.
+**Next action:** Executer la Phase 3 (`/gsd:execute-phase 03-guardian-n2n3`), puis Phase 4, puis Phase 5.
 
 ---
 
@@ -113,13 +122,22 @@
 | 2026-06-05 | D-41: Sections [guardian_n2] et [guardian_n3] dans config.toml | Seuils, timeouts, enable/disable |
 | 2026-06-05 | D-42: N3 disabled + N2 escalate = block (fail-closed) | Securite maximale par defaut |
 | 2026-06-05 | D-43: Nouveaux DomainEvent variants | N2Blocked, N2Escalated, N3Result |
-| **2026-06-05** | **D-44: dadou-skill.yaml manifest** | **Format YAML avec nom, version, auteur, GPG, permissions, WASM** |
-| **2026-06-05** | **D-45: Store TOML ~/.openhuman/skills/store.toml** | **SkillsStore avec load/save/upsert/remove** |
-| **2026-06-05** | **D-46: Wasmtime in-process avec WASI deny-by-default** | **Epoch-based timeout 30s, reseau bloque, filesystem restreint** |
-| **2026-06-05** | **D-47: GPG via sequoia-openpgp + git verify-tag --raw** | **Trust store ~/.openhuman/skills/certs/** |
-| **2026-06-05** | **D-48: Static analysis avec 15+ regles** | **Block sur eval/subprocess/socket/network non autorise** |
-| **2026-06-05** | **D-49: CLI dadou skill install|update|audit|remove|list** | **Sous-commande dans core/cli.rs** |
-| **2026-06-05** | **D-50: 5 nouveaux controleurs dadou.skill_*** | **Prefixe dadou. pour distinguer des skills.* herites** |
+| 2026-06-05 | D-44: dadou-skill.yaml manifest | Format YAML avec nom, version, auteur, GPG, permissions, WASM |
+| 2026-06-05 | D-45: Store TOML ~/.openhuman/skills/store.toml | SkillsStore avec load/save/upsert/remove |
+| 2026-06-05 | D-46: Wasmtime in-process avec WASI deny-by-default | Epoch-based timeout 30s, reseau bloque, filesystem restreint |
+| 2026-06-05 | D-47: GPG via sequoia-openpgp + git verify-tag --raw | Trust store ~/.openhuman/skills/certs/ |
+| 2026-06-05 | D-48: Static analysis avec 15+ regles | Block sur eval/subprocess/socket/network non autorise |
+| 2026-06-05 | D-49: CLI dadou skill install|update|audit|remove|list | Sous-commande dans core/cli.rs |
+| 2026-06-05 | D-50: 6 controleurs dadou.skill_* | Prefixe dadou. pour distinguer des skills.* herites |
+| **2026-06-05** | **D-51: Format `<external_data>`** | **Tag `<external_data source="..." trusted="false">` remplace `<untrusted-source>`** |
+| **2026-06-05** | **D-52: AntiInjectionSection system prompt** | **Section expliquant le contrat de confiance au LLM** |
+| **2026-06-05** | **D-53: Couverture exhaustive wrapping** | **Memoire, skills WASM, web content, file reads** |
+| **2026-06-05** | **D-54: SkillOutputEnvelope JSON** | **{skill_name, version, content_type, trusted, output, truncated}** |
+| **2026-06-05** | **D-55: SemanticOutputValidator** | **Module anti_injection/validator/ avec rules.rs + llm_check.rs** |
+| **2026-06-05** | **D-56: Interception dans tool_loop** | **Apres execute() et avant tool_results, wrapping + validation** |
+| **2026-06-05** | **D-57: StructuredPlan type** | **{goal, steps: [{tool, args, rationale}]}** |
+| **2026-06-05** | **D-58: GuardianPipeline::evaluate_plan()** | **Validation structure + intention + chaque etape via pipeline** |
+| **2026-06-05** | **D-59: ExecutionProtocolSection** | **Section system prompt expliquant le format plan JSON** |
 
 ### Open questions
 
@@ -138,10 +156,12 @@
 | whisper-rs-sys build bloque cargo check/test | **Active** | Medium | Verification manuelle par pattern matching |
 | wasmtime compile time/linkage Windows | Medium | Medium | CI test avec cargo check -p openhuman |
 | sequoia-openpgp compile time | Medium | Low | Feature crypto-rust, pas de native NSS |
+| Faux positifs validation semantique | Medium | Medium | Mode Relaxed disponible, regles ajustables |
+| Plan validation N3 >500ms pour plans complexes | Medium | Medium | Plan capped a 20 steps, timeout N3 450ms |
 
 ### Blockers
 
-- **whisper-rs-sys**: libclang.dll manquant sur Windows -> cargo check impossible. Tout le code Phase 1+2+3+4 est verifie par correspondance structurelle avec les patterns existants.
+- **whisper-rs-sys**: libclang.dll manquant sur Windows -> cargo check impossible. Tout le code Phase 1-5 est verifie par correspondance structurelle avec les patterns existants.
 
 ---
 
@@ -182,8 +202,13 @@
 | 04-04 | Static analysis: imports, filesystem, network (SKL-05) | 1 |
 | 04-05 | CLI dadou skill + JSON-RPC controllers (SKL-07) | 2 |
 
-### Phase 5 — Anti-Injection ⏳
-*To be planned*
+### Phase 5 — Anti-Injection 📋 (Planned)
+| Plan | Content | Wave |
+|------|---------|------|
+| 05-01 | External data tagging `<external_data>` + AntiInjectionSection (INJ-01) | 1 |
+| 05-02 | SkillOutputEnvelope JSON structure (INJ-02) | 1 |
+| 05-03 | Semantic output validation: rules + LLM check (INJ-03) | 2 |
+| 05-04 | JSON plan validation via Guardian pipeline (INJ-04) | 2 |
 
 ### Phase 6 — Dashboard ⏳
 *To be planned*
@@ -215,13 +240,18 @@
 | `.planning/phases/04-skills-wasm/04-03-PLAN.md` | GPG verification (SKL-04) |
 | `.planning/phases/04-skills-wasm/04-04-PLAN.md` | Static analysis (SKL-05) |
 | `.planning/phases/04-skills-wasm/04-05-PLAN.md` | CLI + Controllers (SKL-07) |
+| `.planning/phases/05-anti-injection/05-CONTEXT.md` | Phase 5 decisions D-51->D-59 |
+| `.planning/phases/05-anti-injection/05-01-PLAN.md` | External data tagging (INJ-01) |
+| `.planning/phases/05-anti-injection/05-02-PLAN.md` | Structured skill output (INJ-02) |
+| `.planning/phases/05-anti-injection/05-03-PLAN.md` | Semantic output validation (INJ-03) |
+| `.planning/phases/05-anti-injection/05-04-PLAN.md` | JSON plan validation (INJ-04) |
 | `CLAUDE.md` | Repo layout, commands, conventions |
 
 ### Next commands
 
-1. `/gsd:execute-phase 03-guardian-n2n3` — Executer les 4 plans Phase 3
-2. Puis `/gsd:execute-phase 04-skills-wasm` — Executer les 5 plans Phase 4
-3. Commencer par Wave 1: Plans 01-04 en parallele, puis Wave 2: Plan 05
+1. `/gsd:execute-phase 03-guardian-n2n3` — Executer les 4 plans Phase 3 (Wave 1: 03-01+03-02, Wave 2: 03-03+03-04)
+2. Puis `/gsd:execute-phase 04-skills-wasm` — Executer les 5 plans Phase 4 (Wave 1: 04-01..04-04, Wave 2: 04-05)
+3. Puis `/gsd:execute-phase 05-anti-injection` — Executer les 4 plans Phase 5 (Wave 1: 05-01+05-02, Wave 2: 05-03+05-04)
 4. `set LIBCLANG_PATH=<path to LLVM bin>` puis `cargo check` pour verifier la compilation (bloqueur pre-existant)
 
 ---
