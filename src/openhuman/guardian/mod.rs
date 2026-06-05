@@ -1,4 +1,13 @@
-//! Guardian N1 -- Deterministic rule engine for tool-call interception.
+//! Guardian — Deterministic rule engine (N1) + LLM validator (N3) for
+//! tool-call interception.
+//!
+//! ## Pipeline stages
+//!
+//! | Stage | Layer | Purpose | Latency |
+//! |-------|-------|---------|---------|
+//! | N1 | Deterministic rules | Block known-bad patterns (regex, paths, commands) | <1 ms |
+//! | N2 | Heuristic classifiers | Score actions for exfiltration, entropy, hidden payloads | <10 ms |
+//! | N3 | LLM validator | Escalation-only LLM call for ambiguous cases (~2%) | <500 ms |
 //!
 //! The Guardian N1 domain formalises the first stage of the defence-in-depth
 //! pipeline: **classify -> gate -> validate**. It wraps OpenHuman's existing
@@ -21,6 +30,8 @@ mod pipeline;
 pub mod bus;
 pub mod ops;
 pub mod schemas;
+pub mod n2;
+pub mod n3;
 
 pub use rules::{compile_ruleset, default_rust_rules, load_yaml_rules, BlocklistRule, PathWhitelistRule, RegexPatternRule, RuleSet};
 pub use types::{GuardianRule, N1Result, RuleAction, RuleContext, RuleResult};
