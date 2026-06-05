@@ -5,10 +5,10 @@
 //! - `semantic_router.get_index_status` — current index state
 //! - `semantic_router.rebuild_index` — force index rebuild
 
-use std::collections::HashMap;
+use serde_json::Map;
 
 use crate::core::all::{ControllerFuture, RegisteredController};
-use crate::core::{ControllerSchema, FieldSchema};
+use crate::core::ControllerSchema;
 
 use super::ops;
 
@@ -18,21 +18,19 @@ fn to_json(value: serde_json::Value) -> Result<serde_json::Value, String> {
     Ok(value)
 }
 
-fn controller_schema(function: &str, description: &str) -> ControllerSchema {
+fn controller_schema(function: &'static str, description: &'static str) -> ControllerSchema {
     ControllerSchema {
-        namespace: "semantic_router".to_string(),
-        function: function.to_string(),
-        description: description.to_string(),
+        namespace: "semantic_router",
+        function,
+        description,
         inputs: vec![],
         outputs: vec![],
-        input_type_hint: None,
-        output_type_hint: None,
     }
 }
 
 // ── Handlers ──────────────────────────────────────────────────────────────
 
-fn handle_route_query(params: HashMap<String, serde_json::Value>) -> ControllerFuture {
+fn handle_route_query(params: Map<String, serde_json::Value>) -> ControllerFuture {
     Box::pin(async move {
         let query = params
             .get("query")
@@ -53,7 +51,7 @@ fn handle_route_query(params: HashMap<String, serde_json::Value>) -> ControllerF
     })
 }
 
-fn handle_get_index_status(_params: HashMap<String, serde_json::Value>) -> ControllerFuture {
+fn handle_get_index_status(_params: Map<String, serde_json::Value>) -> ControllerFuture {
     Box::pin(async move {
         let router = ops::global()
             .ok_or_else(|| "semantic router not initialised".to_string())?;
@@ -68,7 +66,7 @@ fn handle_get_index_status(_params: HashMap<String, serde_json::Value>) -> Contr
     })
 }
 
-fn handle_rebuild_index(_params: HashMap<String, serde_json::Value>) -> ControllerFuture {
+fn handle_rebuild_index(_params: Map<String, serde_json::Value>) -> ControllerFuture {
     Box::pin(async move {
         let skills_store = crate::openhuman::skills::store::SkillsStore::load()
             .map_err(|e| format!("failed to load skills store: {e}"))?;

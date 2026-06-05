@@ -4,12 +4,11 @@
 //! serving the self-contained dashboard HTML frontend and API endpoints.
 
 use std::net::SocketAddr;
-use std::sync::Arc;
 
 use axum::extract::Query;
 use axum::http::StatusCode;
 use axum::response::sse::{Event, KeepAlive, Sse};
-use axum::response::{IntoResponse, Response};
+use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::Router;
 use futures_util::Stream;
@@ -23,7 +22,7 @@ use crate::core::event_bus::DomainEvent;
 use crate::openhuman::config::Config;
 
 use super::store;
-use super::types::{DashboardStats, SkillSummary};
+use super::types::SkillSummary;
 
 // ── Embedded frontend ─────────────────────────────────────────────────────
 
@@ -237,7 +236,7 @@ async fn sse_handler() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
         BroadcastStream::new(rx).filter_map(|result| {
             let event = match result {
                 Ok(e) => e,
-                Err(_) => return std::future::ready(None),
+                Err(_) => return None,
             };
 
             // Only forward events from dashboard-relevant domains.
@@ -247,7 +246,7 @@ async fn sse_handler() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
                 "guardian" | "tool" | "agent" | "skill" | "memory" | "channel" | "system"
             );
             if !relevant {
-                return std::future::ready(None);
+                return None;
             }
 
             // Serialise to a compact JSON payload.
@@ -259,15 +258,15 @@ async fn sse_handler() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
             });
 
             let data = payload.to_string();
-            std::future::ready(Some(Ok(Event::default()
+            Some(Ok(Event::default()
                 .event("dashboard_event")
-                .data(data))))
+                .data(data)))
         })
     } else {
         // No event bus — return an empty stream.
         let (_, rx) = broadcast::channel::<DomainEvent>(1);
         BroadcastStream::new(rx)
-            .filter_map(|_| std::future::ready(None::<Result<Event, Infallible>>))
+            .filter_map(|_| None::<Result<Event, Infallible>>)
     };
 
     Sse::new(stream).keep_alive(KeepAlive::new().interval(std::time::Duration::from_secs(15)))

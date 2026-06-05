@@ -13,13 +13,11 @@
 //! `main.py` entry point. The embedded runner script reads a JSON-RPC request
 //! from stdin, calls `run()`, and writes the response to stdout.
 
-use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::io::AsyncWriteExt;
 use tokio::process::Command as TokioCommand;
 use tokio::time::timeout;
 
@@ -274,7 +272,7 @@ impl PythonSkillRuntime {
     /// Execute a Python skill inside a Docker container.
     async fn execute_in_docker(
         &self,
-        skill_name: &str,
+        _skill_name: &str,
         src_dir: &Path,
         args: &serde_json::Value,
         timeout_duration: Duration,
@@ -361,7 +359,7 @@ impl PythonSkillRuntime {
     /// Execute a Python skill using the local Python interpreter.
     async fn execute_locally(
         &self,
-        skill_name: &str,
+        _skill_name: &str,
         src_dir: &Path,
         args: &serde_json::Value,
         timeout_duration: Duration,

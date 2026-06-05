@@ -6,13 +6,10 @@
 //! - `dashboard.get_skills` — installed skill summaries
 //! - `dashboard.get_memory_stats` — memory event statistics
 
-use std::collections::HashMap;
+use serde_json::Map;
 
 use crate::core::all::{ControllerFuture, RegisteredController};
-use crate::core::{ControllerSchema, FieldSchema, TypeSchema};
-
-use super::store;
-use super::types::{DashboardStats, SkillSummary, StoredDashboardEvent};
+use crate::core::{ControllerSchema, FieldSchema};
 
 // ── Schema helpers ────────────────────────────────────────────────────────
 
@@ -21,32 +18,30 @@ fn to_json(value: serde_json::Value) -> Result<serde_json::Value, String> {
 }
 
 fn deserialize_params<T: serde::de::DeserializeOwned>(
-    params: HashMap<String, serde_json::Value>,
+    params: Map<String, serde_json::Value>,
 ) -> Result<T, String> {
     let value = serde_json::to_value(params).map_err(|e| format!("serialize params: {e}"))?;
     serde_json::from_value(value).map_err(|e| format!("invalid params: {e}"))
 }
 
 fn controller_schema(
-    function: &str,
-    description: &str,
+    function: &'static str,
+    description: &'static str,
     inputs: Vec<FieldSchema>,
     outputs: Vec<FieldSchema>,
 ) -> ControllerSchema {
     ControllerSchema {
-        namespace: "dashboard".to_string(),
-        function: function.to_string(),
-        description: description.to_string(),
+        namespace: "dashboard",
+        function,
+        description,
         inputs,
         outputs,
-        input_type_hint: None,
-        output_type_hint: None,
     }
 }
 
 // ── Handlers ──────────────────────────────────────────────────────────────
 
-fn handle_get_stats(_params: HashMap<String, serde_json::Value>) -> ControllerFuture {
+fn handle_get_stats(_params: Map<String, serde_json::Value>) -> ControllerFuture {
     Box::pin(async move {
         let store = store::global()
             .ok_or_else(|| "dashboard store not initialised".to_string())?;
@@ -72,7 +67,7 @@ fn handle_get_stats(_params: HashMap<String, serde_json::Value>) -> ControllerFu
     })
 }
 
-fn handle_get_recent_events(params: HashMap<String, serde_json::Value>) -> ControllerFuture {
+fn handle_get_recent_events(params: Map<String, serde_json::Value>) -> ControllerFuture {
     Box::pin(async move {
         let limit = params
             .get("limit")
@@ -97,7 +92,7 @@ fn handle_get_recent_events(params: HashMap<String, serde_json::Value>) -> Contr
     })
 }
 
-fn handle_get_skills(_params: HashMap<String, serde_json::Value>) -> ControllerFuture {
+fn handle_get_skills(_params: Map<String, serde_json::Value>) -> ControllerFuture {
     Box::pin(async move {
         let skills = match crate::openhuman::skills::store::SkillsStore::load() {
             Ok(skills_store) => skills_store
@@ -121,7 +116,7 @@ fn handle_get_skills(_params: HashMap<String, serde_json::Value>) -> ControllerF
     })
 }
 
-fn handle_get_memory_stats(_params: HashMap<String, serde_json::Value>) -> ControllerFuture {
+fn handle_get_memory_stats(_params: Map<String, serde_json::Value>) -> ControllerFuture {
     Box::pin(async move {
         let store = store::global()
             .ok_or_else(|| "dashboard store not initialised".to_string())?;
