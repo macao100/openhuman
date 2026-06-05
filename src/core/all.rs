@@ -280,6 +280,10 @@ fn build_registered_controllers() -> Vec<RegisteredController> {
     controllers.extend(
         crate::openhuman::session_context::schemas::all_registered_controllers(),
     );
+    // Anti-injection semantic output validation (INJ-03)
+    controllers.extend(
+        crate::openhuman::anti_injection::all_anti_injection_registered_controllers(),
+    );
     controllers
 }
 
@@ -409,6 +413,10 @@ fn build_declared_controller_schemas() -> Vec<ControllerSchema> {
     schemas.extend(
         crate::openhuman::session_context::schemas::all_controller_schemas(),
     );
+    // Anti-injection semantic output validation (INJ-03)
+    schemas.extend(
+        crate::openhuman::anti_injection::all_anti_injection_controller_schemas(),
+    );
     schemas
 }
 
@@ -536,6 +544,9 @@ pub fn namespace_description(namespace: &str) -> Option<&'static str> {
         ),
         "dadou" => Some(
             "DADOU WASM skill lifecycle management (install, update, audit, remove, list, trust-author).",
+        ),
+        "anti_injection" => Some(
+            "Anti-injection semantic output validation — inspect and configure injection pattern detection for skill outputs.",
         ),
         _ => None,
     }

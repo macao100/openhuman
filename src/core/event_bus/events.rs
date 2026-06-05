@@ -354,6 +354,36 @@ pub enum DomainEvent {
         latency_us: u64,
     },
 
+    /// A structured plan was validated by the Guardian pipeline.
+    /// Published by `GuardianPipeline::evaluate_plan()` after validation
+    /// completes (before returning the result).
+    PlanValidated {
+        /// The high-level goal of the plan.
+        goal: String,
+        /// Whether the plan was approved for execution.
+        allowed: bool,
+        /// Which level rejected the plan: `"structure"`, `"step_n1"`,
+        /// `"step_n2"`, `"step_n3"`, or `"none"`.
+        blocked_by: String,
+        /// Total number of steps in the plan.
+        step_count: usize,
+        /// Indices of steps that were rejected (empty when approved).
+        rejected_step_indices: Vec<usize>,
+    },
+
+    // ── Anti-Injection (INJ-03) ────────────────────────────────────────
+    /// An anti-injection validation blocked a skill output from reaching
+    /// the LLM conversation context. Published by the tool loop when
+    /// `SemanticOutputValidator` flags a skill result as malicious.
+    InjectionBlocked {
+        /// Name of the tool/tool that produced the blocked output.
+        tool_name: String,
+        /// Human-readable summary of why the output was blocked.
+        reason: String,
+        /// Number of injection pattern rules that triggered.
+        finding_count: usize,
+    },
+
     // ── Approval ────────────────────────────────────────────────────────
     /// Agent attempted a tool call that produces an external side
     /// effect; awaiting user approval. Published by `ApprovalGate`
@@ -760,7 +790,9 @@ impl DomainEvent {
             Self::GuardianBlocked { .. }
             | Self::N2Blocked { .. }
             | Self::N2Escalated { .. }
-            | Self::N3Result { .. } => "guardian",
+            | Self::N3Result { .. }
+            | Self::PlanValidated { .. }
+            | Self::InjectionBlocked { .. } => "guardian",
 
             Self::WebhookIncomingRequest { .. }
             | Self::WebhookReceived { .. }

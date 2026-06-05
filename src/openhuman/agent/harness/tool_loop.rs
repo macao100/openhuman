@@ -19,6 +19,7 @@ use super::parse::{build_native_assistant_history, parse_structured_tool_calls, 
 use super::payload_summarizer::PayloadSummarizer;
 use crate::openhuman::context::guard::{ContextCheckResult, ContextGuard};
 use crate::openhuman::inference::model_context::context_window_for_model;
+use crate::openhuman::guardian::types::StructuredPlan;
 
 use super::token_budget::trim_chat_messages_to_budget;
 
@@ -697,6 +698,50 @@ pub(crate) async fn run_tool_call_loop(
             let _ = std::io::stdout().flush();
         }
 
+        // ── Plan validation interception (INJ-04) ──────────────────────
+        // Before executing any tool, check if the LLM's response contains
+        // a structured JSON plan. If so, validate it through the Guardian
+        // pipeline. A rejected plan cancels all tool execution and asks the
+        // LLM to revise.
+        if let Some(plan) = extract_structured_plan(&response_text) {
+            tracing::info!(
+                "[agent_loop] structured plan found: goal='{}' steps={}",
+                plan.goal.chars().take(60).collect::<String>(),
+                plan.steps.len()
+            );
+            if let Some(pipeline) =
+                crate::openhuman::guardian::GuardianPipeline::try_global()
+            {
+                let plan_result = pipeline.evaluate_plan(&plan).await;
+
+                // Event already published by evaluate_plan, but log locally too.
+                if !plan_result.allowed {
+                    let msg = format!(
+                        "[policy-blocked] Plan rejected by Guardian: {}. Reason: {}",
+                        plan_result.blocked_by, plan_result.reasoning
+                    );
+                    tracing::warn!("[agent_loop] {msg}");
+
+                    // Push the rejection into history so the LLM can revise.
+                    history.push(ChatMessage::assistant(response_text.clone()));
+                    history.push(ChatMessage::user(format!(
+                        "[Plan validation result]\nThe Guardian rejected your plan. \
+                         {} steps were blocked ({}). \nReason: {}\n\n\
+                         Please revise your plan and resubmit.",
+                        plan_result.rejected_steps.len(),
+                        plan_result.blocked_by,
+                        plan_result.reasoning
+                    )));
+                    continue; // Skip tool execution, let LLM revise
+                }
+
+                tracing::info!(
+                    "[agent_loop] plan validated successfully: {} steps approved",
+                    plan.steps.len()
+                );
+            }
+        }
+
         // Execute each tool call and build results.
         // `individual_results` tracks per-call output so that native-mode history
         // can emit one `role: tool` message per tool call with the correct ID.
@@ -1282,6 +1327,62 @@ pub(crate) async fn run_tool_call_loop(
                 result.clone()
             };
 
+            // ── Semantic output validation (INJ-03) ─────────────────
+            // Validate skill output for prompt injection patterns before
+            // it reaches the LLM context. Runs AFTER the INJ-02 envelope
+            // but BEFORE the INJ-01 <external_data> wrapping.
+            //
+            // Only applies to skill execution tools that went through the
+            // INJ-02 envelope path above.
+            let result = if call_succeeded && should_wrap_skill_output(&call.name) {
+                let skill_name = call
+                    .arguments
+                    .get("name")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("unknown");
+                let validator =
+                    crate::openhuman::anti_injection::SemanticOutputValidator::new(
+                        crate::openhuman::anti_injection::ValidatorConfig::default(),
+                    );
+                let validation = validator.validate(skill_name, &result);
+
+                if !validation.allowed {
+                    // Blocked — replace the result with a structured error.
+                    let blocked_msg = format!(
+                        "[policy-blocked] Skill output blocked by anti-injection validation: {}",
+                        validation.summary
+                    );
+                    log::warn!(
+                        "[anti-injection] tool='{}' skill='{}' blocked: {} rule(s) triggered",
+                        call.name,
+                        skill_name,
+                        validation.rule_findings.len()
+                    );
+
+                    // Publish event for dashboard / audit logging.
+                    crate::core::event_bus::bus::publish_global(
+                        crate::core::event_bus::DomainEvent::InjectionBlocked {
+                            tool_name: call.name.clone(),
+                            reason: validation.summary.clone(),
+                            finding_count: validation.rule_findings.len(),
+                        },
+                    );
+
+                    blocked_msg
+                } else {
+                    if !validation.rule_findings.is_empty() {
+                        // Relaxed mode: findings exist but output allowed through.
+                        log::warn!(
+                            "[anti-injection] suspicious skill output passed through (relaxed mode): {}",
+                            validation.summary
+                        );
+                    }
+                    result
+                }
+            } else {
+                result
+            };
+
             // ── External data wrapping (INJ-01) ──
             // Wrap tool results that originate from external sources (skills,
             // web fetches, file reads) in `<external_data>` tags so the LLM
@@ -1511,6 +1612,46 @@ fn is_outside_workspace(path: &str) -> bool {
         || (path.len() > 2
             && path.as_bytes()[1] == b':'
             && matches!(path.as_bytes()[0], b'a'..=b'z' | b'A'..=b'Z'))
+}
+
+// ── Plan extraction helper (INJ-04) ───────────────────────────────────────
+
+/// Try to extract a structured plan from the LLM's response text.
+///
+/// The LLM emits plans as JSON matching the `StructuredPlan` schema,
+/// either as raw JSON or wrapped in a markdown code block.
+/// Returns `None` if no valid plan can be extracted.
+fn extract_structured_plan(text: &str) -> Option<StructuredPlan> {
+    // Strategy 1: Try direct JSON parse of the entire text.
+    if let Ok(plan) = serde_json::from_str::<StructuredPlan>(text) {
+        return Some(plan);
+    }
+
+    // Strategy 2: Try wrapping the text in {"plan": ...} format.
+    // The LLM emits plans as: {"plan": {"goal": "...", "steps": [...]}}
+    if let Ok(wrapped) = serde_json::from_str::<std::collections::HashMap<String, StructuredPlan>>(
+        text,
+    ) {
+        if let Some(plan) = wrapped.get("plan") {
+            return Some(plan.clone());
+        }
+    }
+
+    // Strategy 3: Extract from markdown code block containing "plan" key.
+    // Matches ```json\n{"plan": {...}}\n``` or ```\n{"plan": {...}}\n```
+    let re = regex::Regex::new(r"```(?:json)?\s*\n(\{[^`]*"plan"[^`]*\})\s*\n```").ok()?;
+    if let Some(caps) = re.captures(text) {
+        // Try parsing the extracted JSON as a wrapped plan.
+        if let Ok(wrapped) =
+            serde_json::from_str::<std::collections::HashMap<String, StructuredPlan>>(&caps[1])
+        {
+            if let Some(plan) = wrapped.get("plan") {
+                return Some(plan.clone());
+            }
+        }
+    }
+
+    None
 }
 
 #[cfg(test)]

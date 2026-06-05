@@ -17,6 +17,7 @@
 pub mod about_app;
 pub mod accessibility;
 pub mod agent;
+pub mod anti_injection;
 pub mod agent_experience;
 pub mod agent_tool_policy;
 pub mod app_state;
