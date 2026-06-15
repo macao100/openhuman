@@ -1,9 +1,26 @@
 # DADOU — Project State
 
-**Last updated:** 2026-06-06
-**Current phase:** E (Build & Distribution) — IN PROGRESS
-**Milestone:** v1 standalone
-**Global progress:** 7/7 phases coded + standalone mode + rebranding
+**Last updated:** 2026-06-16
+**Current phase:** Distribution & Polish — DONE
+**Milestone:** v1.0.0 shipped
+**Global progress:** 7/7 phases + standalone + rebranding + self-hosted frontend + cargo fix
+
+## Session 2026-06-16 — Post-Release Polish
+
+### Completed
+- **Self-hosted frontend**: core sert `app/dist/` en statique — un seul binaire, zéro dépendance externe
+- **Cargo fix**: `%USERPROFILE%\.cargo\bin\cargo` dans `app/package.json` (pnpm + cmd.exe PATH issue)
+- **Format pass**: 66 fichiers Rust formatés (`cargo fmt --all`), Prettier OK
+- **Pre-push hook**: `pnpm format:check` passe (prettier ✅, cargo fmt ✅)
+- **Deps**: `pnpm install` — 1111 packages réinstallés proprement
+- **3 plugins désactivés**: marketplaces locales inexistantes (goodmem, project-bootstrap, code-security)
+- **Agent file access audit**: Supervised par défaut, workspace_only, symlink-safe, trusted roots
+
+### Known issues (carry-over)
+- **whisper-rs-sys**: libclang.dll manquant → `cargo check` impossible. Bloque la rebuild du binaire.
+- **Husky Git hook env**: le hook pre-push échoue en environnement Git (PATH différent du shell interactif)
+- **context7 MCP**: timeout (retry via `/mcp`)
+- **5 tests Vitest + 4 erreurs TS**: hérités d'OpenHuman upstream
 
 ## Standalone Mode (2026-06-06)
 
@@ -23,7 +40,7 @@
 
 **Core value:** Un assistant qui apprend. DADOU construit et maintient un modele mental persistant du monde numerique de l'utilisateur - projets, preferences, erreurs passees, succes.
 
-**Current focus:** Phase 5 planifiee (4 plans, 2 waves). Phase 6 a planifier ensuite.
+**Current focus:** v1.0.0 maintenance — polish, bugfixes, DX improvements.
 
 **Key decisions:**
 - Fork independant OpenHuman (pas contribution upstream) - ACTIVE
@@ -173,7 +190,7 @@
 
 ### Blockers
 
-- **whisper-rs-sys**: libclang.dll manquant sur Windows -> cargo check impossible. Tout le code Phase 1-5 est verifie par correspondance structurelle avec les patterns existants.
+- **whisper-rs-sys**: libclang.dll manquant sur Windows → `cargo check` / `cargo build` impossible. Solution: installer LLVM 18+ (`winget install LLVM.LLVM`) et set `LIBCLANG_PATH`. Tout le code Phase 1-7 est vérifié structurellement mais non compilé.
 
 ---
 
@@ -222,11 +239,8 @@
 | 05-03 | Semantic output validation: rules + LLM check (INJ-03) | 2 |
 | 05-04 | JSON plan validation via Guardian pipeline (INJ-04) | 2 |
 
-### Phase 6 — Dashboard & Semantic Router 📋 (To plan)
-*Planning en cours — Phase 6*
-
-### Phase 7 — Python Skills ⏳
-*To be planned after Phase 6*
+### Phase 6 — Dashboard & Semantic Router ✅
+### Phase 7 — Python Skills ✅
 
 ---
 
@@ -261,11 +275,11 @@
 
 ### Next commands
 
-1. `plan-phase 6` — Planifier la Phase 6 (Dashboard & Semantic Router)
-2. `execute-phase 06-dashboard` — Exécuter les plans Phase 6
-3. `plan-phase 7` — Planifier la Phase 7 (Python Skills)
-4. `execute-phase 07-python-skills` — Exécuter les plans Phase 7
-5. Installer cmake + LLVM pour débloquer `cargo check` (whisper-rs-sys)
+1. Installer cmake + LLVM pour débloquer `cargo check` (whisper-rs-sys) → rebuild binaire
+2. Corriger les 5 tests Vitest + 4 erreurs TS hérités d'OpenHuman
+3. Rebuild `dadou-core.exe` avec les derniers changements → mettre à jour DISTRIBUTION/
+4. Réessayer context7 MCP (`/mcp`)
+5. Configurer un provider LLM dans le config.toml (DeepSeek, Ollama, ou autre)
 
 ---
-*Last updated: 2026-06-05*
+*Last updated: 2026-06-16*

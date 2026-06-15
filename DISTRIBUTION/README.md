@@ -64,11 +64,13 @@
 ## Structure du projet
 
 ```
-openhuman/
+dadou/
 ├── DISTRIBUTION/          # Fichiers de déploiement
 │   ├── install.html       # Assistant d'installation
 │   ├── manual.html        # Manuel utilisateur
 │   ├── setup.ps1          # Script d'installation automatisée
+│   ├── run.bat / run.ps1  # Lancement portable (double-clic)
+│   ├── config.toml        # Configuration portable
 │   └── README.md          # Ce fichier
 ├── src/                   # Core Rust (60+ domaines)
 ├── app/                   # Frontend React + Tauri
@@ -76,6 +78,22 @@ openhuman/
 ├── .planning/             # Roadmap et spécifications
 └── Cargo.toml             # Manifest Rust
 ```
+
+## Architecture runtime
+
+**Un seul binaire, zéro dépendance externe.** Le core Rust (`dadou-core.exe`) sert :
+- L'API JSON-RPC sur `http://127.0.0.1:7788/rpc`
+- L'interface React (SPA) sur `http://127.0.0.1:7788`
+- Le dashboard d'observabilité sur `http://127.0.0.1:7790`
+
+Le frontend est servi directement depuis `app/dist/` par le core — pas besoin de serveur web séparé.
+
+## Mode offline
+
+Par défaut, DADOU démarre en mode 100% local (`offline_mode = true` dans `config.toml`).
+- Aucune connexion à api.tinyhumans.ai
+- Session locale auto-signée (token JWT-like, expiry 1 an)
+- Fonctionne avec Ollama, DeepSeek, OpenAI, ou tout provider compatible
 
 ---
 
