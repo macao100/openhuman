@@ -508,10 +508,7 @@ export default function CoreStateProvider({ children }: { children: ReactNode })
       // In offline mode (local session token), skip continuous polling
       // after the initial bootstrap — the core state is static.
       const state = getCoreStateSnapshot();
-      if (
-        !state.isBootstrapping &&
-        isLocalSessionToken(state.snapshot.sessionToken)
-      ) {
+      if (!state.isBootstrapping && isLocalSessionToken(state.snapshot.sessionToken)) {
         return;
       }
       const delay =
