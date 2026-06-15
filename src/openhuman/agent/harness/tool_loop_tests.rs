@@ -1352,7 +1352,10 @@ fn extract_plan_returns_none_for_no_plan() {
 fn extract_plan_from_code_block_no_lang() {
     let text = "```\n{\"plan\": {\"goal\": \"Test\", \"steps\": [{\"tool\": \"file_read\", \"args\": {\"path\": \"test.txt\"}, \"rationale\": \"test\"}]}}\n```";
     let plan = extract_structured_plan(text);
-    assert!(plan.is_some(), "should extract plan from code block without language tag");
+    assert!(
+        plan.is_some(),
+        "should extract plan from code block without language tag"
+    );
 }
 
 #[test]

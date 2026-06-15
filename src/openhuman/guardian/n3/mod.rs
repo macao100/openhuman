@@ -22,9 +22,9 @@
 //! 5. Cache — store the result so the same action in the same session
 //!    skips the LLM call.
 
-pub mod types;
-mod prompt;
 mod cache;
+mod prompt;
+pub mod types;
 
 use std::sync::Arc;
 use std::time::Instant;
@@ -113,13 +113,8 @@ impl GuardianN3 {
 
         // Step 2: Build the full prompt (system + user context).
         let system_prompt = N3PromptBuilder::system_prompt();
-        let user_prompt = N3PromptBuilder::build_user_prompt(
-            tool_name,
-            tool_args,
-            command,
-            file_path,
-            n2_scores,
-        );
+        let user_prompt =
+            N3PromptBuilder::build_user_prompt(tool_name, tool_args, command, file_path, n2_scores);
         let full_prompt = format!("{}\n\n{}", system_prompt, user_prompt);
 
         // Step 3: Call LLM with timeout.
@@ -257,13 +252,16 @@ mod tests {
         // Insert something into the cache.
         {
             let mut cache = g.cache.lock();
-            cache.insert("test-key".into(), N3Result {
-                verdict: N3Verdict::Allow,
-                reason: "test".into(),
-                latency_us: 0,
-                cached: false,
-                model_used: "test".into(),
-            });
+            cache.insert(
+                "test-key".into(),
+                N3Result {
+                    verdict: N3Verdict::Allow,
+                    reason: "test".into(),
+                    latency_us: 0,
+                    cached: false,
+                    model_used: "test".into(),
+                },
+            );
             assert!(cache.get("test-key").is_some());
         }
         // Reset cache.

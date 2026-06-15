@@ -18,8 +18,8 @@ use super::memory_context_safety::wrap_external_data;
 use super::parse::{build_native_assistant_history, parse_structured_tool_calls, parse_tool_calls};
 use super::payload_summarizer::PayloadSummarizer;
 use crate::openhuman::context::guard::{ContextCheckResult, ContextGuard};
-use crate::openhuman::inference::model_context::context_window_for_model;
 use crate::openhuman::guardian::StructuredPlan;
+use crate::openhuman::inference::model_context::context_window_for_model;
 
 use super::token_budget::trim_chat_messages_to_budget;
 
@@ -709,9 +709,7 @@ pub(crate) async fn run_tool_call_loop(
                 plan.goal.chars().take(60).collect::<String>(),
                 plan.steps.len()
             );
-            if let Some(pipeline) =
-                crate::openhuman::guardian::GuardianPipeline::try_global()
-            {
+            if let Some(pipeline) = crate::openhuman::guardian::GuardianPipeline::try_global() {
                 let plan_result = pipeline.evaluate_plan(&plan).await;
 
                 // Event already published by evaluate_plan, but log locally too.
@@ -959,18 +957,15 @@ pub(crate) async fn run_tool_call_loop(
 
             let (result, call_succeeded) = if let Some(tool) = tool_opt {
                 // ── Guardian pipeline interception (N1 -> N2 -> N3) ──
-                if let Some(pipeline) =
-                    crate::openhuman::guardian::GuardianPipeline::try_global()
-                {
+                if let Some(pipeline) = crate::openhuman::guardian::GuardianPipeline::try_global() {
                     let command = if call.name == "bash" || call.name == "shell" {
                         call.arguments.get("command").and_then(|v| v.as_str())
                     } else {
                         None
                     };
                     let file_path = match call.name.as_str() {
-                        "file_write" | "edit" | "file_read" | "glob" | "grep"
-                        | "list_files" | "glob_search" | "read_diff"
-                        | "run_linter" | "run_tests" => {
+                        "file_write" | "edit" | "file_read" | "glob" | "grep" | "list_files"
+                        | "glob_search" | "read_diff" | "run_linter" | "run_tests" => {
                             call.arguments.get("path").and_then(|v| v.as_str())
                         }
                         "apply_patch" => call
@@ -1312,7 +1307,7 @@ pub(crate) async fn run_tool_call_loop(
                     skill_name,
                     "0.0.0", // manifest version not loaded in tool loop
                     serde_json::json!({"output": &result}),
-                    0,    // elapsed_ms not tracked per-call in this path
+                    0,     // elapsed_ms not tracked per-call in this path
                     false, // GPG status unknown in tool loop
                 );
                 log::debug!(
@@ -1340,10 +1335,9 @@ pub(crate) async fn run_tool_call_loop(
                     .get("name")
                     .and_then(|v| v.as_str())
                     .unwrap_or("unknown");
-                let validator =
-                    crate::openhuman::anti_injection::SemanticOutputValidator::new(
-                        crate::openhuman::anti_injection::ValidatorConfig::default(),
-                    );
+                let validator = crate::openhuman::anti_injection::SemanticOutputValidator::new(
+                    crate::openhuman::anti_injection::ValidatorConfig::default(),
+                );
                 let validation = validator.validate(skill_name, &result);
 
                 if !validation.allowed {
@@ -1500,10 +1494,7 @@ fn build_pipeline_block_reason(
                 .n1
                 .rule_results
                 .iter()
-                .filter(|r| {
-                    r.action
-                        == crate::openhuman::guardian::RuleAction::Block
-                })
+                .filter(|r| r.action == crate::openhuman::guardian::RuleAction::Block)
                 .map(|r| format!("[{}: {}]", r.rule_name, r.reason))
                 .collect();
             format!(
@@ -1519,12 +1510,7 @@ fn build_pipeline_block_reason(
                     n2.scores
                         .iter()
                         .filter(|s| s.score >= 0.7) // BLOCK_THRESHOLD
-                        .map(|s| {
-                            format!(
-                                "[{}: {} (score={})]",
-                                s.triggered_by, s.reason, s.score
-                            )
-                        })
+                        .map(|s| format!("[{}: {} (score={})]", s.triggered_by, s.reason, s.score))
                         .collect()
                 })
                 .unwrap_or_default();
@@ -1608,7 +1594,9 @@ pub(crate) fn should_wrap_skill_output(tool_name: &str) -> bool {
 /// for future refinement but not currently used in the wrapping decision.
 #[allow(dead_code)]
 fn is_outside_workspace(path: &str) -> bool {
-    path.contains("..") || path.starts_with('/') || path.starts_with("\\\\")
+    path.contains("..")
+        || path.starts_with('/')
+        || path.starts_with("\\\\")
         || (path.len() > 2
             && path.as_bytes()[1] == b':'
             && matches!(path.as_bytes()[0], b'a'..=b'z' | b'A'..=b'Z'))
@@ -1629,9 +1617,9 @@ fn extract_structured_plan(text: &str) -> Option<StructuredPlan> {
 
     // Strategy 2: Try wrapping the text in {"plan": ...} format.
     // The LLM emits plans as: {"plan": {"goal": "...", "steps": [...]}}
-    if let Ok(wrapped) = serde_json::from_str::<std::collections::HashMap<String, StructuredPlan>>(
-        text,
-    ) {
+    if let Ok(wrapped) =
+        serde_json::from_str::<std::collections::HashMap<String, StructuredPlan>>(text)
+    {
         if let Some(plan) = wrapped.get("plan") {
             return Some(plan.clone());
         }
@@ -1639,7 +1627,9 @@ fn extract_structured_plan(text: &str) -> Option<StructuredPlan> {
 
     // Strategy 3: Extract from markdown code block containing "plan" key.
     // Matches ```json\n{"plan": {...}}\n``` or ```\n{"plan": {...}}\n```
-    let re = regex::Regex::new(r#"```(?:json)?\s*\n(\{(?:[^`]|`[^"])*"plan"(?:[^`]|`[^"])*\})\s*\n```"#).ok()?;
+    let re =
+        regex::Regex::new(r#"```(?:json)?\s*\n(\{(?:[^`]|`[^"])*"plan"(?:[^`]|`[^"])*\})\s*\n```"#)
+            .ok()?;
     if let Some(caps) = re.captures(text) {
         // Try parsing the extracted JSON as a wrapped plan.
         if let Ok(wrapped) =

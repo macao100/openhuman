@@ -294,7 +294,10 @@ mod tests {
         let long_b64 = "A".repeat(45);
         let args = format!("--payload '{}'", long_b64);
         let score = det.detect(None, &args);
-        assert!(score.is_some(), "should detect long base64 as flag argument");
+        assert!(
+            score.is_some(),
+            "should detect long base64 as flag argument"
+        );
     }
 
     #[test]
@@ -388,6 +391,9 @@ mod tests {
         let det = detector();
         let cmd = r#"echo "cGF5bG9hZCA9ICdUZXN0Jw==" >> /tmp/script.py"#;
         let score = det.detect(Some(cmd), "");
-        assert!(score.is_some(), "should detect encoded write to script file");
+        assert!(
+            score.is_some(),
+            "should detect encoded write to script file"
+        );
     }
 }

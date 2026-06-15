@@ -26,7 +26,7 @@ use crate::openhuman::skills::manifest::{parse_manifest, ManifestError, SkillMan
 use crate::openhuman::skills::static_analysis::{scan_skill, AnalysisResult, AnalysisVerdict};
 use crate::openhuman::skills::store::{InstalledSkill, SkillsStore};
 use crate::openhuman::skills::verify::{
-    verify_git_tag_signature, TrustStore, SignatureVerificationResult, VerifyError,
+    verify_git_tag_signature, SignatureVerificationResult, TrustStore, VerifyError,
 };
 use crate::openhuman::skills::wasm::WasmEngine;
 
@@ -173,10 +173,9 @@ impl GitSkillInstaller {
         trust_store: TrustStore,
         wasm_engine: Arc<WasmEngine>,
     ) -> Result<Self, InstallError> {
-        let skills_dir = SkillsStore::default_skills_dir()
-            .ok_or_else(|| InstallError::DirResolution(
-                "cannot resolve home directory for skills folder".into(),
-            ))?;
+        let skills_dir = SkillsStore::default_skills_dir().ok_or_else(|| {
+            InstallError::DirResolution("cannot resolve home directory for skills folder".into())
+        })?;
         Ok(Self {
             store,
             trust_store,
@@ -247,17 +246,17 @@ impl GitSkillInstaller {
         // Route to WASM or Python install path based on manifest runtime.
         match manifest.runtime_kind() {
             "python" => {
-                return self.install_python_skill(&manifest, &clone_path, git_url).await;
+                return self
+                    .install_python_skill(&manifest, &clone_path, git_url)
+                    .await;
             }
             "wasm" => {
                 // Continue with WASM path below.
             }
             _ => {
-                return Err(InstallError::Manifest(
-                    ManifestError::InvalidField(
-                        "manifest must specify either 'wasm' or 'python' section".to_string(),
-                    ),
-                ));
+                return Err(InstallError::Manifest(ManifestError::InvalidField(
+                    "manifest must specify either 'wasm' or 'python' section".to_string(),
+                )));
             }
         }
 
@@ -314,8 +313,13 @@ impl GitSkillInstaller {
                 std::fs::create_dir_all(parent)
                     .with_context(|| format!("failed to create WASM dir: {}", parent.display()))?;
             }
-            std::fs::copy(&wasm_src, &wasm_dest)
-                .with_context(|| format!("failed to copy WASM: {} -> {}", wasm_src.display(), wasm_dest.display()))?;
+            std::fs::copy(&wasm_src, &wasm_dest).with_context(|| {
+                format!(
+                    "failed to copy WASM: {} -> {}",
+                    wasm_src.display(),
+                    wasm_dest.display()
+                )
+            })?;
             tracing::info!("[skills:install] copied WASM to {}", wasm_dest.display());
         } else {
             tracing::warn!(
@@ -339,9 +343,7 @@ impl GitSkillInstaller {
             Some(SignatureVerificationResult::Untrusted { fingerprint }) => {
                 ("untrusted".to_string(), Some(fingerprint.clone()))
             }
-            Some(SignatureVerificationResult::NoSignature) => {
-                ("no_signature".to_string(), None)
-            }
+            Some(SignatureVerificationResult::NoSignature) => ("no_signature".to_string(), None),
             Some(SignatureVerificationResult::Invalid { .. }) => {
                 unreachable!("handled above")
             }
@@ -404,10 +406,11 @@ impl GitSkillInstaller {
         clone_path: &Path,
         _git_url: &str,
     ) -> Result<InstallOutcome, InstallError> {
-        let python_config = manifest.python.as_ref()
-            .ok_or_else(|| InstallError::Manifest(ManifestError::InvalidField(
+        let python_config = manifest.python.as_ref().ok_or_else(|| {
+            InstallError::Manifest(ManifestError::InvalidField(
                 "python section missing from manifest".to_string(),
-            )))?;
+            ))
+        })?;
 
         // Steps 4-5 — GPG + static analysis (reuse WASM pipeline steps)
         let sig_result = if manifest.gpg.is_some() {
@@ -444,7 +447,10 @@ impl GitSkillInstaller {
             .with_context(|| format!("failed to create skill src dir: {}", src_dir.display()))?;
 
         copy_dir_except_git(clone_path, &src_dir)?;
-        tracing::info!("[skills:install] copied Python source to {}", src_dir.display());
+        tracing::info!(
+            "[skills:install] copied Python source to {}",
+            src_dir.display()
+        );
 
         // Copy manifest YAML for audit trail
         let manifest_src = clone_path.join("dadou-skill.yaml");
@@ -520,7 +526,10 @@ impl GitSkillInstaller {
             .ok_or_else(|| InstallError::NotFound(name.to_string()))?
             .clone();
 
-        tracing::info!("[skills:install] updating skill '{name}' (v{})", installed.version);
+        tracing::info!(
+            "[skills:install] updating skill '{name}' (v{})",
+            installed.version
+        );
 
         // We need the git URL. For now, reconstruct from the installed skill's
         // assumed remote. In v2, store the origin URL in the store.
@@ -575,8 +584,7 @@ impl GitSkillInstaller {
         // Re-parse manifest to get permissions for analysis
         let manifest_path = skill_dir.join("dadou-skill.yaml");
         let manifest = if manifest_path.exists() {
-            let content = std::fs::read_to_string(&manifest_path)
-                .map_err(InstallError::Io)?;
+            let content = std::fs::read_to_string(&manifest_path).map_err(InstallError::Io)?;
             Some(parse_manifest(&content).map_err(InstallError::Manifest)?)
         } else {
             None
@@ -627,10 +635,7 @@ impl GitSkillInstaller {
     /// Deletes the skill directory under `~/.openhuman/skills/<name>/` and
     /// removes the entry from the TOML store.
     pub fn remove_skill(&mut self, name: &str) -> Result<RemoveOutcome, InstallError> {
-        let existed = self
-            .store
-            .get(name)
-            .is_some();
+        let existed = self.store.get(name).is_some();
 
         if !existed {
             return Err(InstallError::NotFound(name.to_string()));
@@ -645,7 +650,10 @@ impl GitSkillInstaller {
         let skill_dir = self.skills_dir.join(name);
         let removed_path = if skill_dir.exists() {
             std::fs::remove_dir_all(&skill_dir)?;
-            tracing::info!("[skills:install] removed skill directory: {}", skill_dir.display());
+            tracing::info!(
+                "[skills:install] removed skill directory: {}",
+                skill_dir.display()
+            );
             Some(skill_dir)
         } else {
             None
@@ -671,11 +679,8 @@ impl GitSkillInstaller {
 /// then delegates to [`GitSkillInstaller::install_skill`].
 pub async fn install_skill(git_url: &str) -> Result<InstallOutcome, InstallError> {
     let store = SkillsStore::load().map_err(|e| InstallError::Store(e.to_string()))?;
-    let trust_store =
-        TrustStore::load().map_err(|e| InstallError::Gpg(e))?;
-    let wasm_engine = Arc::new(
-        WasmEngine::new().map_err(|e| InstallError::Wasm(e.to_string()))?,
-    );
+    let trust_store = TrustStore::load().map_err(|e| InstallError::Gpg(e))?;
+    let wasm_engine = Arc::new(WasmEngine::new().map_err(|e| InstallError::Wasm(e.to_string()))?);
     let mut installer = GitSkillInstaller::new(store, trust_store, wasm_engine)?;
     installer.install_skill(git_url).await
 }
@@ -686,11 +691,8 @@ pub async fn install_skill(git_url: &str) -> Result<InstallOutcome, InstallError
 /// and delegates to [`GitSkillInstaller::audit_skill`].
 pub fn audit_skill(name: &str) -> Result<AuditOutcome, InstallError> {
     let store = SkillsStore::load().map_err(|e| InstallError::Store(e.to_string()))?;
-    let trust_store =
-        TrustStore::load().map_err(|e| InstallError::Gpg(e))?;
-    let wasm_engine = Arc::new(
-        WasmEngine::new().map_err(|e| InstallError::Wasm(e.to_string()))?,
-    );
+    let trust_store = TrustStore::load().map_err(|e| InstallError::Gpg(e))?;
+    let wasm_engine = Arc::new(WasmEngine::new().map_err(|e| InstallError::Wasm(e.to_string()))?);
     let mut installer = GitSkillInstaller::new(store, trust_store, wasm_engine)?;
     installer.audit_skill(name)
 }
@@ -701,11 +703,8 @@ pub fn audit_skill(name: &str) -> Result<AuditOutcome, InstallError> {
 /// [`GitSkillInstaller::remove_skill`].
 pub fn remove_skill(name: &str) -> Result<RemoveOutcome, InstallError> {
     let store = SkillsStore::load().map_err(|e| InstallError::Store(e.to_string()))?;
-    let trust_store =
-        TrustStore::load().map_err(|e| InstallError::Gpg(e))?;
-    let wasm_engine = Arc::new(
-        WasmEngine::new().map_err(|e| InstallError::Wasm(e.to_string()))?,
-    );
+    let trust_store = TrustStore::load().map_err(|e| InstallError::Gpg(e))?;
+    let wasm_engine = Arc::new(WasmEngine::new().map_err(|e| InstallError::Wasm(e.to_string()))?);
     let mut installer = GitSkillInstaller::new(store, trust_store, wasm_engine)?;
     installer.remove_skill(name)
 }
@@ -749,9 +748,8 @@ fn validate_git_url(url: &str) -> Result<&str, InstallError> {
 ///
 /// Returns the `TempDir` guard and the canonical clone path.
 async fn clone_to_temp(url: &str) -> Result<(TempDir, PathBuf), InstallError> {
-    let tmp = tempfile::tempdir().map_err(|e| {
-        InstallError::GitError(format!("failed to create temp dir: {e}"))
-    })?;
+    let tmp = tempfile::tempdir()
+        .map_err(|e| InstallError::GitError(format!("failed to create temp dir: {e}")))?;
     let target = tmp.path().join("repo");
 
     tracing::debug!("[skills:install] cloning {url} -> {}", target.display());
@@ -911,8 +909,8 @@ fn scoped_static_analysis(
     manifest: &SkillManifest,
 ) -> Result<AnalysisResult, InstallError> {
     let permissions = &manifest.permissions;
-    let result = scan_skill(clone_path, permissions)
-        .map_err(|e| InstallError::Store(e.to_string()))?;
+    let result =
+        scan_skill(clone_path, permissions).map_err(|e| InstallError::Store(e.to_string()))?;
 
     tracing::info!(
         "[skills:install] static analysis: {:?} ({} findings)",
@@ -1020,18 +1018,12 @@ permissions:
         std::fs::create_dir_all(&skills_dir).unwrap();
 
         let store = SkillsStore::load_from(&store_path).unwrap();
-        let trust_store = TrustStore::load_from(
-            dir.path().join("certs"),
-            dir.path().join("trust.toml"),
-        );
+        let trust_store =
+            TrustStore::load_from(dir.path().join("certs"), dir.path().join("trust.toml"));
 
         let wasm_engine = Arc::new(WasmEngine::new().unwrap());
-        let mut installer = GitSkillInstaller::with_skills_dir(
-            store,
-            trust_store,
-            wasm_engine,
-            skills_dir.clone(),
-        );
+        let mut installer =
+            GitSkillInstaller::with_skills_dir(store, trust_store, wasm_engine, skills_dir.clone());
 
         // Manually insert a skill (simulating what install_skill would do)
         let skill = InstalledSkill {
@@ -1044,10 +1036,7 @@ permissions:
             last_audit_at: Some(Utc::now().to_rfc3339()),
             audit_result: Some("pass".to_string()),
         };
-        installer
-            .store_mut()
-            .upsert(skill)
-            .unwrap();
+        installer.store_mut().upsert(skill).unwrap();
 
         // Verify it's in the store
         let loaded = installer.store().get("mock-skill").unwrap();
@@ -1065,10 +1054,8 @@ permissions:
         let dir = TempDir::new().unwrap();
         let store_path = dir.path().join("store.toml");
         let store = SkillsStore::load_from(&store_path).unwrap();
-        let trust_store = TrustStore::load_from(
-            dir.path().join("certs"),
-            dir.path().join("trust.toml"),
-        );
+        let trust_store =
+            TrustStore::load_from(dir.path().join("certs"), dir.path().join("trust.toml"));
 
         let wasm_engine = Arc::new(WasmEngine::new().unwrap());
         let mut installer = GitSkillInstaller::with_skills_dir(
@@ -1087,10 +1074,8 @@ permissions:
         let dir = TempDir::new().unwrap();
         let store_path = dir.path().join("store.toml");
         let store = SkillsStore::load_from(&store_path).unwrap();
-        let trust_store = TrustStore::load_from(
-            dir.path().join("certs"),
-            dir.path().join("trust.toml"),
-        );
+        let trust_store =
+            TrustStore::load_from(dir.path().join("certs"), dir.path().join("trust.toml"));
 
         let wasm_engine = Arc::new(WasmEngine::new().unwrap());
         let mut installer = GitSkillInstaller::with_skills_dir(
@@ -1106,10 +1091,8 @@ permissions:
 
     #[test]
     fn git_skill_installer_new_creates_installer() {
-        let store = SkillsStore::load_from(
-            &TempDir::new().unwrap().path().join("store.toml"),
-        )
-        .unwrap();
+        let store =
+            SkillsStore::load_from(&TempDir::new().unwrap().path().join("store.toml")).unwrap();
         let trust_store = TrustStore::load_from(
             TempDir::new().unwrap().path().join("certs"),
             TempDir::new().unwrap().path().join("trust.toml"),

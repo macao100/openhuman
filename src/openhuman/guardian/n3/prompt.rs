@@ -90,7 +90,10 @@ impl N3PromptBuilder {
         // Truncate to max length.
         if prompt.len() > MAX_USER_PROMPT_CHARS {
             let truncated: String = prompt.chars().take(MAX_USER_PROMPT_CHARS).collect();
-            return format!("{}...\n[TRUNCATED at {} chars]", truncated, MAX_USER_PROMPT_CHARS);
+            return format!(
+                "{}...\n[TRUNCATED at {} chars]",
+                truncated, MAX_USER_PROMPT_CHARS
+            );
         }
 
         prompt
@@ -131,15 +134,27 @@ impl N3PromptBuilder {
     /// Build the user prompt for plan-level intent validation.
     ///
     /// Includes the plan's goal and each step's tool, args, and rationale.
-    pub fn plan_intent_user_prompt(plan: &crate::openhuman::guardian::types::StructuredPlan) -> String {
+    pub fn plan_intent_user_prompt(
+        plan: &crate::openhuman::guardian::types::StructuredPlan,
+    ) -> String {
         use crate::openhuman::guardian::types::StructuredPlan;
         format!(
             "Plan goal: {}\nSteps:\n{}",
             plan.goal,
-            plan.steps.iter().enumerate().map(|(i, s)| {
-                format!("  {}. tool={}, args={}, rationale={}",
-                    i + 1, s.tool, s.args, s.rationale)
-            }).collect::<Vec<_>>().join("\n")
+            plan.steps
+                .iter()
+                .enumerate()
+                .map(|(i, s)| {
+                    format!(
+                        "  {}. tool={}, args={}, rationale={}",
+                        i + 1,
+                        s.tool,
+                        s.args,
+                        s.rationale
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join("\n")
         )
     }
 }
@@ -243,7 +258,10 @@ mod tests {
             None,
             &scores,
         );
-        assert!(prompt.contains("exfiltration"), "should include N2 detector name");
+        assert!(
+            prompt.contains("exfiltration"),
+            "should include N2 detector name"
+        );
         assert!(prompt.contains("0.650"), "should include N2 score value");
         assert!(prompt.contains("0.420"), "should include N2 score value");
     }
@@ -299,10 +317,7 @@ mod tests {
             MAX_USER_PROMPT_CHARS,
             prompt.len()
         );
-        assert!(
-            prompt.contains("TRUNCATED"),
-            "should indicate truncation"
-        );
+        assert!(prompt.contains("TRUNCATED"), "should indicate truncation");
     }
 
     // -----------------------------------------------------------------------

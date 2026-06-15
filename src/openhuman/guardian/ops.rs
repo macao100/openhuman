@@ -8,11 +8,11 @@ use std::sync::Arc;
 
 use serde_json::{json, Value};
 
-use crate::openhuman::guardian::pipeline::GuardianN1;
-use crate::openhuman::guardian::rules;
 use crate::openhuman::guardian::n2::types::N2EngineConfig;
 use crate::openhuman::guardian::n2::GuardianN2;
 use crate::openhuman::guardian::n3::GuardianN3;
+use crate::openhuman::guardian::pipeline::GuardianN1;
+use crate::openhuman::guardian::rules;
 use crate::openhuman::guardian::types::StructuredPlan;
 use crate::rpc::RpcOutcome;
 
@@ -56,7 +56,10 @@ pub async fn reload_yaml_rules(yaml_path: Option<&str>) -> Result<RpcOutcome<Val
     let loaded = rules::load_yaml_rules(&path);
     let count = loaded.len();
 
-    log::info!("[guardian] Reloaded {count} YAML rules from {}", path.display());
+    log::info!(
+        "[guardian] Reloaded {count} YAML rules from {}",
+        path.display()
+    );
 
     let payload = json!({
         "loaded_count": count,
@@ -77,7 +80,9 @@ pub async fn evaluate_pipeline(
     let yaml_path = default_yaml_path();
     let guardian = GuardianN1::new(policy, Some(&yaml_path));
 
-    let result = guardian.evaluate(tool_name, &args, command, file_path).await;
+    let result = guardian
+        .evaluate(tool_name, &args, command, file_path)
+        .await;
 
     let payload = json!({
         "allowed": result.allowed,
@@ -164,11 +169,10 @@ pub async fn validate_plan(plan_value: Value) -> Result<RpcOutcome<Value>, Strin
         format!("Invalid plan JSON: {e}")
     })?;
 
-    let pipeline =
-        crate::openhuman::guardian::GuardianPipeline::try_global().ok_or_else(|| {
-            log::warn!("[guardian:plan] GuardianPipeline not initialized");
-            "GuardianPipeline not initialized".to_string()
-        })?;
+    let pipeline = crate::openhuman::guardian::GuardianPipeline::try_global().ok_or_else(|| {
+        log::warn!("[guardian:plan] GuardianPipeline not initialized");
+        "GuardianPipeline not initialized".to_string()
+    })?;
 
     let result = pipeline.evaluate_plan(&plan).await;
 

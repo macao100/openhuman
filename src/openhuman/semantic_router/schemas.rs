@@ -37,13 +37,9 @@ fn handle_route_query(params: Map<String, serde_json::Value>) -> ControllerFutur
             .and_then(|v| v.as_str())
             .ok_or_else(|| "missing 'query' parameter".to_string())?;
 
-        let top_k = params
-            .get("top_k")
-            .and_then(|v| v.as_u64())
-            .unwrap_or(3) as usize;
+        let top_k = params.get("top_k").and_then(|v| v.as_u64()).unwrap_or(3) as usize;
 
-        let router = ops::global()
-            .ok_or_else(|| "semantic router not initialised".to_string())?;
+        let router = ops::global().ok_or_else(|| "semantic router not initialised".to_string())?;
 
         let result = router.route_query(query, top_k);
 
@@ -53,8 +49,7 @@ fn handle_route_query(params: Map<String, serde_json::Value>) -> ControllerFutur
 
 fn handle_get_index_status(_params: Map<String, serde_json::Value>) -> ControllerFuture {
     Box::pin(async move {
-        let router = ops::global()
-            .ok_or_else(|| "semantic router not initialised".to_string())?;
+        let router = ops::global().ok_or_else(|| "semantic router not initialised".to_string())?;
 
         let index = router.index.read().map_err(|e| format!("lock: {e}"))?;
         let status = serde_json::json!({
@@ -73,7 +68,9 @@ fn handle_rebuild_index(_params: Map<String, serde_json::Value>) -> ControllerFu
 
         ops::rebuild_index(&skills_store)?;
 
-        to_json(serde_json::json!({"status": "ok", "skill_count": skills_store.installed().len() as u64}))
+        to_json(
+            serde_json::json!({"status": "ok", "skill_count": skills_store.installed().len() as u64}),
+        )
     })
 }
 
@@ -81,9 +78,18 @@ fn handle_rebuild_index(_params: Map<String, serde_json::Value>) -> ControllerFu
 
 pub fn all_semantic_router_controller_schemas() -> Vec<ControllerSchema> {
     vec![
-        controller_schema("route_query", "Find matching skills for a user query using embedding or keyword similarity"),
-        controller_schema("get_index_status", "Current skill index state (count, embedder)"),
-        controller_schema("rebuild_index", "Force rebuild of the skill embedding index"),
+        controller_schema(
+            "route_query",
+            "Find matching skills for a user query using embedding or keyword similarity",
+        ),
+        controller_schema(
+            "get_index_status",
+            "Current skill index state (count, embedder)",
+        ),
+        controller_schema(
+            "rebuild_index",
+            "Force rebuild of the skill embedding index",
+        ),
     ]
 }
 

@@ -54,8 +54,7 @@ fn controller_schema(
 
 fn handle_get_stats(_params: Map<String, serde_json::Value>) -> ControllerFuture {
     Box::pin(async move {
-        let store = store::global()
-            .ok_or_else(|| "dashboard store not initialised".to_string())?;
+        let store = store::global().ok_or_else(|| "dashboard store not initialised".to_string())?;
         let store = store.lock().map_err(|e| format!("lock: {e}"))?;
 
         let mut stats = store.get_stats().map_err(|e| format!("get_stats: {e}"))?;
@@ -91,8 +90,7 @@ fn handle_get_recent_events(params: Map<String, serde_json::Value>) -> Controlle
             .and_then(|v| v.as_str())
             .map(|s| s.to_string());
 
-        let store = store::global()
-            .ok_or_else(|| "dashboard store not initialised".to_string())?;
+        let store = store::global().ok_or_else(|| "dashboard store not initialised".to_string())?;
         let store = store.lock().map_err(|e| format!("lock: {e}"))?;
 
         let events = store
@@ -129,8 +127,7 @@ fn handle_get_skills(_params: Map<String, serde_json::Value>) -> ControllerFutur
 
 fn handle_get_memory_stats(_params: Map<String, serde_json::Value>) -> ControllerFuture {
     Box::pin(async move {
-        let store = store::global()
-            .ok_or_else(|| "dashboard store not initialised".to_string())?;
+        let store = store::global().ok_or_else(|| "dashboard store not initialised".to_string())?;
         let store = store.lock().map_err(|e| format!("lock: {e}"))?;
 
         // Count events using a simple in-memory aggregation from recent events.
@@ -138,10 +135,7 @@ fn handle_get_memory_stats(_params: Map<String, serde_json::Value>) -> Controlle
             .list_recent(10_000, None)
             .map_err(|e| format!("list_recent: {e}"))?;
 
-        let memory_stored = events
-            .iter()
-            .filter(|e| e.kind == "memory_stored")
-            .count() as u64;
+        let memory_stored = events.iter().filter(|e| e.kind == "memory_stored").count() as u64;
         let memory_recalled = events
             .iter()
             .filter(|e| e.kind == "memory_recalled")
@@ -162,7 +156,12 @@ fn handle_get_memory_stats(_params: Map<String, serde_json::Value>) -> Controlle
 
 pub fn all_dashboard_controller_schemas() -> Vec<ControllerSchema> {
     vec![
-        controller_schema("get_stats", "Aggregate dashboard statistics", vec![], vec![]),
+        controller_schema(
+            "get_stats",
+            "Aggregate dashboard statistics",
+            vec![],
+            vec![],
+        ),
         controller_schema(
             "get_recent_events",
             "Recent dashboard events, optionally filtered by kind",
@@ -170,7 +169,12 @@ pub fn all_dashboard_controller_schemas() -> Vec<ControllerSchema> {
             vec![],
         ),
         controller_schema("get_skills", "Installed skills with status", vec![], vec![]),
-        controller_schema("get_memory_stats", "Memory event statistics", vec![], vec![]),
+        controller_schema(
+            "get_memory_stats",
+            "Memory event statistics",
+            vec![],
+            vec![],
+        ),
     ]
 }
 
@@ -226,7 +230,11 @@ mod tests {
         names.sort();
         let len_before = names.len();
         names.dedup();
-        assert_eq!(len_before, names.len(), "duplicate function names in schemas");
+        assert_eq!(
+            len_before,
+            names.len(),
+            "duplicate function names in schemas"
+        );
     }
 
     #[test]

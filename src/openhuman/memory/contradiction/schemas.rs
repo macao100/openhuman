@@ -193,7 +193,8 @@ fn schema(function: &str) -> ControllerSchema {
 
 /// Parse action from params — accepts snake_case string.
 fn parse_action(value: &str) -> Result<ContradictionAction, String> {
-    value.parse::<ContradictionAction>()
+    value
+        .parse::<ContradictionAction>()
         .map_err(|e| format!("invalid action '{value}': {e}"))
 }
 
@@ -218,15 +219,9 @@ pub fn handle_check(params: Map<String, Value>) -> ControllerFuture {
         // `None` — the detector will skip provenance filtering and run the
         // check against all semantically-close entries regardless of their
         // confidence.
-        let report = check_for_contradictions(
-            &memory,
-            namespace,
-            value,
-            None,
-            min_similarity,
-        )
-        .await
-        .map_err(|e| format!("contradiction check: {e}"))?;
+        let report = check_for_contradictions(&memory, namespace, value, None, min_similarity)
+            .await
+            .map_err(|e| format!("contradiction check: {e}"))?;
 
         let candidates_json: Vec<Value> = report
             .candidates
@@ -298,8 +293,8 @@ pub fn handle_resolve(params: Map<String, Value>) -> ControllerFuture {
 
 /// Obtain the global memory handle (Arc<dyn Memory>) for the RPC handler.
 fn get_memory_handle() -> Result<std::sync::Arc<dyn Memory>, String> {
-    let client = crate::openhuman::memory::global::client()
-        .map_err(|e| format!("memory client: {e}"))?;
+    let client =
+        crate::openhuman::memory::global::client().map_err(|e| format!("memory client: {e}"))?;
     Ok(client.memory_handle())
 }
 
@@ -327,8 +322,7 @@ mod tests {
             assert!(
                 matching,
                 "controller {}.{} has no matching schema",
-                ctrl.schema.namespace,
-                ctrl.schema.function
+                ctrl.schema.namespace, ctrl.schema.function
             );
         }
     }

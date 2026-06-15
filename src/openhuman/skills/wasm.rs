@@ -151,7 +151,12 @@ pub fn build_wasi_ctx(data_dir: &Path) -> anyhow::Result<wasmtime_wasi::preview1
 
     // Preopen for write access (permitted if the caller allows writes).
     builder
-        .preopened_dir(&canonical, "/data", DirPerms::READ | DirPerms::MUTATE, FilePerms::WRITE)
+        .preopened_dir(
+            &canonical,
+            "/data",
+            DirPerms::READ | DirPerms::MUTATE,
+            FilePerms::WRITE,
+        )
         .context("failed to preopen skill data directory for write")?;
     // Always preopen for read access.
     builder
@@ -232,9 +237,8 @@ pub fn execute_wasm(
     let data_dir = skill_data_dir(skill_name);
     std::fs::create_dir_all(&data_dir)
         .map_err(|e| WasmExecutionError::DataDir(format!("failed to create {data_dir:?}: {e}")))?;
-    let wasi_ctx = build_wasi_ctx(&data_dir).map_err(|e| {
-        WasmExecutionError::DataDir(format!("failed to build WASI context: {e}"))
-    })?;
+    let wasi_ctx = build_wasi_ctx(&data_dir)
+        .map_err(|e| WasmExecutionError::DataDir(format!("failed to build WASI context: {e}")))?;
 
     // 3. Create store with epoch deadline.
     let mut store = Store::new(engine, wasi_ctx);
@@ -250,9 +254,9 @@ pub fn execute_wasm(
         .map_err(classify_trap)?;
 
     // 6. Locate entry function.
-    let func = instance
-        .get_func(&mut store, entry_fn)
-        .ok_or_else(|| WasmExecutionError::Trap(format!("entry function '{entry_fn}' not found")))?;
+    let func = instance.get_func(&mut store, entry_fn).ok_or_else(|| {
+        WasmExecutionError::Trap(format!("entry function '{entry_fn}' not found"))
+    })?;
 
     // 7. Inspect signature and dispatch.
     let ty = func.ty(&store);
@@ -263,7 +267,13 @@ pub fn execute_wasm(
         // `()` → `()` — standard WASI _start or void entry.
         ([], []) => {
             tracing::debug!("[skills:wasm] calling void → void entry '{entry_fn}'");
-            call_with_timeout(&func, &mut store, &[], &mut [], defaults::EXECUTION_TIMEOUT_SECS)?;
+            call_with_timeout(
+                &func,
+                &mut store,
+                &[],
+                &mut [],
+                defaults::EXECUTION_TIMEOUT_SECS,
+            )?;
             Vec::new()
         }
 
@@ -276,7 +286,8 @@ pub fn execute_wasm(
             })?;
 
             // Write input bytes at the agreed input offset.
-            memory.write(&mut store, defaults::INPUT_OFFSET as usize, input)
+            memory
+                .write(&mut store, defaults::INPUT_OFFSET as usize, input)
                 .map_err(|e| WasmExecutionError::Trap(e.to_string()))?;
 
             tracing::debug!(
@@ -311,7 +322,8 @@ pub fn execute_wasm(
                 Vec::new()
             } else {
                 let mut output = vec![0u8; output_len];
-                memory.read(&store, defaults::OUTPUT_OFFSET as usize, &mut output)
+                memory
+                    .read(&store, defaults::OUTPUT_OFFSET as usize, &mut output)
                     .map_err(|e| WasmExecutionError::Trap(e.to_string()))?;
                 output
             }
@@ -470,8 +482,7 @@ fn call_with_timeout(
     results: &mut [wasmtime::Val],
     _timeout_secs: u64,
 ) -> Result<(), WasmExecutionError> {
-    func.call(store, params, results)
-        .map_err(classify_trap)
+    func.call(store, params, results).map_err(classify_trap)
 }
 
 // ---------------------------------------------------------------------------
@@ -545,7 +556,10 @@ mod tests {
 
         let output = execute_wasm(engine.engine(), &wasm, "run", b"", "test-skill")
             .expect("execution with empty input should succeed");
-        assert!(output.is_empty(), "expected empty output for zero-length input");
+        assert!(
+            output.is_empty(),
+            "expected empty output for zero-length input"
+        );
     }
 
     // -----------------------------------------------------------------------
@@ -578,9 +592,7 @@ mod tests {
         let instance = linker
             .instantiate(&mut store, &module)
             .expect("instantiate");
-        let func = instance
-            .get_func(&mut store, "run")
-            .expect("get run func");
+        let func = instance.get_func(&mut store, "run").expect("get run func");
 
         let eng = engine.engine().clone();
 
@@ -600,9 +612,7 @@ mod tests {
         std::thread::sleep(std::time::Duration::from_millis(100));
         eng.increment_epoch();
 
-        let outcome = handle
-            .join()
-            .expect("background thread should not panic");
+        let outcome = handle.join().expect("background thread should not panic");
 
         match outcome {
             Ok(_) => panic!("expected timeout error but execution succeeded"),
@@ -722,7 +732,8 @@ mod tests {
         .expect("valid WAT");
 
         let mut store = Store::new(shared_engine().engine(), ctx);
-        let mut linker = Linker::<wasmtime_wasi::preview1::WasiP1Ctx>::new(shared_engine().engine());
+        let mut linker =
+            Linker::<wasmtime_wasi::preview1::WasiP1Ctx>::new(shared_engine().engine());
         wasmtime_wasi::preview1::add_to_linker_sync(&mut linker, |ctx| ctx).expect("add WASI");
         let module = Module::new(shared_engine().engine(), &wasm).expect("compile");
 
@@ -752,9 +763,14 @@ mod tests {
     fn skill_data_dir_resolves_correctly() {
         let path = skill_data_dir("test-skill");
         let path_str = path.to_string_lossy();
-        assert!(path_str.contains("test-skill"), "path should contain skill name");
-        assert!(path_str.ends_with("test-skill/data") || path_str.ends_with("test-skill\\data"),
-            "path should end with 'test-skill/data', got: {path_str}");
+        assert!(
+            path_str.contains("test-skill"),
+            "path should contain skill name"
+        );
+        assert!(
+            path_str.ends_with("test-skill/data") || path_str.ends_with("test-skill\\data"),
+            "path should end with 'test-skill/data', got: {path_str}"
+        );
     }
 
     // -----------------------------------------------------------------------
@@ -795,10 +811,16 @@ mod tests {
         .expect("valid WAT");
 
         let result = execute_wasm(engine.engine(), &wasm, "nonexistent", b"", "test-skill");
-        assert!(result.is_err(), "should fail when entry function is missing");
+        assert!(
+            result.is_err(),
+            "should fail when entry function is missing"
+        );
         match result.unwrap_err() {
             WasmExecutionError::Trap(msg) => {
-                assert!(msg.contains("nonexistent"), "error should mention function name");
+                assert!(
+                    msg.contains("nonexistent"),
+                    "error should mention function name"
+                );
             }
             other => panic!("expected Trap error, got: {other}"),
         }
@@ -823,8 +845,15 @@ mod tests {
         .expect("valid WAT");
 
         let input = b"hello structured output!";
-        let envelope =
-            execute_wasm_structured(engine.engine(), &wasm, "run", input, "structured-skill", "1.2.0", true);
+        let envelope = execute_wasm_structured(
+            engine.engine(),
+            &wasm,
+            "run",
+            input,
+            "structured-skill",
+            "1.2.0",
+            true,
+        );
 
         assert_eq!(envelope.skill_name, "structured-skill");
         assert_eq!(envelope.skill_version, "1.2.0");
@@ -841,8 +870,15 @@ mod tests {
         let engine = shared_engine();
         let garbage = b"not valid wasm at all";
 
-        let envelope =
-            execute_wasm_structured(engine.engine(), garbage, "run", b"", "bad-skill", "0.0.1", false);
+        let envelope = execute_wasm_structured(
+            engine.engine(),
+            garbage,
+            "run",
+            b"",
+            "bad-skill",
+            "0.0.1",
+            false,
+        );
 
         // Should still return an envelope (not propagate the error)
         assert_eq!(envelope.skill_name, "bad-skill");
@@ -862,8 +898,15 @@ mod tests {
         )
         .expect("valid WAT");
 
-        let envelope =
-            execute_wasm_structured(engine.engine(), &wasm, "_start", b"", "empty-skill", "0.1.0", false);
+        let envelope = execute_wasm_structured(
+            engine.engine(),
+            &wasm,
+            "_start",
+            b"",
+            "empty-skill",
+            "0.1.0",
+            false,
+        );
 
         assert_eq!(envelope.execution_status, ExecutionStatus::Success);
         assert_eq!(envelope.data["output"], "");

@@ -275,7 +275,9 @@ impl Tool for ApplyPatchTool {
             // ── Rollback: complete this file's entry with diff ────────────
             if let Some(ref entry) = rollback_entry {
                 if let Some(ref rb) = self.rollback {
-                    if let Err(e) = rb.after_write(entry, buf.original.as_bytes(), buf.contents.as_bytes()) {
+                    if let Err(e) =
+                        rb.after_write(entry, buf.original.as_bytes(), buf.contents.as_bytes())
+                    {
                         log::warn!("[rollback] after_write failed for {}: {}", path, e);
                     }
                 }

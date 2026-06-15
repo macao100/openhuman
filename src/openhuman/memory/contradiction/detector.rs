@@ -133,7 +133,7 @@ pub async fn check_for_contradictions(
 mod tests {
     use super::*;
     use crate::openhuman::memory::provenance::{ConfidenceLevel, MemorySource, Provenance};
-    use crate::openhuman::memory::{MemoryCategory};
+    use crate::openhuman::memory::MemoryCategory;
 
     /// Verified provenance fixture.
     fn verified_prov() -> Provenance {

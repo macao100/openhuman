@@ -123,11 +123,9 @@ pub async fn undo_before(
 
     // Mark successfully restored entries as rolled back.
     for entry in entries.iter().rev() {
-        let was_not_failed = !failures.iter().any(|f| {
-            f.get("action_id")
-                .and_then(|v| v.as_str())
-                == Some(&entry.action_id)
-        });
+        let was_not_failed = !failures
+            .iter()
+            .any(|f| f.get("action_id").and_then(|v| v.as_str()) == Some(&entry.action_id));
         if was_not_failed {
             let _ = store.mark_rolled_back(&entry.action_id);
         }
@@ -141,7 +139,9 @@ pub async fn undo_before(
 
     let log_msg = format!(
         "Undo before {}: restored {} files, {} failed",
-        timestamp, restored_count, failures.len()
+        timestamp,
+        restored_count,
+        failures.len()
     );
     Ok(RpcOutcome::single_log(result, log_msg))
 }
@@ -178,12 +178,10 @@ async fn restore_file(
 
         // Ensure parent directory exists.
         if let Some(parent) = abs_path.parent() {
-            std::fs::create_dir_all(parent)
-                .map_err(|e| RollbackError::Io(e))?;
+            std::fs::create_dir_all(parent).map_err(|e| RollbackError::Io(e))?;
         }
 
-        std::fs::write(&abs_path, &content)
-            .map_err(|e| RollbackError::Io(e))?;
+        std::fs::write(&abs_path, &content).map_err(|e| RollbackError::Io(e))?;
 
         tracing::info!(
             "[rollback] Restored file: {} ({} bytes, action_id: {})",
@@ -194,8 +192,7 @@ async fn restore_file(
     } else {
         // Snapshot doesn't exist → file was created by the tool → delete it.
         if abs_path.exists() {
-            std::fs::remove_file(&abs_path)
-                .map_err(|e| RollbackError::Io(e))?;
+            std::fs::remove_file(&abs_path).map_err(|e| RollbackError::Io(e))?;
 
             tracing::info!(
                 "[rollback] Removed created file: {} (action_id: {})",
@@ -277,7 +274,10 @@ mod tests {
 
         // Verify file is modified
         let after_mod = std::fs::read_to_string(&abs_path).unwrap();
-        assert_eq!(after_mod, "modified content", "file should be modified before undo");
+        assert_eq!(
+            after_mod, "modified content",
+            "file should be modified before undo"
+        );
 
         // Undo the last change
         let outcome = undo_last(&store).await.expect("undo_last");
@@ -285,11 +285,17 @@ mod tests {
 
         // Verify result
         assert_eq!(val["restored"], serde_json::Value::Bool(true));
-        assert_eq!(val["file_path"], serde_json::Value::String("test.txt".into()));
+        assert_eq!(
+            val["file_path"],
+            serde_json::Value::String("test.txt".into())
+        );
 
         // Verify file content is restored
         let content = std::fs::read_to_string(&abs_path).unwrap();
-        assert_eq!(content, "original content", "file should be restored to original");
+        assert_eq!(
+            content, "original content",
+            "file should be restored to original"
+        );
     }
 
     #[tokio::test]
@@ -330,7 +336,10 @@ mod tests {
         assert_eq!(outcome.value["file_path"], rel_path);
 
         let content = std::fs::read_to_string(&abs_path).unwrap();
-        assert_eq!(content, "version 2", "should revert to version 2, not version 1");
+        assert_eq!(
+            content, "version 2",
+            "should revert to version 2, not version 1"
+        );
 
         // Undo again — should go back to version 1
         let outcome2 = undo_last(&store).await.expect("undo_last 2");
@@ -400,7 +409,10 @@ mod tests {
         let outcome = undo_before(&store, "2026-02-01T00:00:00Z")
             .await
             .expect("undo_before");
-        assert_eq!(outcome.value["restored_count"], 3, "all 3 files should be restored");
+        assert_eq!(
+            outcome.value["restored_count"], 3,
+            "all 3 files should be restored"
+        );
         assert_eq!(outcome.value["failed_count"], 0, "no failures expected");
 
         // Verify all files restored
@@ -451,8 +463,12 @@ mod tests {
         // Delete the diff file (simulate corruption)
         // Find the latest entry and get its action_id
         let entry = store.get_latest_not_rolled_back().unwrap().unwrap();
-        let diff_path = store.history_dir().join(format!("{}.diff", entry.action_id));
-        let snapshot_path = store.history_dir().join(format!("{}.snapshot", entry.action_id));
+        let diff_path = store
+            .history_dir()
+            .join(format!("{}.diff", entry.action_id));
+        let snapshot_path = store
+            .history_dir()
+            .join(format!("{}.snapshot", entry.action_id));
 
         // Verify snapshot exists
         assert!(snapshot_path.exists(), "snapshot should exist");
@@ -462,10 +478,15 @@ mod tests {
         std::fs::remove_file(&diff_path).unwrap();
 
         // Undo — should still work with snapshot
-        undo_last(&store).await.expect("undo_last should work even without diff");
+        undo_last(&store)
+            .await
+            .expect("undo_last should work even without diff");
 
         let content = std::fs::read_to_string(&abs_path).unwrap();
-        assert_eq!(content, "line1\nline2\nline3\n", "should restore from snapshot");
+        assert_eq!(
+            content, "line1\nline2\nline3\n",
+            "should restore from snapshot"
+        );
     }
 
     #[tokio::test]
@@ -505,18 +526,16 @@ mod tests {
         // File 2: modify but don't undo
         let abs_path2 = dir.path().join("second.txt");
         std::fs::write(&abs_path2, b"second original").unwrap();
-        let _entry2 = record_snapshot(
-            &store,
-            "second.txt",
-            b"second original",
-            b"second modified",
-        );
+        let _entry2 = record_snapshot(&store, "second.txt", b"second original", b"second modified");
 
         // undo_before should only restore second.txt (first is already rolled back)
         let outcome = undo_before(&store, "2026-12-31T23:59:59Z")
             .await
             .expect("undo_before");
-        assert_eq!(outcome.value["restored_count"], 1, "only second.txt should be restored");
+        assert_eq!(
+            outcome.value["restored_count"], 1,
+            "only second.txt should be restored"
+        );
 
         let content2 = std::fs::read_to_string(&abs_path2).unwrap();
         assert_eq!(content2, "second original", "second.txt should be restored");

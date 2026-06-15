@@ -157,8 +157,8 @@ impl TrustStore {
     /// Creates `~/.openhuman/skills/certs/` and a minimal
     /// `~/.openhuman/skills/trust.toml` if they do not exist.
     pub fn load() -> Result<Self, VerifyError> {
-        let home =
-            dirs::home_dir().ok_or_else(|| VerifyError::NoHomeDir("cannot determine HOME".into()))?;
+        let home = dirs::home_dir()
+            .ok_or_else(|| VerifyError::NoHomeDir("cannot determine HOME".into()))?;
         let skills_dir = home.join(SKILLS_SUBDIR);
         let certs_dir = skills_dir.join(CERTS_SUBDIR);
         let store_path = skills_dir.join(TRUST_TOML);
@@ -279,14 +279,13 @@ impl TrustStore {
         };
 
         let trimmed = content.trim();
-        if trimmed.is_empty() || !trimmed.contains("[[" ) {
+        if trimmed.is_empty() || !trimmed.contains("[[") {
             return Ok(Vec::new());
         }
 
         // toml::from_str would require a wrapper struct, so parse as
         // a TOML array of tables manually.
-        let value: toml::Value = toml::from_str(&content)
-            .map_err(|e| VerifyError::TomlDe(e))?;
+        let value: toml::Value = toml::from_str(&content).map_err(|e| VerifyError::TomlDe(e))?;
 
         let authors = value
             .get("authors")
@@ -331,10 +330,7 @@ impl TrustStore {
             lines.push(format!("name = {:?}", author.name));
             lines.push(format!("key_id = {:?}", author.key_id));
             lines.push(format!("fingerprint = {:?}", author.fingerprint));
-            lines.push(format!(
-                "added_at = {:?}",
-                author.added_at.format("%+")
-            ));
+            lines.push(format!("added_at = {:?}", author.added_at.format("%+")));
             lines.push(String::new());
         }
 
@@ -447,10 +443,7 @@ fn decode_armor(armored: &str) -> Result<Vec<u8>, VerifyError> {
         }
 
         // Skip empty lines, headers (Key: Value), and the CRC24 checksum line
-        if trimmed.is_empty()
-            || trimmed.contains(':')
-            || trimmed.starts_with('=')
-        {
+        if trimmed.is_empty() || trimmed.contains(':') || trimmed.starts_with('=') {
             continue;
         }
 
@@ -475,7 +468,9 @@ fn decode_armor(armored: &str) -> Result<Vec<u8>, VerifyError> {
 /// (section 4.2.2) packet headers. GnuPG uses old-format by default.
 fn parse_packet_header(data: &[u8], pos: usize) -> Result<(u8, usize, usize), VerifyError> {
     if pos >= data.len() {
-        return Err(VerifyError::CertParse("unexpected end of packet data".into()));
+        return Err(VerifyError::CertParse(
+            "unexpected end of packet data".into(),
+        ));
     }
 
     let ctb = data[pos];
@@ -489,7 +484,9 @@ fn parse_packet_header(data: &[u8], pos: usize) -> Result<(u8, usize, usize), Ve
         let tag = ctb & 0x3F;
 
         if pos + 1 >= data.len() {
-            return Err(VerifyError::CertParse("truncated new-format packet header".into()));
+            return Err(VerifyError::CertParse(
+                "truncated new-format packet header".into(),
+            ));
         }
 
         let len_byte = data[pos + 1];
@@ -497,13 +494,17 @@ fn parse_packet_header(data: &[u8], pos: usize) -> Result<(u8, usize, usize), Ve
             (len_byte as usize, 1)
         } else if len_byte < 224 {
             if pos + 2 >= data.len() {
-                return Err(VerifyError::CertParse("truncated two-octet packet length".into()));
+                return Err(VerifyError::CertParse(
+                    "truncated two-octet packet length".into(),
+                ));
             }
             let len = ((len_byte as usize - 192) << 8) + data[pos + 2] as usize + 192;
             (len, 2)
         } else if len_byte == 255 {
             if pos + 5 >= data.len() {
-                return Err(VerifyError::CertParse("truncated five-octet packet length".into()));
+                return Err(VerifyError::CertParse(
+                    "truncated five-octet packet length".into(),
+                ));
             }
             let len = (data[pos + 2] as usize) << 24
                 | (data[pos + 3] as usize) << 16
@@ -542,7 +543,9 @@ fn parse_packet_header(data: &[u8], pos: usize) -> Result<(u8, usize, usize), Ve
             1 => {
                 // 2-octet length (big-endian)
                 if pos + 2 >= data.len() {
-                    return Err(VerifyError::CertParse("truncated old-format 2-byte length".into()));
+                    return Err(VerifyError::CertParse(
+                        "truncated old-format 2-byte length".into(),
+                    ));
                 }
                 let len = (data[pos + 1] as usize) << 8 | data[pos + 2] as usize;
                 (len, 2)
@@ -550,7 +553,9 @@ fn parse_packet_header(data: &[u8], pos: usize) -> Result<(u8, usize, usize), Ve
             2 => {
                 // 4-octet length (big-endian)
                 if pos + 4 >= data.len() {
-                    return Err(VerifyError::CertParse("truncated old-format 4-byte length".into()));
+                    return Err(VerifyError::CertParse(
+                        "truncated old-format 4-byte length".into(),
+                    ));
                 }
                 let len = (data[pos + 1] as usize) << 24
                     | (data[pos + 2] as usize) << 16
@@ -715,9 +720,7 @@ pub fn verify_manifest_signature(
         )));
     }
 
-    let tag_name = String::from_utf8_lossy(&output.stdout)
-        .trim()
-        .to_string();
+    let tag_name = String::from_utf8_lossy(&output.stdout).trim().to_string();
 
     if tag_name.is_empty() {
         return Err(VerifyError::NoTags("no tags found in repository".into()));
@@ -733,8 +736,7 @@ pub fn verify_manifest_signature(
                 // No manifest GPG config — trust store membership is enough
                 true
             } else {
-                fingerprint.starts_with(expected)
-                    || fingerprint.eq_ignore_ascii_case(expected)
+                fingerprint.starts_with(expected) || fingerprint.eq_ignore_ascii_case(expected)
             };
             if verified {
                 Ok(VerificationResult {
@@ -819,9 +821,7 @@ pub fn verify_skill_signature(
         )));
     }
 
-    let tag_name = String::from_utf8_lossy(&output.stdout)
-        .trim()
-        .to_string();
+    let tag_name = String::from_utf8_lossy(&output.stdout).trim().to_string();
 
     if tag_name.is_empty() {
         return Err(VerifyError::NoTags("no tags found in repository".into()));
@@ -993,7 +993,7 @@ xN4nxZQGqMfp2isjAQDggK8vYgq+7DKA9W5vMPGsg+QO74YllF7qgqdxApHzCQ==
             let store = TrustStore::load_from(&certs, &toml);
             store.add_author(TEST_PGP_PUBKEY).unwrap();
         } // store drops here
-        // Reopen and verify the data persisted
+          // Reopen and verify the data persisted
         let store2 = TrustStore::load_from(&certs, &toml);
         let authors = store2.list_authors().unwrap();
         assert_eq!(authors.len(), 1);
@@ -1083,10 +1083,7 @@ gpg: BAD signature from \"Test User\"";
 
         // Key ID is last 16 hex chars of fingerprint
         assert_eq!(author.key_id.len(), 16);
-        assert_eq!(
-            author.key_id,
-            &author.fingerprint[24..]
-        );
+        assert_eq!(author.key_id, &author.fingerprint[24..]);
     }
 
     #[test]

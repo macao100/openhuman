@@ -125,8 +125,7 @@ mod tests {
             rolled_back_at: None,
         };
         let json = serde_json::to_string(&entry).expect("serialize");
-        let deserialized: RollbackEntry =
-            serde_json::from_str(&json).expect("deserialize");
+        let deserialized: RollbackEntry = serde_json::from_str(&json).expect("deserialize");
         assert_eq!(deserialized.action_id, entry.action_id);
         assert_eq!(deserialized.file_path, entry.file_path);
         assert_eq!(deserialized.checksum_sha256, entry.checksum_sha256);

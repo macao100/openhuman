@@ -573,7 +573,9 @@ pub async fn snapshot() -> Result<RpcOutcome<AppStateSnapshot>, String> {
         let token = crate::openhuman::credentials::session_support::create_local_session_token();
         let auth = AuthStateResponse {
             is_authenticated: true,
-            user_id: Some(crate::openhuman::credentials::session_support::LOCAL_SESSION_USER_ID.to_string()),
+            user_id: Some(
+                crate::openhuman::credentials::session_support::LOCAL_SESSION_USER_ID.to_string(),
+            ),
             user: Some(serde_json::json!({
                 "id": crate::openhuman::credentials::session_support::LOCAL_SESSION_USER_ID,
                 "name": "DADOU User",
@@ -601,7 +603,9 @@ pub async fn snapshot() -> Result<RpcOutcome<AppStateSnapshot>, String> {
         let session_profile =
             tokio::task::spawn_blocking(move || load_app_session_profile(&config_for_profile))
                 .await
-                .unwrap_or_else(|e| Err(format!("[app_state] auth profile load task panicked: {e}")))?;
+                .unwrap_or_else(|e| {
+                    Err(format!("[app_state] auth profile load task panicked: {e}"))
+                })?;
         let auth = session_state_from_profile(session_profile.as_ref());
         let token = session_token_from_profile(session_profile.as_ref());
         let stored = sanitize_snapshot_user(auth.user.clone());

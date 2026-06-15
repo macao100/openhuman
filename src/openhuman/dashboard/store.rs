@@ -89,7 +89,13 @@ impl DashboardEventStore {
     }
 
     /// Insert a single dashboard event.
-    pub fn insert(&self, id: &str, kind: &str, payload: &serde_json::Value, recorded_at: &str) -> Result<()> {
+    pub fn insert(
+        &self,
+        id: &str,
+        kind: &str,
+        payload: &serde_json::Value,
+        recorded_at: &str,
+    ) -> Result<()> {
         self.with_connection(|conn| {
             conn.execute(
                 "INSERT INTO dashboard_events (id, kind, payload, recorded_at) VALUES (?1, ?2, ?3, ?4)",
@@ -237,8 +243,8 @@ impl DashboardEventStore {
     /// Delete the oldest events when the count exceeds `max_events`.
     pub fn enforce_max_events(&self, max_events: u64) -> Result<usize> {
         self.with_connection(|conn| {
-            let count: u64 = conn
-                .query_row("SELECT COUNT(*) FROM dashboard_events", [], |row| {
+            let count: u64 =
+                conn.query_row("SELECT COUNT(*) FROM dashboard_events", [], |row| {
                     row.get(0)
                 })?;
 
@@ -287,7 +293,12 @@ mod tests {
 
         let payload = serde_json::json!({"tool_name": "shell", "reason": "blocked"});
         store
-            .insert("evt-1", "guardian_blocked", &payload, "2026-06-05T00:00:00Z")
+            .insert(
+                "evt-1",
+                "guardian_blocked",
+                &payload,
+                "2026-06-05T00:00:00Z",
+            )
             .unwrap();
 
         let events = store.list_recent(10, None).unwrap();
@@ -303,10 +314,20 @@ mod tests {
         let store = DashboardEventStore::open(&cfg).unwrap();
 
         store
-            .insert("a", "guardian_blocked", &serde_json::json!({}), "2026-01-01T00:00:00Z")
+            .insert(
+                "a",
+                "guardian_blocked",
+                &serde_json::json!({}),
+                "2026-01-01T00:00:00Z",
+            )
             .unwrap();
         store
-            .insert("b", "n2_blocked", &serde_json::json!({}), "2026-01-02T00:00:00Z")
+            .insert(
+                "b",
+                "n2_blocked",
+                &serde_json::json!({}),
+                "2026-01-02T00:00:00Z",
+            )
             .unwrap();
 
         let filtered = store.list_recent(10, Some("guardian_blocked")).unwrap();
@@ -332,16 +353,36 @@ mod tests {
         let store = DashboardEventStore::open(&cfg).unwrap();
 
         store
-            .insert("1", "guardian_blocked", &serde_json::json!({}), "2026-01-01T00:00:00Z")
+            .insert(
+                "1",
+                "guardian_blocked",
+                &serde_json::json!({}),
+                "2026-01-01T00:00:00Z",
+            )
             .unwrap();
         store
-            .insert("2", "guardian_blocked", &serde_json::json!({}), "2026-01-02T00:00:00Z")
+            .insert(
+                "2",
+                "guardian_blocked",
+                &serde_json::json!({}),
+                "2026-01-02T00:00:00Z",
+            )
             .unwrap();
         store
-            .insert("3", "n3_result", &serde_json::json!({"verdict": "block"}), "2026-01-03T00:00:00Z")
+            .insert(
+                "3",
+                "n3_result",
+                &serde_json::json!({"verdict": "block"}),
+                "2026-01-03T00:00:00Z",
+            )
             .unwrap();
         store
-            .insert("4", "n3_result", &serde_json::json!({"verdict": "allow"}), "2026-01-04T00:00:00Z")
+            .insert(
+                "4",
+                "n3_result",
+                &serde_json::json!({"verdict": "allow"}),
+                "2026-01-04T00:00:00Z",
+            )
             .unwrap();
 
         let stats = store.get_stats().unwrap();

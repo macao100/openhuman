@@ -197,7 +197,8 @@ mod tests {
 
     #[test]
     fn parses_suspicious_verdict() {
-        let response = r#"{"verdict": "suspicious", "reason": "Possible role switch", "confidence": 0.6}"#;
+        let response =
+            r#"{"verdict": "suspicious", "reason": "Possible role switch", "confidence": 0.6}"#;
         let verdict = parse_llm_response(response);
         assert!(verdict.is_some());
         let v = verdict.unwrap();
@@ -206,7 +207,8 @@ mod tests {
 
     #[test]
     fn parses_malicious_verdict() {
-        let response = r#"{"verdict": "malicious", "reason": "Clear injection attempt", "confidence": 0.98}"#;
+        let response =
+            r#"{"verdict": "malicious", "reason": "Clear injection attempt", "confidence": 0.98}"#;
         let verdict = parse_llm_response(response);
         assert!(verdict.is_some());
         let v = verdict.unwrap();
@@ -258,6 +260,9 @@ mod tests {
         let verdict = parse_llm_response(response);
         assert!(verdict.is_some());
         let v = verdict.unwrap();
-        assert!((v.confidence - 1.0).abs() < 0.01, "confidence should be clamped to 1.0");
+        assert!(
+            (v.confidence - 1.0).abs() < 0.01,
+            "confidence should be clamped to 1.0"
+        );
     }
 }

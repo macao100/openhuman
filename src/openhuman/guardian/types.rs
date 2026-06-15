@@ -229,7 +229,10 @@ mod tests {
         assert_eq!(parsed.steps.len(), 2);
         assert_eq!(parsed.steps[0].tool, "file_read");
         assert_eq!(parsed.steps[1].tool, "glob");
-        assert_eq!(parsed.steps[0].rationale, "Understand the project structure");
+        assert_eq!(
+            parsed.steps[0].rationale,
+            "Understand the project structure"
+        );
     }
 
     #[test]

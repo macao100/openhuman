@@ -18,15 +18,15 @@
 //! Target latency: **<10ms** per evaluation (all detectors are synchronous,
 //! regex patterns compiled once at construction time).
 
-mod exfiltration;
 mod entropy;
+mod exfiltration;
 mod hidden_payloads;
 pub mod types;
 
 use std::time::Instant;
 
-use exfiltration::ExfiltrationDetector;
 use entropy::EntropyAnalyzer;
+use exfiltration::ExfiltrationDetector;
 use hidden_payloads::HiddenPayloadsDetector;
 use types::{N2EngineConfig, N2Result, N2Score};
 

@@ -55,9 +55,7 @@ pub fn save_session(conn: &Connection, state: &SessionState) -> anyhow::Result<(
 ///
 /// Returns `None` if no session has been saved yet (clean first start).
 pub fn load_session(conn: &Connection) -> anyhow::Result<Option<SessionState>> {
-    let mut stmt = conn.prepare(
-        "SELECT value_json FROM dadou_session_context WHERE key = ?1",
-    )?;
+    let mut stmt = conn.prepare("SELECT value_json FROM dadou_session_context WHERE key = ?1")?;
     let mut rows = stmt.query(params![SESSION_CONTEXT_KEY])?;
     match rows.next()? {
         Some(row) => {
@@ -117,7 +115,10 @@ mod tests {
             .unwrap()
             .expect("session should exist after save");
         assert_eq!(loaded.active_project, Some("dadou".to_string()));
-        assert_eq!(loaded.active_phase, Some("02-memory-continuity".to_string()));
+        assert_eq!(
+            loaded.active_phase,
+            Some("02-memory-continuity".to_string())
+        );
         assert_eq!(
             loaded.last_topic,
             Some("Cross-session continuity implementation".to_string())
@@ -156,7 +157,10 @@ mod tests {
     fn test_delete_session_returns_false_when_empty() {
         let (_tmp, conn) = setup_db();
         let deleted = delete_session(&conn).unwrap();
-        assert!(!deleted, "delete should return false when no session exists");
+        assert!(
+            !deleted,
+            "delete should return false when no session exists"
+        );
     }
 
     // ── Test 5: Multiple save/load cycles preserve data integrity ──
@@ -178,9 +182,7 @@ mod tests {
         };
         save_session(&conn, &state2).unwrap();
 
-        let loaded = load_session(&conn)
-            .unwrap()
-            .expect("session should exist");
+        let loaded = load_session(&conn).unwrap().expect("session should exist");
         // After second save, we should get state2 (upsert)
         assert_eq!(loaded.active_project, Some("project-b".to_string()));
         assert_eq!(loaded.last_topic, Some("Second topic".to_string()));
@@ -201,9 +203,7 @@ mod tests {
         };
 
         save_session(&conn, &state).unwrap();
-        let loaded = load_session(&conn)
-            .unwrap()
-            .expect("session should exist");
+        let loaded = load_session(&conn).unwrap().expect("session should exist");
         assert!(loaded.active_project.is_none());
         assert!(loaded.active_phase.is_none());
         assert!(loaded.last_topic.is_none());

@@ -98,7 +98,12 @@ impl N2Result {
     /// Create a new N2Result by aggregating scores with the given thresholds.
     ///
     /// This is the canonical constructor used by [`GuardianN2::evaluate`].
-    pub fn from_scores(scores: Vec<N2Score>, latency_us: u64, block_threshold: f64, escalate_threshold: f64) -> Self {
+    pub fn from_scores(
+        scores: Vec<N2Score>,
+        latency_us: u64,
+        block_threshold: f64,
+        escalate_threshold: f64,
+    ) -> Self {
         let has_blocking = scores.iter().any(|s| s.is_blocking(block_threshold));
         let has_escalating = scores.iter().any(|s| s.is_escalating(escalate_threshold));
 

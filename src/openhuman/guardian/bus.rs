@@ -112,7 +112,7 @@ impl EventHandler for N3ResultSubscriber {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::event_bus::bus::{publish_global, subscribe_global, init_global};
+    use crate::core::event_bus::bus::{init_global, publish_global, subscribe_global};
     use std::sync::Arc;
 
     #[tokio::test]
@@ -241,7 +241,8 @@ mod tests {
         let event = DomainEvent::N2Blocked {
             tool_name: "file_write".to_string(),
             reason: "high entropy detected".to_string(),
-            scores_json: r#"[{"score":0.7,"reason":"base64","triggered_by":"entropy"}]"#.to_string(),
+            scores_json: r#"[{"score":0.7,"reason":"base64","triggered_by":"entropy"}]"#
+                .to_string(),
             latency_us: 123,
         };
 

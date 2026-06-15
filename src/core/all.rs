@@ -263,31 +263,23 @@ fn build_registered_controllers() -> Vec<RegisteredController> {
     // Mobile device pairing and management
     controllers.extend(crate::openhuman::devices::all_devices_registered_controllers());
     // DADOU provenance tracking — confidence decay, source attribution
-    controllers.extend(
-        crate::openhuman::memory::provenance::schemas::all_registered_controllers(),
-    );
+    controllers.extend(crate::openhuman::memory::provenance::schemas::all_registered_controllers());
     // DADOU project context — structured project facts stored in
     // the dadou_project_context namespace.
-    controllers.extend(
-        crate::openhuman::memory::project_context::schemas::all_registered_controllers(),
-    );
+    controllers
+        .extend(crate::openhuman::memory::project_context::schemas::all_registered_controllers());
     // DADOU contradiction detection — check and resolve memory contradictions.
-    controllers.extend(
-        crate::openhuman::memory::contradiction::schemas::all_registered_controllers(),
-    );
+    controllers
+        .extend(crate::openhuman::memory::contradiction::schemas::all_registered_controllers());
     // DADOU session context — cross-session continuity via
     // the dadou_session_context namespace.
-    controllers.extend(
-        crate::openhuman::session_context::schemas::all_registered_controllers(),
-    );
+    controllers.extend(crate::openhuman::session_context::schemas::all_registered_controllers());
     // Anti-injection semantic output validation (INJ-03)
-    controllers.extend(
-        crate::openhuman::anti_injection::all_anti_injection_registered_controllers(),
-    );
+    controllers
+        .extend(crate::openhuman::anti_injection::all_anti_injection_registered_controllers());
     // Live observability dashboard
-    controllers.extend(
-        crate::openhuman::dashboard::schemas::all_dashboard_registered_controllers(),
-    );
+    controllers
+        .extend(crate::openhuman::dashboard::schemas::all_dashboard_registered_controllers());
     // Semantic skill router — embedding-based skill discovery
     controllers.extend(
         crate::openhuman::semantic_router::schemas::all_semantic_router_registered_controllers(),
@@ -405,30 +397,18 @@ fn build_declared_controller_schemas() -> Vec<ControllerSchema> {
     // Mobile device pairing and management
     schemas.extend(crate::openhuman::devices::all_devices_controller_schemas());
     // DADOU provenance tracking — confidence decay, source attribution
-    schemas.extend(
-        crate::openhuman::memory::provenance::schemas::all_controller_schemas(),
-    );
+    schemas.extend(crate::openhuman::memory::provenance::schemas::all_controller_schemas());
     // DADOU project context — structured project facts stored in
     // the dadou_project_context namespace.
-    schemas.extend(
-        crate::openhuman::memory::project_context::schemas::all_controller_schemas(),
-    );
+    schemas.extend(crate::openhuman::memory::project_context::schemas::all_controller_schemas());
     // DADOU contradiction detection — check and resolve memory contradictions.
-    schemas.extend(
-        crate::openhuman::memory::contradiction::schemas::all_controller_schemas(),
-    );
+    schemas.extend(crate::openhuman::memory::contradiction::schemas::all_controller_schemas());
     // DADOU session context — cross-session continuity via
     // the dadou_session_context namespace.
-    schemas.extend(
-        crate::openhuman::session_context::schemas::all_controller_schemas(),
-    );
+    schemas.extend(crate::openhuman::session_context::schemas::all_controller_schemas());
     // Anti-injection semantic output validation (INJ-03)
-    schemas.extend(
-        crate::openhuman::anti_injection::all_anti_injection_controller_schemas(),
-    );
-    schemas.extend(
-        crate::openhuman::dashboard::schemas::all_dashboard_controller_schemas(),
-    );
+    schemas.extend(crate::openhuman::anti_injection::all_anti_injection_controller_schemas());
+    schemas.extend(crate::openhuman::dashboard::schemas::all_dashboard_controller_schemas());
     schemas.extend(
         crate::openhuman::semantic_router::schemas::all_semantic_router_controller_schemas(),
     );

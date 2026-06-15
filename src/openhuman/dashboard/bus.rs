@@ -38,7 +38,9 @@ impl EventHandler for DashboardRecorder {
     }
 
     fn domains(&self) -> Option<&'static [&'static str]> {
-        Some(&["guardian", "tool", "agent", "skill", "memory", "channel", "system"])
+        Some(&[
+            "guardian", "tool", "agent", "skill", "memory", "channel", "system",
+        ])
     }
 
     async fn handle(&self, event: &DomainEvent) {

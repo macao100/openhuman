@@ -35,9 +35,7 @@ impl JailBackend for NoopBackend {
 
     fn spawn(&self, _jail: &Jail, mut cmd: Command) -> std::io::Result<JailedChild> {
         if is_permissive() {
-            log::warn!(
-                "[cwd_jail] DADOU_SANDBOX_PERMISSIVE=1 — spawning WITHOUT sandbox!"
-            );
+            log::warn!("[cwd_jail] DADOU_SANDBOX_PERMISSIVE=1 — spawning WITHOUT sandbox!");
             cmd.spawn().map(JailedChild::Std)
         } else {
             Err(std::io::Error::new(

@@ -31,9 +31,7 @@ pub fn migrate_dadou_provenance(conn: &Connection) -> anyhow::Result<()> {
         .context("read PRAGMA user_version for provenance migration")?;
 
     if version >= DADOU_PROVENANCE_MIGRATION_VERSION {
-        log::debug!(
-            "[provenance] migration already applied (user_version={version}), skipping"
-        );
+        log::debug!("[provenance] migration already applied (user_version={version}), skipping");
         return Ok(());
     }
 
@@ -45,24 +43,16 @@ pub fn migrate_dadou_provenance(conn: &Connection) -> anyhow::Result<()> {
     if !column_exists {
         log::info!("[provenance] adding column `{PROVENANCE_COLUMN}` to memory_docs");
         conn.execute(
-            &format!(
-                "ALTER TABLE memory_docs ADD COLUMN {PROVENANCE_COLUMN} TEXT DEFAULT NULL"
-            ),
+            &format!("ALTER TABLE memory_docs ADD COLUMN {PROVENANCE_COLUMN} TEXT DEFAULT NULL"),
             [],
         )
         .context("ALTER TABLE memory_docs ADD COLUMN provenance_json")?;
     } else {
-        log::debug!(
-            "[provenance] column `{PROVENANCE_COLUMN}` already exists, skipping ALTER"
-        );
+        log::debug!("[provenance] column `{PROVENANCE_COLUMN}` already exists, skipping ALTER");
     }
 
-    conn.pragma_update(
-        None,
-        "user_version",
-        DADOU_PROVENANCE_MIGRATION_VERSION,
-    )
-    .context("set PRAGMA user_version after provenance migration")?;
+    conn.pragma_update(None, "user_version", DADOU_PROVENANCE_MIGRATION_VERSION)
+        .context("set PRAGMA user_version after provenance migration")?;
 
     log::info!(
         "[provenance] migration complete, user_version={DADOU_PROVENANCE_MIGRATION_VERSION}"
@@ -116,8 +106,7 @@ mod tests {
         create_minimal_memory_docs(&conn)?;
 
         // Before migration
-        let version_before: i64 =
-            conn.query_row("PRAGMA user_version", [], |r| r.get(0))?;
+        let version_before: i64 = conn.query_row("PRAGMA user_version", [], |r| r.get(0))?;
         assert_eq!(version_before, 0, "fresh DB starts at user_version 0");
 
         migrate_dadou_provenance(&conn)?;
@@ -128,8 +117,7 @@ mod tests {
             cols.contains(&"provenance_json".to_string()),
             "provenance_json column should exist, got: {cols:?}"
         );
-        let version_after: i64 =
-            conn.query_row("PRAGMA user_version", [], |r| r.get(0))?;
+        let version_after: i64 = conn.query_row("PRAGMA user_version", [], |r| r.get(0))?;
         assert_eq!(version_after, DADOU_PROVENANCE_MIGRATION_VERSION);
         Ok(())
     }
@@ -143,15 +131,13 @@ mod tests {
 
         migrate_dadou_provenance(&conn)?;
         let cols_after_first = column_names(&conn);
-        let version_after_first: i64 =
-            conn.query_row("PRAGMA user_version", [], |r| r.get(0))?;
+        let version_after_first: i64 = conn.query_row("PRAGMA user_version", [], |r| r.get(0))?;
 
         // Run again
         migrate_dadou_provenance(&conn)?;
 
         let cols_after_second = column_names(&conn);
-        let version_after_second: i64 =
-            conn.query_row("PRAGMA user_version", [], |r| r.get(0))?;
+        let version_after_second: i64 = conn.query_row("PRAGMA user_version", [], |r| r.get(0))?;
 
         assert_eq!(cols_after_first, cols_after_second);
         assert_eq!(version_after_first, version_after_second);
@@ -180,7 +166,10 @@ mod tests {
             [],
             |r| r.get(0),
         )?;
-        assert!(val.is_none(), "existing row should have NULL provenance_json");
+        assert!(
+            val.is_none(),
+            "existing row should have NULL provenance_json"
+        );
         Ok(())
     }
 

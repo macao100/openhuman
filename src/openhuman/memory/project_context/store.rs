@@ -109,7 +109,13 @@ pub async fn upsert_fact(client: &MemoryClient, fact: &ProjectFact) -> anyhow::R
     let content = content_from_fact(fact);
     let memory: Arc<dyn Memory> = client.memory_handle();
     memory
-        .store(PROJECT_CONTEXT_NAMESPACE, &key, &content, MemoryCategory::Core, None)
+        .store(
+            PROJECT_CONTEXT_NAMESPACE,
+            &key,
+            &content,
+            MemoryCategory::Core,
+            None,
+        )
         .await?;
     Ok(key)
 }
@@ -185,9 +191,7 @@ mod tests {
     /// Helper: create a temporary in-memory store and wrap in a MemoryClient.
     fn setup_client() -> (TempDir, MemoryClient) {
         let tmp = TempDir::new().unwrap();
-        let mem = Arc::new(
-            UnifiedMemory::new(tmp.path(), Arc::new(NoopEmbedding), None).unwrap(),
-        );
+        let mem = Arc::new(UnifiedMemory::new(tmp.path(), Arc::new(NoopEmbedding), None).unwrap());
         let client = MemoryClient::from_workspace_dir(tmp.path().join("ws")).unwrap();
         (tmp, client)
     }

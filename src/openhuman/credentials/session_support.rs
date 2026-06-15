@@ -72,7 +72,8 @@ pub fn create_local_session_token() -> String {
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_secs())
         .unwrap_or(0);
-    let header = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(br#"{"alg":"none","typ":"JWT"}"#);
+    let header =
+        base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(br#"{"alg":"none","typ":"JWT"}"#);
     let payload = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(
         format!(
             r#"{{"sub":"{}","iat":{},"exp":{}}}"#,

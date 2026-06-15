@@ -191,12 +191,10 @@ pub async fn store_preference_with_contradiction_check(
     let mut total_checked = 0usize;
     let mut total_elapsed = 0u64;
 
-    for ns in &[
-        USER_PREF_GENERAL_NAMESPACE,
-        USER_PREF_SITUATIONAL_NAMESPACE,
-    ] {
-        let report = check_for_contradictions(memory, ns, value, provenance, CONTRADICTION_SIMILARITY)
-            .await?;
+    for ns in &[USER_PREF_GENERAL_NAMESPACE, USER_PREF_SITUATIONAL_NAMESPACE] {
+        let report =
+            check_for_contradictions(memory, ns, value, provenance, CONTRADICTION_SIMILARITY)
+                .await?;
         if !report.candidates.is_empty() {
             combined_candidates.extend(report.candidates);
         }
@@ -216,13 +214,11 @@ pub async fn store_preference_with_contradiction_check(
         // For now, embed it in content like store_preference_correction does.
         let content = format!(
             "{topic}: {value}\n[provenance] {}",
-            serde_json::to_string(
-                &provenance.unwrap_or(&Provenance {
-                    source: MemorySource::ChatHistory,
-                    confidence: ConfidenceLevel::Inferred,
-                    source_detail: String::new(),
-                })
-            )
+            serde_json::to_string(&provenance.unwrap_or(&Provenance {
+                source: MemorySource::ChatHistory,
+                confidence: ConfidenceLevel::Inferred,
+                source_detail: String::new(),
+            }))
             .unwrap_or_else(|_| "{}".into())
         );
 
@@ -310,7 +306,9 @@ mod tests {
         let mem: Arc<dyn Memory> =
             Arc::new(UnifiedMemory::new(tmp.path(), Arc::new(NoopEmbedding), None).unwrap());
 
-        store_preference_correction(&mem, "theme", "dark mode").await.unwrap();
+        store_preference_correction(&mem, "theme", "dark mode")
+            .await
+            .unwrap();
 
         let retrieved = mem
             .get(USER_PREF_GENERAL_NAMESPACE, "theme")
@@ -328,8 +326,12 @@ mod tests {
         let mem: Arc<dyn Memory> =
             Arc::new(UnifiedMemory::new(tmp.path(), Arc::new(NoopEmbedding), None).unwrap());
 
-        store_preference_correction(&mem, "language", "English").await.unwrap();
-        store_preference_correction(&mem, "language", "French").await.unwrap();
+        store_preference_correction(&mem, "language", "English")
+            .await
+            .unwrap();
+        store_preference_correction(&mem, "language", "French")
+            .await
+            .unwrap();
 
         let retrieved = mem
             .get(USER_PREF_GENERAL_NAMESPACE, "language")

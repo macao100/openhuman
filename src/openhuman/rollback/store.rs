@@ -27,15 +27,9 @@ enum DiffOp<'a> {
         new_idx: usize,
     },
     /// Line removed from old.
-    Del {
-        line: &'a str,
-        old_idx: usize,
-    },
+    Del { line: &'a str, old_idx: usize },
     /// Line added in new.
-    Ins {
-        line: &'a str,
-        new_idx: usize,
-    },
+    Ins { line: &'a str, new_idx: usize },
 }
 
 /// Global singleton instance of `RollbackStore`.
@@ -125,9 +119,8 @@ impl RollbackStore {
                 ON rollback_history(action_id);",
         )?;
         // Migration: add rolled_back_at column for UND-02 (ignore if already exists).
-        let _ = conn.execute_batch(
-            "ALTER TABLE rollback_history ADD COLUMN rolled_back_at TEXT NULL;",
-        );
+        let _ =
+            conn.execute_batch("ALTER TABLE rollback_history ADD COLUMN rolled_back_at TEXT NULL;");
         Ok(())
     }
 
@@ -226,7 +219,8 @@ impl RollbackStore {
              LIMIT ?1",
         )?;
         let rows = stmt.query_map(params![limit as i64], Self::row_to_entry)?;
-        rows.collect::<Result<Vec<_>, _>>().map_err(RollbackError::Sqlite)
+        rows.collect::<Result<Vec<_>, _>>()
+            .map_err(RollbackError::Sqlite)
     }
 
     /// Returns all entries at or after the given ISO 8601 timestamp.
@@ -241,14 +235,12 @@ impl RollbackStore {
              ORDER BY timestamp_utc ASC",
         )?;
         let rows = stmt.query_map(params![timestamp], Self::row_to_entry)?;
-        rows.collect::<Result<Vec<_>, _>>().map_err(RollbackError::Sqlite)
+        rows.collect::<Result<Vec<_>, _>>()
+            .map_err(RollbackError::Sqlite)
     }
 
     /// Returns all entries for the given `file_path`, most recent first.
-    pub fn get_by_path(
-        &self,
-        file_path: &str,
-    ) -> Result<Vec<RollbackEntry>, RollbackError> {
+    pub fn get_by_path(&self, file_path: &str) -> Result<Vec<RollbackEntry>, RollbackError> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
             "SELECT action_id, file_path, checksum_sha256, content_size_bytes,
@@ -259,7 +251,8 @@ impl RollbackStore {
              ORDER BY id DESC",
         )?;
         let rows = stmt.query_map(params![file_path], Self::row_to_entry)?;
-        rows.collect::<Result<Vec<_>, _>>().map_err(RollbackError::Sqlite)
+        rows.collect::<Result<Vec<_>, _>>()
+            .map_err(RollbackError::Sqlite)
     }
 
     /// Deletes entries older than `days` days.  Returns the number of rows
@@ -306,7 +299,9 @@ impl RollbackStore {
         new_content: &[u8],
     ) -> Result<(), RollbackError> {
         // Write snapshot file (full content for reliable restoration)
-        let snapshot_path = self.history_dir.join(format!("{}.snapshot", entry.action_id));
+        let snapshot_path = self
+            .history_dir
+            .join(format!("{}.snapshot", entry.action_id));
         std::fs::write(&snapshot_path, old_content)?;
 
         // Generate and write diff
@@ -334,11 +329,9 @@ impl RollbackStore {
     ///
     /// Returns `RollbackError::NotFound` if the diff does not exist.
     pub fn read_diff(&self, action_id: &str) -> Result<String, RollbackError> {
-        self.read_diff_file(action_id)?
-            .ok_or_else(|| RollbackError::NotFound(format!(
-                "Diff for action_id '{}' not found",
-                action_id
-            )))
+        self.read_diff_file(action_id)?.ok_or_else(|| {
+            RollbackError::NotFound(format!("Diff for action_id '{}' not found", action_id))
+        })
     }
 
     // ── Undo operations ───────────────────────────────────────────────────
@@ -397,7 +390,8 @@ impl RollbackStore {
              ORDER BY timestamp_utc ASC",
         )?;
         let rows = stmt.query_map(params![timestamp], Self::row_to_entry)?;
-        rows.collect::<Result<Vec<_>, _>>().map_err(RollbackError::Sqlite)
+        rows.collect::<Result<Vec<_>, _>>()
+            .map_err(RollbackError::Sqlite)
     }
 
     // ── Global singleton ──────────────────────────────────────────────────
@@ -634,11 +628,7 @@ impl RollbackStore {
 
     /// Backtrack through the LCS table to produce (op, old_line, new_line)
     /// operations: "eq" (unchanged), "del" (removed from old), "ins" (added).
-    fn backtrack_ops<'a>(
-        table: &[Vec<usize>],
-        a: &[&'a str],
-        b: &[&'a str],
-    ) -> Vec<DiffOp<'a>> {
+    fn backtrack_ops<'a>(table: &[Vec<usize>], a: &[&'a str], b: &[&'a str]) -> Vec<DiffOp<'a>> {
         let mut ops = Vec::new();
         let mut i = a.len();
         let mut j = b.len();
@@ -711,12 +701,8 @@ impl RollbackStore {
                                 hunks.push(hunk);
                             }
                             // Keep the last CONTEXT eq lines as start of next hunk.
-                            let tail: Vec<_> = current_hunk
-                                .iter()
-                                .rev()
-                                .take(CONTEXT)
-                                .cloned()
-                                .collect();
+                            let tail: Vec<_> =
+                                current_hunk.iter().rev().take(CONTEXT).cloned().collect();
                             current_hunk.clear();
                             current_hunk.extend(tail.into_iter().rev());
                         }
@@ -747,7 +733,9 @@ impl RollbackStore {
             let mut new_start = 1usize;
             for (idx, op) in hunk {
                 match op {
-                    DiffOp::Eq { old_idx, new_idx, .. } => {
+                    DiffOp::Eq {
+                        old_idx, new_idx, ..
+                    } => {
                         old_start = *old_idx;
                         new_start = *new_idx;
                     }
@@ -1008,11 +996,13 @@ mod tests {
         store
             .save_entry(&make_entry(&dup_id, "a.txt", "2026-01-01T00:00:00Z"))
             .unwrap();
-        let result =
-            store.save_entry(&make_entry(&dup_id, "b.txt", "2026-01-02T00:00:00Z"));
+        let result = store.save_entry(&make_entry(&dup_id, "b.txt", "2026-01-02T00:00:00Z"));
         match result {
             Err(RollbackError::Sqlite(_)) => {} // OK — unique constraint violation
-            other => panic!("expected Sqlite error for duplicate action_id, got {:?}", other),
+            other => panic!(
+                "expected Sqlite error for duplicate action_id, got {:?}",
+                other
+            ),
         }
     }
 
@@ -1124,7 +1114,10 @@ mod tests {
     fn test_generate_diff_identical_content() {
         let content = b"line1\nline2\nline3\n";
         let diff = RollbackStore::generate_diff(content, content);
-        assert!(diff.is_empty(), "identical content should produce empty diff");
+        assert!(
+            diff.is_empty(),
+            "identical content should produce empty diff"
+        );
     }
 
     #[test]
@@ -1211,8 +1204,16 @@ mod tests {
             .read_diff_file(&entry.action_id)
             .expect("read")
             .expect("diff should exist");
-        assert!(diff.contains("-old content"), "diff should contain old: {}", diff);
-        assert!(diff.contains("+new content"), "diff should contain new: {}", diff);
+        assert!(
+            diff.contains("-old content"),
+            "diff should contain old: {}",
+            diff
+        );
+        assert!(
+            diff.contains("+new content"),
+            "diff should contain new: {}",
+            diff
+        );
 
         // Verify entry is in SQLite
         let saved = store

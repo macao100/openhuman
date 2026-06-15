@@ -63,8 +63,7 @@ async fn stats_handler() -> impl IntoResponse {
             match store.get_stats() {
                 Ok(mut stats) => {
                     // Augment with active skill count.
-                    if let Ok(skills_store) = crate::openhuman::skills::store::SkillsStore::load()
-                    {
+                    if let Ok(skills_store) = crate::openhuman::skills::store::SkillsStore::load() {
                         stats.active_skill_count = skills_store
                             .installed()
                             .iter()
@@ -85,7 +84,11 @@ async fn stats_handler() -> impl IntoResponse {
         serde_json::json!({"error": "store not initialised"})
     };
 
-    (StatusCode::OK, [("content-type", "application/json")], stats.to_string())
+    (
+        StatusCode::OK,
+        [("content-type", "application/json")],
+        stats.to_string(),
+    )
 }
 
 /// Query parameters for `/api/recent`.
@@ -158,7 +161,10 @@ async fn memory_handler() -> impl IntoResponse {
             match store.list_recent(10_000, None) {
                 Ok(events) => {
                     let stored = events.iter().filter(|e| e.kind == "memory_stored").count();
-                    let recalled = events.iter().filter(|e| e.kind == "memory_recalled").count();
+                    let recalled = events
+                        .iter()
+                        .filter(|e| e.kind == "memory_recalled")
+                        .count();
                     serde_json::json!({
                         "total_memory_events": stored + recalled,
                         "stored": stored,
@@ -260,17 +266,12 @@ async fn sse_handler() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
                 });
 
                 let data = payload.to_string();
-                Some(Ok(Event::default()
-                    .event("dashboard_event")
-                    .data(data)))
+                Some(Ok(Event::default().event("dashboard_event").data(data)))
             }))
         } else {
             // No event bus — return an empty stream.
             let (_, rx) = broadcast::channel::<DomainEvent>(1);
-            Box::pin(
-                BroadcastStream::new(rx)
-                    .filter_map(|_| None::<Result<Event, Infallible>>),
-            )
+            Box::pin(BroadcastStream::new(rx).filter_map(|_| None::<Result<Event, Infallible>>))
         };
 
     Sse::new(stream).keep_alive(KeepAlive::new().interval(std::time::Duration::from_secs(15)))

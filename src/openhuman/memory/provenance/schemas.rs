@@ -133,8 +133,8 @@ fn handle_run_decay(_params: Map<String, Value>) -> ControllerFuture {
             .await
             .map_err(|e| format!("load config: {e}"))?;
         let db_path = config.workspace_dir.join("memory").join("memory.db");
-        let conn = rusqlite::Connection::open(&db_path)
-            .map_err(|e| format!("open memory db: {e}"))?;
+        let conn =
+            rusqlite::Connection::open(&db_path).map_err(|e| format!("open memory db: {e}"))?;
         let report = decay::run_decay(&conn).map_err(|e| format!("decay pass: {e}"))?;
         to_json(crate::rpc::RpcOutcome::new(report, vec![]))
     })
@@ -184,14 +184,13 @@ mod tests {
             "each schema needs a registered handler"
         );
         for ctrl in &controllers {
-            let matching = schemas
-                .iter()
-                .any(|s| s.namespace == ctrl.schema.namespace && s.function == ctrl.schema.function);
+            let matching = schemas.iter().any(|s| {
+                s.namespace == ctrl.schema.namespace && s.function == ctrl.schema.function
+            });
             assert!(
                 matching,
                 "controller {}.{} has no matching schema",
-                ctrl.schema.namespace,
-                ctrl.schema.function
+                ctrl.schema.namespace, ctrl.schema.function
             );
         }
     }

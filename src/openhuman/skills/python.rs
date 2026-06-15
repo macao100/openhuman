@@ -278,9 +278,8 @@ impl PythonSkillRuntime {
         timeout_duration: Duration,
     ) -> Result<serde_json::Value, PythonSkillError> {
         // Write the runner script to a temp file so it can be bind-mounted.
-        let runner_dir = tempfile::tempdir().map_err(|e| {
-            PythonSkillError::Io(std::io::Error::new(std::io::ErrorKind::Other, e))
-        })?;
+        let runner_dir = tempfile::tempdir()
+            .map_err(|e| PythonSkillError::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
         let runner_path = runner_dir.path().join("runner.py");
         std::fs::write(&runner_path, PYTHON_RUNNER)?;
 
@@ -314,9 +313,9 @@ impl PythonSkillRuntime {
         .stderr(std::process::Stdio::piped())
         .kill_on_drop(true);
 
-        let mut child = cmd
-            .spawn()
-            .map_err(|e| PythonSkillError::DockerUnavailable(format!("failed to spawn docker: {e}")))?;
+        let mut child = cmd.spawn().map_err(|e| {
+            PythonSkillError::DockerUnavailable(format!("failed to spawn docker: {e}"))
+        })?;
 
         // Send JSON-RPC request
         let request = serde_json::json!({
@@ -364,17 +363,15 @@ impl PythonSkillRuntime {
         args: &serde_json::Value,
         timeout_duration: Duration,
     ) -> Result<serde_json::Value, PythonSkillError> {
-        let python_bin = self
-            .python_bin
-            .as_ref()
-            .ok_or_else(|| PythonSkillError::RuntimeUnavailable(
+        let python_bin = self.python_bin.as_ref().ok_or_else(|| {
+            PythonSkillError::RuntimeUnavailable(
                 "no Python 3.12+ interpreter found. Install Python or Docker.".to_string(),
-            ))?;
+            )
+        })?;
 
         // Write runner to a temp file for local execution
-        let runner_dir = tempfile::tempdir().map_err(|e| {
-            PythonSkillError::Io(std::io::Error::new(std::io::ErrorKind::Other, e))
-        })?;
+        let runner_dir = tempfile::tempdir()
+            .map_err(|e| PythonSkillError::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
         let runner_path = runner_dir.path().join("runner.py");
         std::fs::write(&runner_path, PYTHON_RUNNER)?;
 
@@ -387,9 +384,7 @@ impl PythonSkillRuntime {
             .stderr(std::process::Stdio::piped())
             .kill_on_drop(true);
 
-        let mut child = cmd
-            .spawn()
-            .map_err(|e| PythonSkillError::Io(e))?;
+        let mut child = cmd.spawn().map_err(|e| PythonSkillError::Io(e))?;
 
         // Send JSON-RPC request
         let request = serde_json::json!({

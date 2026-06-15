@@ -60,7 +60,10 @@ pub async fn load_project_context(client: &MemoryClient) -> String {
             .map(|f| f.fact_value.as_str());
 
         if let Some(ver) = version {
-            out.push_str(&format!("- Project: {} (v{ver})\n", project_facts[0].project_name));
+            out.push_str(&format!(
+                "- Project: {} (v{ver})\n",
+                project_facts[0].project_name
+            ));
         } else {
             out.push_str(&format!("- Project: {}\n", project_facts[0].project_name));
         }
@@ -86,9 +89,9 @@ fn capitalize(s: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::Utc;
     use crate::openhuman::embeddings::NoopEmbedding;
     use crate::openhuman::memory_store::{MemoryClient, UnifiedMemory};
+    use chrono::Utc;
     use std::sync::Arc;
     use tempfile::TempDir;
 
@@ -127,7 +130,13 @@ mod tests {
         .unwrap();
         store::upsert_fact(
             &client,
-            &make_fact("openhuman-backend", "goal", "Build AI assistant", "goal", "user"),
+            &make_fact(
+                "openhuman-backend",
+                "goal",
+                "Build AI assistant",
+                "goal",
+                "user",
+            ),
         )
         .await
         .unwrap();

@@ -14,7 +14,11 @@ use crate::rpc::RpcOutcome;
 use super::validator::{SemanticOutputValidator, ValidatorConfig};
 
 pub fn all_controller_schemas() -> Vec<ControllerSchema> {
-    vec![schemas("validate"), schemas("config"), schemas("rules_list")]
+    vec![
+        schemas("validate"),
+        schemas("config"),
+        schemas("rules_list"),
+    ]
 }
 
 pub fn all_registered_controllers() -> Vec<RegisteredController> {
@@ -140,19 +144,18 @@ fn handle_config(params: Map<String, Value>) -> ControllerFuture {
             let mode = match mode_str.to_lowercase().as_str() {
                 "strict" => super::validator::ValidationMode::Strict,
                 "relaxed" => super::validator::ValidationMode::Relaxed,
-                _ => return Err(format!(
-                    "invalid mode '{}': expected 'strict' or 'relaxed'",
-                    mode_str
-                )),
+                _ => {
+                    return Err(format!(
+                        "invalid mode '{}': expected 'strict' or 'relaxed'",
+                        mode_str
+                    ))
+                }
             };
             let config = super::validator::ValidatorConfig {
                 mode,
                 ..super::validator::ValidatorConfig::default()
             };
-            log::info!(
-                "[anti-injection] validation mode set to '{}'",
-                mode_str
-            );
+            log::info!("[anti-injection] validation mode set to '{}'", mode_str);
 
             let outcome = RpcOutcome::single_log(
                 serde_json::to_value(&config).map_err(|e| e.to_string())?,

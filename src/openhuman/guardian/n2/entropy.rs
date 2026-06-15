@@ -184,14 +184,22 @@ mod tests {
     fn entropy_two_chars_equal() {
         // Two chars with equal frequency: p = 0.5 each, H = -0.5*log2(0.5)*2 = 1.0
         let h = EntropyAnalyzer::shannon_entropy("ab");
-        assert!((h - 1.0).abs() < 0.01, "two equal chars should have H=1.0, got {}", h);
+        assert!(
+            (h - 1.0).abs() < 0.01,
+            "two equal chars should have H=1.0, got {}",
+            h
+        );
     }
 
     #[test]
     fn entropy_english_text_low() {
         // Standard English text has entropy around 3.0-4.0 bits/char.
         let h = EntropyAnalyzer::shannon_entropy("The quick brown fox jumps over the lazy dog");
-        assert!(h > 2.0 && h < 4.5, "english text entropy should be moderate, got {}", h);
+        assert!(
+            h > 2.0 && h < 4.5,
+            "english text entropy should be moderate, got {}",
+            h
+        );
     }
 
     #[test]
@@ -205,9 +213,14 @@ mod tests {
     #[test]
     fn entropy_hex_moderate() {
         // Hex-encoded data has ~4.5 bits/char (16 unique chars).
-        let hex = "48656c6c6f20576f726c64205468697320697320612068657820656e636f64656420737472696e67";
+        let hex =
+            "48656c6c6f20576f726c64205468697320697320612068657820656e636f64656420737472696e67";
         let h = EntropyAnalyzer::shannon_entropy(hex);
-        assert!(h > 4.0 && h < 5.5, "hex should have moderate entropy, got {}", h);
+        assert!(
+            h > 4.0 && h < 5.5,
+            "hex should have moderate entropy, got {}",
+            h
+        );
     }
 
     // ── Entropy-to-score mapping ────────────────────────────────────
@@ -250,10 +263,7 @@ mod tests {
     #[test]
     fn normal_text_no_alert() {
         let analyzer = EntropyAnalyzer::new();
-        let result = analyzer.analyze(
-            "The quick brown fox jumps over the lazy dog",
-            None,
-        );
+        let result = analyzer.analyze("The quick brown fox jumps over the lazy dog", None);
         assert!(result.is_none(), "normal text should not trigger");
     }
 
@@ -265,7 +275,10 @@ mod tests {
             "U3VzcGljaW91cyBkYXRhIHRoYXQgbG9va3MgbGlrZSBiYXNlNjQgdG8gYmUgc2FmZQ=="
         );
         let result = analyzer.analyze(&args, None);
-        assert!(result.is_some(), "base64 token should trigger entropy alert");
+        assert!(
+            result.is_some(),
+            "base64 token should trigger entropy alert"
+        );
         let score = result.unwrap();
         assert!(score.score >= 0.4, "base64 should score at least 0.4");
         assert_eq!(score.triggered_by, "entropy");
@@ -302,7 +315,10 @@ mod tests {
         let result = analyzer.analyze(args, None);
         assert!(result.is_some(), "should detect the hex token");
         let score = result.unwrap();
-        assert!(score.reason.contains("48656c6c6f"), "reason should mention the high-entropy token");
+        assert!(
+            score.reason.contains("48656c6c6f"),
+            "reason should mention the high-entropy token"
+        );
     }
 
     #[test]
@@ -315,12 +331,16 @@ mod tests {
     fn long_token_truncated_in_reason() {
         let analyzer = EntropyAnalyzer::new();
         // Create a token well over 32 chars.
-        let long_b64 = "U3VzcGljaW91cyBkYXRhIHRoYXQgbG9va3MgbGlrZSBiYXNlNjQgdG8gYmUgc2FmZQ==".repeat(3);
+        let long_b64 =
+            "U3VzcGljaW91cyBkYXRhIHRoYXQgbG9va3MgbGlrZSBiYXNlNjQgdG8gYmUgc2FmZQ==".repeat(3);
         let args = format!("prefix {}", long_b64);
         let result = analyzer.analyze(&args, None);
         assert!(result.is_some());
         let reason = result.unwrap().reason;
         // Should contain the truncated token (first 32 chars + "...")
-        assert!(reason.contains("..."), "long tokens should be truncated in reason");
+        assert!(
+            reason.contains("..."),
+            "long tokens should be truncated in reason"
+        );
     }
 }

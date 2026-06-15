@@ -952,7 +952,9 @@ fn handle_dadou_skill_install(params: Map<String, Value>) -> ControllerFuture {
         );
 
         let mut installer = crate::openhuman::skills::wasm_install::GitSkillInstaller::new(
-            store, trust_store, wasm_engine,
+            store,
+            trust_store,
+            wasm_engine,
         )
         .map_err(|e| format!("failed to create installer: {e}"))?;
 
@@ -978,7 +980,9 @@ fn handle_dadou_skill_update(params: Map<String, Value>) -> ControllerFuture {
         );
 
         let mut installer = crate::openhuman::skills::wasm_install::GitSkillInstaller::new(
-            store, trust_store, wasm_engine,
+            store,
+            trust_store,
+            wasm_engine,
         )
         .map_err(|e| format!("failed to create installer: {e}"))?;
 
@@ -1002,7 +1006,9 @@ fn handle_dadou_skill_audit(params: Map<String, Value>) -> ControllerFuture {
             .join(&name);
 
         if !skill_dir.exists() {
-            return Err(format!("skill '{name}' is not installed (directory not found)"));
+            return Err(format!(
+                "skill '{name}' is not installed (directory not found)"
+            ));
         }
 
         // Read manifest for permissions
@@ -1017,8 +1023,9 @@ fn handle_dadou_skill_audit(params: Map<String, Value>) -> ControllerFuture {
             Default::default()
         };
 
-        let analysis = crate::openhuman::skills::static_analysis::scan_skill(&skill_dir, &permissions)
-            .map_err(|e| format!("static analysis failed: {e}"))?;
+        let analysis =
+            crate::openhuman::skills::static_analysis::scan_skill(&skill_dir, &permissions)
+                .map_err(|e| format!("static analysis failed: {e}"))?;
 
         let result_str = match analysis.verdict {
             crate::openhuman::skills::static_analysis::AnalysisVerdict::Pass => "pass",
@@ -1026,12 +1033,13 @@ fn handle_dadou_skill_audit(params: Map<String, Value>) -> ControllerFuture {
             crate::openhuman::skills::static_analysis::AnalysisVerdict::Block => "fail",
         };
 
-        store.record_audit(&name, result_str)
+        store
+            .record_audit(&name, result_str)
             .map_err(|e| format!("failed to record audit: {e}"))?;
 
         let verdict_str = format!("{:?}", analysis.verdict);
-        let findings_json = serde_json::to_value(&analysis.findings)
-            .unwrap_or(serde_json::Value::Null);
+        let findings_json =
+            serde_json::to_value(&analysis.findings).unwrap_or(serde_json::Value::Null);
         let now = chrono::Utc::now().to_rfc3339();
 
         let result = serde_json::json!({
@@ -1058,7 +1066,8 @@ fn handle_dadou_skill_remove(params: Map<String, Value>) -> ControllerFuture {
             return Err(format!("skill '{name}' is not installed"));
         }
 
-        store.remove(&name)
+        store
+            .remove(&name)
             .map_err(|e| format!("failed to remove from store: {e}"))?;
 
         let skills_dir = crate::openhuman::skills::store::SkillsStore::default_skills_dir()
@@ -1137,7 +1146,10 @@ fn handle_dadou_skill_trust_author(params: Map<String, Value>) -> ControllerFutu
 fn handle_dadou_skill_execute(params: Map<String, Value>) -> ControllerFuture {
     Box::pin(async move {
         let name = get_string_param(&params, "name")?;
-        let args = params.get("args").cloned().unwrap_or(serde_json::Value::Null);
+        let args = params
+            .get("args")
+            .cloned()
+            .unwrap_or(serde_json::Value::Null);
         let timeout_secs = params
             .get("timeout_secs")
             .and_then(|v| v.as_u64())
@@ -1153,7 +1165,10 @@ fn handle_dadou_skill_execute(params: Map<String, Value>) -> ControllerFuture {
             .ok_or_else(|| format!("skill '{name}' not found"))?;
 
         if skill.runtime != crate::openhuman::skills::store::SkillRuntime::Python {
-            return Err(format!("skill '{name}' is not a Python skill (runtime: {:?})", skill.runtime));
+            return Err(format!(
+                "skill '{name}' is not a Python skill (runtime: {:?})",
+                skill.runtime
+            ));
         }
 
         let skills_dir = crate::openhuman::skills::store::SkillsStore::default_skills_dir()

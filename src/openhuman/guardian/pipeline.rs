@@ -18,11 +18,11 @@ use std::sync::{Arc, OnceLock};
 use std::time::Instant;
 
 use crate::openhuman::guardian::n2::GuardianN2;
-use crate::openhuman::guardian::n3::GuardianN3;
 use crate::openhuman::guardian::n3::types::N3Config;
+use crate::openhuman::guardian::n3::GuardianN3;
 use crate::openhuman::guardian::rules::RuleSet;
 use crate::openhuman::guardian::types::{
-    GuardianPipelineResult, N1Result, N2Result, PlanValidationResult, PlanStep, RuleAction,
+    GuardianPipelineResult, N1Result, N2Result, PlanStep, PlanValidationResult, RuleAction,
     RuleContext, RuleResult, StructuredPlan,
 };
 use crate::openhuman::security::policy::SecurityPolicy;
@@ -95,9 +95,7 @@ impl GuardianN1 {
         let mut rule_results = self.rule_set.evaluate_all(&ctx);
 
         // Check if any Rust rule blocked (fail-closed — even if YAML allows).
-        let any_block = rule_results
-            .iter()
-            .any(|r| r.action == RuleAction::Block);
+        let any_block = rule_results.iter().any(|r| r.action == RuleAction::Block);
 
         // Step 2: Shell command gating via SecurityPolicy (only if not already blocked).
         if !any_block {
@@ -121,9 +119,7 @@ impl GuardianN1 {
         }
 
         // Step 3: Path validation via SecurityPolicy (only if not already blocked).
-        let still_allowed = !rule_results
-            .iter()
-            .any(|r| r.action == RuleAction::Block);
+        let still_allowed = !rule_results.iter().any(|r| r.action == RuleAction::Block);
 
         if still_allowed {
             if let Some(path) = file_path {
@@ -160,9 +156,7 @@ impl GuardianN1 {
         let latency_us = start.elapsed().as_micros() as u64;
 
         // Step 5: Final decision.
-        let allowed = !rule_results
-            .iter()
-            .any(|r| r.action == RuleAction::Block);
+        let allowed = !rule_results.iter().any(|r| r.action == RuleAction::Block);
 
         N1Result {
             allowed,
@@ -322,15 +316,16 @@ impl GuardianPipeline {
                 n3_result.as_ref().map_or(0, |r| r.latency_us),
             );
         } else {
-            log::debug!(
-                "[guardian:pipeline] All stages allowed tool={}",
-                tool_name,
-            );
+            log::debug!("[guardian:pipeline] All stages allowed tool={}", tool_name,);
         }
 
         GuardianPipelineResult {
             allowed: !n3_blocks,
-            blocked_by: if n3_blocks { "n3".into() } else { "none".into() },
+            blocked_by: if n3_blocks {
+                "n3".into()
+            } else {
+                "none".into()
+            },
             n1: n1_result,
             n2: Some(n2_result),
             n3: n3_result,
@@ -526,7 +521,10 @@ mod tests {
     async fn pipeline_combines_rust_and_yaml() {
         // Create a temp YAML that blocks /tmp.
         let dir = std::env::temp_dir();
-        let yaml_path = dir.join(format!("guardian-pipeline-test-{}.yaml", uuid::Uuid::new_v4()));
+        let yaml_path = dir.join(format!(
+            "guardian-pipeline-test-{}.yaml",
+            uuid::Uuid::new_v4()
+        ));
         let yaml = r#"
 rules:
   - name: "block-tmp"
@@ -583,10 +581,11 @@ rules:
     #[tokio::test]
     async fn pipeline_handles_no_command_no_path() {
         let guardian = GuardianN1::new(test_policy(), None);
-        let result = guardian
-            .evaluate("some_tool", &json!({}), None, None)
-            .await;
-        assert!(result.allowed, "tools without command or path should be allowed");
+        let result = guardian.evaluate("some_tool", &json!({}), None, None).await;
+        assert!(
+            result.allowed,
+            "tools without command or path should be allowed"
+        );
         assert!(result.latency_us > 0);
     }
 
@@ -599,14 +598,15 @@ rules:
         n3_enabled: bool,
     ) -> GuardianPipeline {
         let n1 = GuardianN1::new(test_policy(), None);
-        let n2_config =
-            crate::openhuman::guardian::n2::types::N2EngineConfig::new(
-                n2_block_threshold, n2_escalate_threshold, 10000,
-            );
+        let n2_config = crate::openhuman::guardian::n2::types::N2EngineConfig::new(
+            n2_block_threshold,
+            n2_escalate_threshold,
+            10000,
+        );
         let n2 = GuardianN2::new(n2_config);
         let n3_config = N3Config {
             enabled: n3_enabled,
-            timeout_ms: 5,  // Quick timeout for tests
+            timeout_ms: 5, // Quick timeout for tests
             max_tokens: 10,
             cache_size: 0,
             model_override: None,
@@ -628,8 +628,14 @@ rules:
             .await;
         assert!(!result.allowed, "N1 should block rm -rf");
         assert_eq!(result.blocked_by, "n1", "should be blocked by n1");
-        assert!(result.n2.is_none(), "N2 should not be called when N1 blocks");
-        assert!(result.n3.is_none(), "N3 should not be called when N1 blocks");
+        assert!(
+            result.n2.is_none(),
+            "N2 should not be called when N1 blocks"
+        );
+        assert!(
+            result.n3.is_none(),
+            "N3 should not be called when N1 blocks"
+        );
     }
 
     #[tokio::test]
@@ -640,17 +646,15 @@ rules:
         let command = format!("echo {}", b64);
 
         let result = pipeline
-            .evaluate(
-                "shell",
-                &json!({"command": command}),
-                Some(&command),
-                None,
-            )
+            .evaluate("shell", &json!({"command": command}), Some(&command), None)
             .await;
         assert!(!result.allowed, "N2 should block base64 command");
         assert_eq!(result.blocked_by, "n2", "should be blocked by n2");
         assert!(result.n2.is_some(), "N2 should have been evaluated");
-        assert!(result.n3.is_none(), "N3 should not be called when N2 blocks");
+        assert!(
+            result.n3.is_none(),
+            "N3 should not be called when N2 blocks"
+        );
     }
 
     #[tokio::test]
@@ -659,16 +663,12 @@ rules:
         // escalate_threshold=0.0 (any non-zero entropy triggers escalation).
         // A hex string gives entropy ~4.0-4.5 → score 0.2 (>0.0, <0.7).
         let pipeline = test_pipeline(1.0, 0.0, true);
-        let hex = "48656c6c6f20576f726c64205468697320697320612068657820656e636f64656420737472696e67";
+        let hex =
+            "48656c6c6f20576f726c64205468697320697320612068657820656e636f64656420737472696e67";
         let command = format!("echo {}", hex);
 
         let result = pipeline
-            .evaluate(
-                "shell",
-                &json!({"command": command}),
-                Some(&command),
-                None,
-            )
+            .evaluate("shell", &json!({"command": command}), Some(&command), None)
             .await;
         assert!(result.n2.is_some(), "N2 should have been evaluated");
         assert!(
@@ -689,19 +689,21 @@ rules:
     async fn pipeline_blocks_when_n3_disabled_and_n2_escalates() {
         // N3 disabled + N2 escalates → fail-closed: block by n2.
         let pipeline = test_pipeline(1.0, 0.0, false);
-        let hex = "48656c6c6f20576f726c64205468697320697320612068657820656e636f64656420737472696e67";
+        let hex =
+            "48656c6c6f20576f726c64205468697320697320612068657820656e636f64656420737472696e67";
         let command = format!("echo {}", hex);
 
         let result = pipeline
-            .evaluate(
-                "shell",
-                &json!({"command": command}),
-                Some(&command),
-                None,
-            )
+            .evaluate("shell", &json!({"command": command}), Some(&command), None)
             .await;
-        assert!(!result.allowed, "should block when N3 disabled and N2 escalates");
-        assert_eq!(result.blocked_by, "n2", "should be blocked by n2 (fail-closed)");
+        assert!(
+            !result.allowed,
+            "should block when N3 disabled and N2 escalates"
+        );
+        assert_eq!(
+            result.blocked_by, "n2",
+            "should be blocked by n2 (fail-closed)"
+        );
         assert!(result.n2.is_some(), "N2 should have been evaluated");
         assert!(result.n3.is_none(), "N3 should not be called when disabled");
     }
@@ -720,7 +722,10 @@ rules:
         assert!(result.allowed, "safe operation should be allowed");
         assert_eq!(result.blocked_by, "none");
         assert!(result.n2.is_some(), "N2 should have been evaluated");
-        assert!(result.n3.is_none(), "N3 should not be called when N2 does not escalate");
+        assert!(
+            result.n3.is_none(),
+            "N3 should not be called when N2 does not escalate"
+        );
     }
 
     // ── evaluate_plan tests (INJ-04) ──
@@ -735,7 +740,10 @@ rules:
         let result = pipeline.evaluate_plan(&plan).await;
         assert!(!result.allowed, "empty goal should be rejected");
         assert_eq!(result.blocked_by, "structure");
-        assert!(result.reasoning.contains("empty"), "reason should mention empty");
+        assert!(
+            result.reasoning.contains("empty"),
+            "reason should mention empty"
+        );
     }
 
     #[tokio::test]
@@ -852,7 +860,7 @@ rules:
                 },
                 PlanStep {
                     tool: "shell".into(),
-                    args: json!({"command": "echo 'SGVsbG8gV29ybGQ='"}),  // base64 in command triggers N2
+                    args: json!({"command": "echo 'SGVsbG8gV29ybGQ='"}), // base64 in command triggers N2
                     rationale: "Echo test".into(),
                 },
             ],
@@ -860,6 +868,9 @@ rules:
         let result = pipeline.evaluate_plan(&plan).await;
         assert!(!result.allowed, "plan with bad steps should be blocked");
         // Step 0 should be blocked by N1 (rm -rf)
-        assert!(result.rejected_steps.contains(&0), "step 0 should be rejected (rm -rf)");
+        assert!(
+            result.rejected_steps.contains(&0),
+            "step 0 should be rejected (rm -rf)"
+        );
     }
 }

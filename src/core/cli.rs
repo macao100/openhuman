@@ -189,7 +189,9 @@ fn run_dashboard_command(args: &[String]) -> Result<()> {
             "--port" => {
                 i += 1;
                 if i < args.len() {
-                    port = args[i].parse().map_err(|_| anyhow::anyhow!("invalid port"))?;
+                    port = args[i]
+                        .parse()
+                        .map_err(|_| anyhow::anyhow!("invalid port"))?;
                 }
             }
             "--host" => {
@@ -226,15 +228,14 @@ fn run_dashboard_command(args: &[String]) -> Result<()> {
         config.dashboard.host = host;
 
         // Initialise the dashboard event store.
-        crate::openhuman::dashboard::store::init_global(&config)
-            .unwrap_or_else(|e| {
-                log::warn!("[dashboard] store initialisation failed: {e}");
-            });
+        crate::openhuman::dashboard::store::init_global(&config).unwrap_or_else(|e| {
+            log::warn!("[dashboard] store initialisation failed: {e}");
+        });
 
         // Register the dashboard recorder subscriber.
-        if let Some(handle) = crate::core::event_bus::subscribe_global(
-            std::sync::Arc::new(crate::openhuman::dashboard::bus::DashboardRecorder),
-        ) {
+        if let Some(handle) = crate::core::event_bus::subscribe_global(std::sync::Arc::new(
+            crate::openhuman::dashboard::bus::DashboardRecorder,
+        )) {
             std::mem::forget(handle);
         }
 
@@ -248,12 +249,7 @@ fn run_dashboard_command(args: &[String]) -> Result<()> {
             shutdown_clone.cancel();
         });
 
-        match crate::openhuman::dashboard::server::start_dashboard_server(
-            &config,
-            shutdown,
-        )
-        .await
-        {
+        match crate::openhuman::dashboard::server::start_dashboard_server(&config, shutdown).await {
             Ok(addr) => {
                 log::info!("[dashboard] server started at http://{addr}");
             }
@@ -289,7 +285,9 @@ fn run_dadou_skill_command(args: &[String]) -> Result<()> {
     match args[0].as_str() {
         "install" => {
             if args.len() < 2 {
-                return Err(anyhow::anyhow!("Usage: openhuman-core skill install <git-url>"));
+                return Err(anyhow::anyhow!(
+                    "Usage: openhuman-core skill install <git-url>"
+                ));
             }
 
             let rt = tokio::runtime::Runtime::new()?;
@@ -331,11 +329,12 @@ fn run_dadou_skill_command(args: &[String]) -> Result<()> {
                         .map_err(|e| anyhow::anyhow!("failed to create engine: {e}"))?,
                 );
 
-                let mut installer =
-                    crate::openhuman::skills::wasm_install::GitSkillInstaller::new(
-                        store, trust_store, wasm_engine,
-                    )
-                    .map_err(|e| anyhow::anyhow!("failed to create installer: {e}"))?;
+                let mut installer = crate::openhuman::skills::wasm_install::GitSkillInstaller::new(
+                    store,
+                    trust_store,
+                    wasm_engine,
+                )
+                .map_err(|e| anyhow::anyhow!("failed to create installer: {e}"))?;
 
                 match installer.update_skill(name).await {
                     Ok(outcome) => {

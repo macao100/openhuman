@@ -49,18 +49,24 @@
 
 // ── Sub-modules ────────────────────────────────────────────────────────
 
-mod types;
-mod rules;
-mod pipeline;
 pub mod bus;
-pub mod ops;
-pub mod schemas;
 pub mod n2;
 pub mod n3;
+pub mod ops;
+mod pipeline;
+mod rules;
+pub mod schemas;
+mod types;
 
-pub use rules::{compile_ruleset, default_rust_rules, load_yaml_rules, BlocklistRule, PathWhitelistRule, RegexPatternRule, RuleSet};
-pub use types::{GuardianPipelineResult, GuardianRule, N1Result, PlanStep, PlanValidationResult, RuleAction, RuleContext, RuleResult, StructuredPlan};
 pub use pipeline::{GuardianN1, GuardianPipeline};
+pub use rules::{
+    compile_ruleset, default_rust_rules, load_yaml_rules, BlocklistRule, PathWhitelistRule,
+    RegexPatternRule, RuleSet,
+};
+pub use types::{
+    GuardianPipelineResult, GuardianRule, N1Result, PlanStep, PlanValidationResult, RuleAction,
+    RuleContext, RuleResult, StructuredPlan,
+};
 
 pub use schemas::{
     all_controller_schemas as all_guardian_controller_schemas,

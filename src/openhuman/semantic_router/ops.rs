@@ -63,7 +63,10 @@ impl SemanticRouter {
     pub fn build_index(&self, skills_store: &SkillsStore) -> anyhow::Result<()> {
         let skills = skills_store.installed();
         if skills.is_empty() {
-            let mut idx = self.index.write().map_err(|e| anyhow::anyhow!("lock: {e}"))?;
+            let mut idx = self
+                .index
+                .write()
+                .map_err(|e| anyhow::anyhow!("lock: {e}"))?;
             idx.clear();
             return Ok(());
         }
@@ -103,7 +106,10 @@ impl SemanticRouter {
             .collect();
 
         let count = index.len();
-        let mut idx = self.index.write().map_err(|e| anyhow::anyhow!("lock: {e}"))?;
+        let mut idx = self
+            .index
+            .write()
+            .map_err(|e| anyhow::anyhow!("lock: {e}"))?;
         *idx = index;
 
         log::info!("[semantic_router] index built with {count} skills");
@@ -152,7 +158,9 @@ impl SemanticRouter {
                 match rt.block_on(self.embedder.embed_one(query)) {
                     Ok(v) => v,
                     Err(e) => {
-                        log::warn!("[semantic_router] embed_one failed: {e} — falling back to keyword");
+                        log::warn!(
+                            "[semantic_router] embed_one failed: {e} — falling back to keyword"
+                        );
                         return self.route_keyword(query, top_k, &index, &start);
                     }
                 }
@@ -176,7 +184,11 @@ impl SemanticRouter {
         }
 
         // Sort descending by score.
-        scored.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+        scored.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         scored.truncate(top_k);
 
         RouteResult {
@@ -207,7 +219,11 @@ impl SemanticRouter {
                     .filter(|t| skill_tokens.contains(t))
                     .count() as f64;
                 let union = (query_tokens.len() + skill_tokens.len()) as f64 - intersection;
-                let score = if union > 0.0 { intersection / union } else { 0.0 };
+                let score = if union > 0.0 {
+                    intersection / union
+                } else {
+                    0.0
+                };
 
                 SkillMatch {
                     skill_name: se.skill_name.clone(),
@@ -217,7 +233,11 @@ impl SemanticRouter {
             })
             .collect();
 
-        scored.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+        scored.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         scored.truncate(top_k);
 
         RouteResult {
@@ -233,7 +253,9 @@ impl SemanticRouter {
 /// Simple whitespace-and-punctuation tokenizer, lowercased.
 fn tokenize(text: &str) -> Vec<String> {
     text.to_lowercase()
-        .split(|c: char| c.is_whitespace() || c == ',' || c == '.' || c == ':' || c == ';' || c == '-')
+        .split(|c: char| {
+            c.is_whitespace() || c == ',' || c == '.' || c == ':' || c == ';' || c == '-'
+        })
         .map(|t| t.trim_matches(|c: char| !c.is_alphanumeric()).to_string())
         .filter(|t| !t.is_empty() && t.len() > 1)
         .collect()
@@ -248,10 +270,18 @@ mod tests {
 
     #[async_trait::async_trait]
     impl EmbeddingProvider for NoopEmbedder {
-        fn name(&self) -> &'static str { "none" }
-        fn model_id(&self) -> &str { "" }
-        fn dimensions(&self) -> usize { 0 }
-        fn signature(&self) -> u64 { 0 }
+        fn name(&self) -> &'static str {
+            "none"
+        }
+        fn model_id(&self) -> &str {
+            ""
+        }
+        fn dimensions(&self) -> usize {
+            0
+        }
+        fn signature(&self) -> u64 {
+            0
+        }
         async fn embed(&self, _texts: &[&str]) -> anyhow::Result<Vec<Vec<f32>>> {
             Ok(vec![])
         }

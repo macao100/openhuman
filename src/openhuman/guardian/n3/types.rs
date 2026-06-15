@@ -128,8 +128,14 @@ mod tests {
 
     #[test]
     fn n3_verdict_serializes_lowercase() {
-        assert_eq!(serde_json::to_string(&N3Verdict::Allow).unwrap(), "\"allow\"");
-        assert_eq!(serde_json::to_string(&N3Verdict::Block).unwrap(), "\"block\"");
+        assert_eq!(
+            serde_json::to_string(&N3Verdict::Allow).unwrap(),
+            "\"allow\""
+        );
+        assert_eq!(
+            serde_json::to_string(&N3Verdict::Block).unwrap(),
+            "\"block\""
+        );
         assert_eq!(
             serde_json::to_string(&N3Verdict::Uncertain).unwrap(),
             "\"uncertain\""
@@ -231,10 +237,7 @@ mod tests {
         assert_eq!(config.max_tokens, 128);
         assert_eq!(config.timeout_ms, 500);
         assert_eq!(config.cache_size, 50);
-        assert_eq!(
-            config.model_override,
-            Some("llama3.2:3b".to_string())
-        );
+        assert_eq!(config.model_override, Some("llama3.2:3b".to_string()));
     }
 
     // -----------------------------------------------------------------------
@@ -289,8 +292,7 @@ mod tests {
 
     #[test]
     fn from_llm_response_extracts_json_from_text_surrounding() {
-        let response =
-            "Some text before {\"verdict\": \"allow\", \"reason\": \"ok\"} and after";
+        let response = "Some text before {\"verdict\": \"allow\", \"reason\": \"ok\"} and after";
         let result = N3Result::from_llm_response(response);
         assert!(result.is_some());
         assert_eq!(result.unwrap().verdict, N3Verdict::Allow);

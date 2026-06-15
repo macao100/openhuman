@@ -10,9 +10,9 @@
 //! - [`decay`] — Confidence decay scheduler (demotes/removes old entries).
 //! - [`schemas`] — Controller schemas for provenance RPCs.
 
-pub mod types;
-pub mod migration;
 pub mod decay;
+pub mod migration;
 pub mod schemas;
+pub mod types;
 
 pub use types::{ConfidenceLevel, MemorySource, Provenance};

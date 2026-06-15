@@ -1241,7 +1241,10 @@ async fn root_handler() -> impl IntoResponse {
 // This makes DADOU self-contained: the core serves both API and UI.
 
 fn dist_dir() -> &'static Path {
-    FRONTEND_DIST.get().map(|p| p.as_path()).unwrap_or_else(|| Path::new("app/dist"))
+    FRONTEND_DIST
+        .get()
+        .map(|p| p.as_path())
+        .unwrap_or_else(|| Path::new("app/dist"))
 }
 
 fn mime_for_path(path: &Path) -> &'static str {
@@ -1292,7 +1295,9 @@ async fn frontend_root_or_default() -> Response {
 async fn frontend_asset(axum::extract::Path(path): axum::extract::Path<String>) -> Response {
     // The route pattern /assets/{*path} captures only the filename;
     // the files actually live under app/dist/assets/.
-    serve_static_file(&format!("assets/{}", path)).await.into_response()
+    serve_static_file(&format!("assets/{}", path))
+        .await
+        .into_response()
 }
 
 /// Serves index.html (SPA fallback) if frontend dist exists, otherwise a 404 JSON response.
@@ -1454,9 +1459,7 @@ async fn run_server_inner(
                 // Initialize DADOU session context — restores the last active
                 // project, phase, and topic so the agent can resume across
                 // restarts.  Safe to call even when memory DB does not exist yet.
-                crate::openhuman::session_context::ops::init_session_context(
-                    &cfg.workspace_dir,
-                );
+                crate::openhuman::session_context::ops::init_session_context(&cfg.workspace_dir);
                 // Register a shutdown hook for standalone mode (Ctrl-C / SIGTERM).
                 // In embedded mode the save runs inline after the server stops.
                 crate::openhuman::session_context::ops::register_shutdown_hook();
@@ -1731,9 +1734,11 @@ async fn run_server_inner(
                 dashboard: dashboard_cfg,
                 ..Default::default()
             };
-            if let Err(e) =
-                crate::openhuman::dashboard::server::start_dashboard_server(&config, dashboard_shutdown)
-                    .await
+            if let Err(e) = crate::openhuman::dashboard::server::start_dashboard_server(
+                &config,
+                dashboard_shutdown,
+            )
+            .await
             {
                 log::warn!("[dashboard] server stopped: {e}");
             }

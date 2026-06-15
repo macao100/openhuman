@@ -219,8 +219,8 @@ fn handle_upsert_fact(params: Map<String, Value>) -> ControllerFuture {
             .and_then(|v| v.as_str())
             .unwrap_or("user");
 
-        let client =
-            crate::openhuman::memory::global::client().map_err(|e| format!("memory client: {e}"))?;
+        let client = crate::openhuman::memory::global::client()
+            .map_err(|e| format!("memory client: {e}"))?;
 
         let fact = ProjectFact {
             project_name: project_name.to_string(),
@@ -246,12 +246,10 @@ fn handle_upsert_fact(params: Map<String, Value>) -> ControllerFuture {
 
 fn handle_list_facts(_params: Map<String, Value>) -> ControllerFuture {
     Box::pin(async move {
-        let project = _params
-            .get("project")
-            .and_then(|v| v.as_str());
+        let project = _params.get("project").and_then(|v| v.as_str());
 
-        let client =
-            crate::openhuman::memory::global::client().map_err(|e| format!("memory client: {e}"))?;
+        let client = crate::openhuman::memory::global::client()
+            .map_err(|e| format!("memory client: {e}"))?;
 
         let facts = store::list_facts(&client, project)
             .await
@@ -287,8 +285,8 @@ fn handle_delete_fact(params: Map<String, Value>) -> ControllerFuture {
             .and_then(|v| v.as_str())
             .ok_or_else(|| "missing required param 'fact_key'".to_string())?;
 
-        let client =
-            crate::openhuman::memory::global::client().map_err(|e| format!("memory client: {e}"))?;
+        let client = crate::openhuman::memory::global::client()
+            .map_err(|e| format!("memory client: {e}"))?;
 
         let deleted = store::delete_fact(&client, project_name, fact_key)
             .await
@@ -322,8 +320,7 @@ mod tests {
             assert!(
                 matching,
                 "controller {}.{} has no matching schema",
-                ctrl.schema.namespace,
-                ctrl.schema.function
+                ctrl.schema.namespace, ctrl.schema.function
             );
         }
     }
@@ -342,9 +339,15 @@ mod tests {
             .filter(|i| i.required)
             .map(|i| i.name)
             .collect();
-        assert!(required_names.contains(&"project_name"), "project_name is required");
+        assert!(
+            required_names.contains(&"project_name"),
+            "project_name is required"
+        );
         assert!(required_names.contains(&"fact_key"), "fact_key is required");
-        assert!(required_names.contains(&"fact_value"), "fact_value is required");
+        assert!(
+            required_names.contains(&"fact_value"),
+            "fact_value is required"
+        );
     }
 
     #[test]

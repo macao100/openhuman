@@ -85,8 +85,8 @@ pub fn decay_pass(conn: &Connection) -> anyhow::Result<DecayReport> {
                     confidence: ConfidenceLevel::Inferred,
                     ..provenance
                 };
-                let new_json = serde_json::to_string(&new_prov)
-                    .context("serialize demoted provenance")?;
+                let new_json =
+                    serde_json::to_string(&new_prov).context("serialize demoted provenance")?;
                 conn.execute(
                     "UPDATE memory_docs SET provenance_json = ?1 WHERE document_id = ?2",
                     rusqlite::params![new_json, doc_id],
@@ -191,9 +191,7 @@ mod tests {
     }
 
     fn provenance_json(confidence: &str) -> String {
-        format!(
-            r#"{{"source":"chat_history","confidence":"{confidence}","source_detail":""}}"#
-        )
+        format!(r#"{{"source":"chat_history","confidence":"{confidence}","source_detail":""}}"#)
     }
 
     fn now_ts() -> f64 {
@@ -230,12 +228,7 @@ mod tests {
         create_memory_docs(&conn)?;
 
         let old_ts = now_ts() - (VERIFIED_DECAY_DAYS as f64 + 1.0) * SECS_PER_DAY;
-        insert_doc(
-            &conn,
-            "old-verified",
-            &provenance_json("verified"),
-            old_ts,
-        )?;
+        insert_doc(&conn, "old-verified", &provenance_json("verified"), old_ts)?;
 
         let report = decay_pass(&conn)?;
         assert_eq!(report.verified_demoted, 1);
@@ -260,12 +253,7 @@ mod tests {
         create_memory_docs(&conn)?;
 
         let old_ts = now_ts() - (EXTERNAL_EXPIRY_DAYS as f64 + 1.0) * SECS_PER_DAY;
-        insert_doc(
-            &conn,
-            "old-external",
-            &provenance_json("external"),
-            old_ts,
-        )?;
+        insert_doc(&conn, "old-external", &provenance_json("external"), old_ts)?;
 
         let report = decay_pass(&conn)?;
         assert_eq!(report.external_removed, 1);

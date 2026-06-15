@@ -134,8 +134,8 @@ impl SkillsStore {
     /// Returns an empty store if the file does not exist. Creates parent
     /// directories if they are missing.
     pub fn load() -> Result<Self> {
-        let path = Self::default_path()
-            .context("cannot resolve home directory for skills store")?;
+        let path =
+            Self::default_path().context("cannot resolve home directory for skills store")?;
         Self::load_from(&path)
     }
 
@@ -146,8 +146,9 @@ impl SkillsStore {
     pub fn load_from(path: &Path) -> Result<Self> {
         // Ensure parent directory exists.
         if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)
-                .with_context(|| format!("failed to create skills store dir: {}", parent.display()))?;
+            std::fs::create_dir_all(parent).with_context(|| {
+                format!("failed to create skills store dir: {}", parent.display())
+            })?;
         }
 
         let skills = if path.exists() {
@@ -180,8 +181,8 @@ impl SkillsStore {
         let store_file = StoreFile {
             skills: self.skills.clone(),
         };
-        let toml_str = toml::to_string_pretty(&store_file)
-            .context("failed to serialize skills store")?;
+        let toml_str =
+            toml::to_string_pretty(&store_file).context("failed to serialize skills store")?;
 
         atomic_write(&self.path, &toml_str)
             .with_context(|| format!("failed to save skills store: {}", self.path.display()))?;

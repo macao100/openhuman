@@ -184,7 +184,11 @@ mod tests {
         // Now 'b' is LRU. Inserting 'd' should evict 'b'.
         cache.insert("d".into(), 4);
 
-        assert_eq!(cache.get("a"), Some(1), "'a' was promoted and should remain");
+        assert_eq!(
+            cache.get("a"),
+            Some(1),
+            "'a' was promoted and should remain"
+        );
         assert_eq!(cache.get("b"), None, "'b' was LRU and should be evicted");
         assert_eq!(cache.get("c"), Some(3));
         assert_eq!(cache.get("d"), Some(4));

@@ -5,12 +5,12 @@ pub mod bus;
 pub mod inject;
 pub mod manifest;
 pub mod ops;
-pub mod python;
 pub mod ops_create;
 pub mod ops_discover;
 pub mod ops_install;
 pub mod ops_parse;
 pub mod ops_types;
+pub mod python;
 pub mod schemas;
 pub mod static_analysis;
 pub mod store;
@@ -23,28 +23,29 @@ pub use manifest::{
     parse_manifest, Dependency, FilesystemPerms, GpgConfig, ManifestError, Permissions,
     PythonConfig, SkillManifest, WasmConfig,
 };
-pub use python::PythonSkillRuntime;
 pub use ops::*;
+pub use python::PythonSkillRuntime;
 pub use schemas::{
     all_dadou_skills_controller_schemas, all_dadou_skills_registered_controllers,
-    all_skills_controller_schemas, all_skills_registered_controllers,
-    dadou_skills_schemas, skills_schemas,
+    all_skills_controller_schemas, all_skills_registered_controllers, dadou_skills_schemas,
+    skills_schemas,
 };
 pub use static_analysis::{
-    scan_file, scan_file_for_writes, scan_skill, AnalysisFinding, AnalysisResult, AnalysisRule,
-    AnalysisVerdict, FindingSeverity, SUPPORTED_EXTENSIONS, default_rules,
+    default_rules, scan_file, scan_file_for_writes, scan_skill, AnalysisFinding, AnalysisResult,
+    AnalysisRule, AnalysisVerdict, FindingSeverity, SUPPORTED_EXTENSIONS,
 };
 
 pub use types::{ExecutionStatus, SkillOutputEnvelope};
 
 pub use wasm::{
-    execute_wasm, execute_wasm_structured, skill_data_dir, wrap_skill_output, WasmEngine,
-    WasmExecutionError, build_wasi_ctx,
+    build_wasi_ctx, execute_wasm, execute_wasm_structured, skill_data_dir, wrap_skill_output,
+    WasmEngine, WasmExecutionError,
 };
 
 pub use verify::{
-    extract_fingerprint, TrustStore, TrustedAuthor, SignatureVerificationResult, VerificationResult,
-    VerifyError, verify_git_tag_signature, verify_manifest_signature, verify_skill_signature,
+    extract_fingerprint, verify_git_tag_signature, verify_manifest_signature,
+    verify_skill_signature, SignatureVerificationResult, TrustStore, TrustedAuthor,
+    VerificationResult, VerifyError,
 };
 
 /// Integration test: manifest parsing -> store persistence -> reload roundtrip.
@@ -110,10 +111,7 @@ dependencies:
         assert_eq!(reloaded.version, "0.3.0");
         assert_eq!(reloaded.commit_hash, "abc123def456");
         assert!(reloaded.enabled);
-        assert_eq!(
-            reloaded.gpg_fingerprint.as_deref(),
-            Some("DEADBEEF")
-        );
+        assert_eq!(reloaded.gpg_fingerprint.as_deref(), Some("DEADBEEF"));
         assert_eq!(reloaded.installed_at, "2026-06-05T12:00:00Z");
 
         // 5. Toggle enabled and verify persistence.

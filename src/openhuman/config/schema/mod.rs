@@ -4,11 +4,11 @@
 
 pub mod cloud_providers;
 pub mod dashboard;
-pub use dashboard::DashboardConfig;
 pub use cloud_providers::{
     generate_provider_id, is_slug_reserved, migrate_legacy_fields, AuthStyle, CloudProviderCreds,
     CloudProviderType,
 };
+pub use dashboard::DashboardConfig;
 mod accessibility;
 mod agent;
 mod autocomplete;

@@ -182,8 +182,8 @@ fn handle_clear_state(_params: Map<String, Value>) -> ControllerFuture {
             return to_json(RpcOutcome::new(json!({"cleared": false}), vec![]));
         }
 
-        let conn = rusqlite::Connection::open(&db_path)
-            .map_err(|e| format!("open memory db: {e}"))?;
+        let conn =
+            rusqlite::Connection::open(&db_path).map_err(|e| format!("open memory db: {e}"))?;
         store::init_table(&conn).map_err(|e| format!("init table: {e}"))?;
         let cleared = store::delete_session(&conn).map_err(|e| format!("delete session: {e}"))?;
 
@@ -255,8 +255,7 @@ mod tests {
             assert!(
                 matching,
                 "controller {}.{} has no matching schema",
-                ctrl.schema.namespace,
-                ctrl.schema.function
+                ctrl.schema.namespace, ctrl.schema.function
             );
         }
     }
@@ -307,7 +306,11 @@ mod tests {
 
         let params = Map::new();
         let result = handle_get_state(params).await;
-        assert!(result.is_ok(), "get_state should succeed: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "get_state should succeed: {:?}",
+            result.err()
+        );
 
         let value = result.unwrap();
         let state_obj = value

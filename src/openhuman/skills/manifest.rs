@@ -343,11 +343,11 @@ min_dadou_version: "0.5.0"
         assert_eq!(m.name, "my-test-skill");
         assert_eq!(m.version, "0.1.0");
         assert_eq!(m.author, Some("Alice".to_string()));
+        assert_eq!(m.description.as_deref(), Some("A test skill"));
         assert_eq!(
-            m.description.as_deref(),
-            Some("A test skill")
+            m.wasm.as_ref().unwrap().path.to_string_lossy(),
+            "build/output.wasm"
         );
-        assert_eq!(m.wasm.as_ref().unwrap().path.to_string_lossy(), "build/output.wasm");
         assert_eq!(m.wasm.as_ref().unwrap().entry, "run");
         assert!(!m.permissions.network);
         assert_eq!(m.permissions.filesystem.read.len(), 1);
@@ -523,10 +523,19 @@ wasm:
         assert_eq!(m.name, m2.name);
         assert_eq!(m.version, m2.version);
         assert_eq!(m.author, m2.author);
-        assert_eq!(m.wasm.as_ref().unwrap().path, m2.wasm.as_ref().unwrap().path);
-        assert_eq!(m.wasm.as_ref().unwrap().entry, m2.wasm.as_ref().unwrap().entry);
+        assert_eq!(
+            m.wasm.as_ref().unwrap().path,
+            m2.wasm.as_ref().unwrap().path
+        );
+        assert_eq!(
+            m.wasm.as_ref().unwrap().entry,
+            m2.wasm.as_ref().unwrap().entry
+        );
         assert_eq!(m.permissions.network, m2.permissions.network);
-        assert_eq!(m.gpg.as_ref().map(|g| &g.fingerprint), m2.gpg.as_ref().map(|g| &g.fingerprint));
+        assert_eq!(
+            m.gpg.as_ref().map(|g| &g.fingerprint),
+            m2.gpg.as_ref().map(|g| &g.fingerprint)
+        );
         assert_eq!(m.dependencies.len(), m2.dependencies.len());
     }
 
@@ -553,7 +562,10 @@ wasm:
         let m = parse_manifest(yaml).unwrap();
         assert_eq!(m.name, "minimal");
         assert_eq!(m.version, "1.0.0");
-        assert_eq!(m.wasm.as_ref().unwrap().path.to_string_lossy(), "output.wasm");
+        assert_eq!(
+            m.wasm.as_ref().unwrap().path.to_string_lossy(),
+            "output.wasm"
+        );
         assert!(m.author.is_none());
         assert!(m.description.is_none());
         assert!(m.dependencies.is_empty());

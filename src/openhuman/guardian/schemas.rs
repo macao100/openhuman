@@ -253,7 +253,11 @@ fn handle_evaluate(params: Map<String, Value>) -> ControllerFuture {
         let command = params.get("command").and_then(|v| v.as_str());
         let file_path = params.get("file_path").and_then(|v| v.as_str());
 
-        match crate::openhuman::guardian::ops::evaluate_pipeline(tool_name, args, command, file_path).await {
+        match crate::openhuman::guardian::ops::evaluate_pipeline(
+            tool_name, args, command, file_path,
+        )
+        .await
+        {
             Ok(outcome) => {
                 log::debug!("[guardian][rpc] evaluate ok");
                 to_json(outcome)
@@ -276,7 +280,9 @@ fn handle_n2_evaluate(params: Map<String, Value>) -> ControllerFuture {
         let args = params.get("args").cloned().unwrap_or(Value::Null);
         let command = params.get("command").and_then(|v| v.as_str());
         let file_path = params.get("file_path").and_then(|v| v.as_str());
-        match crate::openhuman::guardian::ops::n2_evaluate(tool_name, args, command, file_path).await {
+        match crate::openhuman::guardian::ops::n2_evaluate(tool_name, args, command, file_path)
+            .await
+        {
             Ok(outcome) => {
                 log::debug!("[guardian][rpc] n2_evaluate ok");
                 to_json(outcome)
@@ -324,10 +330,7 @@ fn handle_pipeline_status(_params: Map<String, Value>) -> ControllerFuture {
 fn handle_plan_validate(params: Map<String, Value>) -> ControllerFuture {
     Box::pin(async move {
         log::debug!("[guardian][rpc] plan_validate enter");
-        let plan_value = params
-            .get("plan")
-            .cloned()
-            .unwrap_or(Value::Null);
+        let plan_value = params.get("plan").cloned().unwrap_or(Value::Null);
         match crate::openhuman::guardian::ops::validate_plan(plan_value).await {
             Ok(outcome) => {
                 log::debug!("[guardian][rpc] plan_validate ok");

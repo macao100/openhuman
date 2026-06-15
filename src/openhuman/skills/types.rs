@@ -251,9 +251,8 @@ impl SkillOutputEnvelope {
     /// This is what the LLM sees — structured data, never raw text.
     /// Returns `data` as a JSON string, or `"null"` when data is Null.
     pub fn data_json_line(&self) -> String {
-        serde_json::to_string(&self.data).unwrap_or_else(|_| {
-            "{{\"error\":\"data serialization failed\"}}".to_string()
-        })
+        serde_json::to_string(&self.data)
+            .unwrap_or_else(|_| "{{\"error\":\"data serialization failed\"}}".to_string())
     }
 
     /// Extract the envelope metadata-section (everything except `data`)
@@ -408,7 +407,8 @@ mod tests {
     #[test]
     fn skill_output_envelope_new_success_has_correct_fields() {
         let data = json!({"output": "hello", "output_bytes": 5});
-        let envelope = SkillOutputEnvelope::new_success("test-skill", "1.0.0", data.clone(), 42, false);
+        let envelope =
+            SkillOutputEnvelope::new_success("test-skill", "1.0.0", data.clone(), 42, false);
 
         assert_eq!(envelope.skill_name, "test-skill");
         assert_eq!(envelope.skill_version, "1.0.0");
@@ -434,8 +434,7 @@ mod tests {
 
     #[test]
     fn skill_output_envelope_new_timeout_has_correct_fields() {
-        let envelope =
-            SkillOutputEnvelope::new_timeout("slow-skill", "0.5.0", 30_000, false);
+        let envelope = SkillOutputEnvelope::new_timeout("slow-skill", "0.5.0", 30_000, false);
 
         assert_eq!(envelope.skill_name, "slow-skill");
         assert_eq!(envelope.skill_version, "0.5.0");
@@ -448,8 +447,7 @@ mod tests {
     #[test]
     fn skill_output_envelope_json_round_trip() {
         let data = json!({"output": "hello world"});
-        let envelope =
-            SkillOutputEnvelope::new_success("test", "2.0.0", data, 500, true);
+        let envelope = SkillOutputEnvelope::new_success("test", "2.0.0", data, 500, true);
 
         let json = serde_json::to_string(&envelope).unwrap();
         let deserialized: SkillOutputEnvelope = serde_json::from_str(&json).unwrap();

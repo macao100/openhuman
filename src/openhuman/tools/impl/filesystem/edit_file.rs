@@ -173,13 +173,7 @@ impl Tool for EditFileTool {
 
         // ── Rollback: capture pre-write snapshot (content already in memory) ─
         let rollback_entry = if let Some(ref rb) = self.rollback {
-            match rb.before_write_with_content(
-                &resolved,
-                "edit",
-                contents.as_bytes(),
-                path,
-                None,
-            ) {
+            match rb.before_write_with_content(&resolved, "edit", contents.as_bytes(), path, None) {
                 Ok(entry) => Some(entry),
                 Err(e) => {
                     log::warn!("[rollback] before_write failed for {}: {}", path, e);
@@ -196,7 +190,9 @@ impl Tool for EditFileTool {
                 // ── Rollback: generate diff and complete entry ────────────
                 if let Some(ref entry) = rollback_entry {
                     if let Some(ref rb) = self.rollback {
-                        if let Err(e) = rb.after_write(entry, contents.as_bytes(), updated.as_bytes()) {
+                        if let Err(e) =
+                            rb.after_write(entry, contents.as_bytes(), updated.as_bytes())
+                        {
                             log::warn!("[rollback] after_write failed for {}: {}", path, e);
                         }
                     }

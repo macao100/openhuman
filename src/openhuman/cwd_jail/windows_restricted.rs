@@ -35,10 +35,9 @@ use windows_sys::Win32::Foundation::{CloseHandle, LocalFree, HLOCAL};
 use windows_sys::Win32::Security::FreeSid;
 use windows_sys::Win32::System::Memory::{LocalAlloc, LPTR};
 use windows_sys::Win32::System::Threading::{
-    DeleteProcThreadAttributeList, InitializeProcThreadAttributeList,
-    ResumeThread, UpdateProcThreadAttribute, CREATE_SUSPENDED,
-    EXTENDED_STARTUPINFO_PRESENT, LPPROC_THREAD_ATTRIBUTE_LIST,
-    PROCESS_INFORMATION, STARTUPINFOEXW, STARTUPINFOW,
+    DeleteProcThreadAttributeList, InitializeProcThreadAttributeList, ResumeThread,
+    UpdateProcThreadAttribute, CREATE_SUSPENDED, EXTENDED_STARTUPINFO_PRESENT,
+    LPPROC_THREAD_ATTRIBUTE_LIST, PROCESS_INFORMATION, STARTUPINFOEXW, STARTUPINFOW,
 };
 
 use super::jail::{Jail, JailBackend, JailedChild};
@@ -50,11 +49,7 @@ use super::jail::{Jail, JailBackend, JailedChild};
 // surface.
 #[link(name = "advapi32")]
 extern "system" {
-    fn OpenProcessToken(
-        ProcessHandle: isize,
-        DesiredAccess: u32,
-        TokenHandle: *mut isize,
-    ) -> i32;
+    fn OpenProcessToken(ProcessHandle: isize, DesiredAccess: u32, TokenHandle: *mut isize) -> i32;
 
     fn CreateRestrictedToken(
         ExistingTokenHandle: isize,
@@ -75,11 +70,8 @@ extern "system" {
         TokenInformationLength: u32,
     ) -> i32;
 
-    fn LookupPrivilegeValueW(
-        lpSystemName: *const u16,
-        lpName: *const u16,
-        lpLuid: *mut i64,
-    ) -> i32;
+    fn LookupPrivilegeValueW(lpSystemName: *const u16, lpName: *const u16, lpLuid: *mut i64)
+        -> i32;
 
     fn AllocateAndInitializeSid(
         pIdentifierAuthority: *const SID_IDENTIFIER_AUTHORITY,
@@ -167,11 +159,13 @@ const SANDBOX_INERT: u32 = 0x00000002;
 
 // ── SID identifier authorities ──────────────────────────────────────
 
-const SECURITY_NULL_SID_AUTHORITY: SID_IDENTIFIER_AUTHORITY =
-    SID_IDENTIFIER_AUTHORITY { Value: [0, 0, 0, 0, 0, 0] };
+const SECURITY_NULL_SID_AUTHORITY: SID_IDENTIFIER_AUTHORITY = SID_IDENTIFIER_AUTHORITY {
+    Value: [0, 0, 0, 0, 0, 0],
+};
 
-const SECURITY_NT_AUTHORITY: SID_IDENTIFIER_AUTHORITY =
-    SID_IDENTIFIER_AUTHORITY { Value: [0, 0, 0, 0, 0, 5] };
+const SECURITY_NT_AUTHORITY: SID_IDENTIFIER_AUTHORITY = SID_IDENTIFIER_AUTHORITY {
+    Value: [0, 0, 0, 0, 0, 5],
+};
 
 // ── Well-known RIDs (WinNT.h) ──────────────────────────────────────
 
@@ -307,11 +301,7 @@ unsafe fn spawn_restricted(_jail: &Jail, _cmd: Command) -> io::Result<JailedChil
     let priv_entries = build_privileges_to_disable();
 
     // 4. Create restricted token.
-    let restricted_token = create_restricted_token(
-        process_token,
-        &sid_entries,
-        &priv_entries,
-    )?;
+    let restricted_token = create_restricted_token(process_token, &sid_entries, &priv_entries)?;
 
     // 5. Free the individually-allocated SIDs now that
     //    `CreateRestrictedToken` has copied them into the token.
@@ -338,10 +328,7 @@ unsafe fn spawn_restricted(_jail: &Jail, _cmd: Command) -> io::Result<JailedChil
 
     // 11. Wrap the process handle in `JailedChild::Custom`.
     let owned = OwnedHandle::from_raw_handle(process_handle as _);
-    Ok(JailedChild::Custom {
-        handle: owned,
-        pid,
-    })
+    Ok(JailedChild::Custom { handle: owned, pid })
 }
 
 /// Open the current process token.
@@ -356,8 +343,7 @@ unsafe fn open_current_process_token() -> io::Result<isize> {
 
 /// Allocate the SIDs to disable and return them as a pair:
 /// (entries for CreateRestrictedToken, handles to free afterwards).
-unsafe fn build_sids_to_disable(
-) -> (Vec<SID_AND_ATTRIBUTES>, Vec<*mut core::ffi::c_void>) {
+unsafe fn build_sids_to_disable() -> (Vec<SID_AND_ATTRIBUTES>, Vec<*mut core::ffi::c_void>) {
     let mut entries = Vec::with_capacity(SIDS_TO_DISABLE.len());
     let mut handles = Vec::with_capacity(SIDS_TO_DISABLE.len());
 
@@ -373,8 +359,14 @@ unsafe fn build_sids_to_disable(
         let rc = AllocateAndInitializeSid(
             info.authority,
             count,
-            sub[0], sub[1], sub[2], sub[3],
-            sub[4], sub[5], sub[6], sub[7],
+            sub[0],
+            sub[1],
+            sub[2],
+            sub[3],
+            sub[4],
+            sub[5],
+            sub[6],
+            sub[7],
             &mut sid,
         );
         if rc != 0 && !sid.is_null() {
@@ -432,7 +424,7 @@ unsafe fn create_restricted_token(
         sids.as_ptr(),
         privs.len() as u32,
         privs.as_ptr(),
-        0,          // RestrictedSidCount
+        0,           // RestrictedSidCount
         ptr::null(), // SidsToRestrict
         &mut new_token,
     );
@@ -455,7 +447,13 @@ unsafe fn set_low_integrity_level(token: isize) -> io::Result<()> {
         &SECURITY_NT_AUTHORITY,
         1,
         SECURITY_MANDATORY_LOW_RID,
-        0, 0, 0, 0, 0, 0, 0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
         &mut sid,
     );
 
@@ -489,17 +487,16 @@ unsafe fn set_low_integrity_level(token: isize) -> io::Result<()> {
 
 /// Spawn the child process under the restricted token with mitigation
 /// policies. Returns (process_handle, thread_handle, pid).
-unsafe fn spawn_with_token(
-    token: isize,
-    cmd: Command,
-) -> io::Result<(isize, isize, u32)> {
+unsafe fn spawn_with_token(token: isize, cmd: Command) -> io::Result<(isize, isize, u32)> {
     // Build command line from the std Command.
     let cmdline = build_command_line(&cmd);
-    let mut cmdline_w: Vec<u16> =
-        cmdline.encode_utf16().chain(std::iter::once(0)).collect();
-    let cwd_w = cmd
-        .get_current_dir()
-        .map(|p| p.as_os_str().encode_wide().chain(std::iter::once(0)).collect::<Vec<u16>>());
+    let mut cmdline_w: Vec<u16> = cmdline.encode_utf16().chain(std::iter::once(0)).collect();
+    let cwd_w = cmd.get_current_dir().map(|p| {
+        p.as_os_str()
+            .encode_wide()
+            .chain(std::iter::once(0))
+            .collect::<Vec<u16>>()
+    });
 
     // Build STARTUPINFOEXW with mitigation policy (CIG + CFG).
     let mut attr_list_size: usize = 0;

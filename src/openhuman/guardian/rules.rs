@@ -48,7 +48,10 @@ impl GuardianRule for PathWhitelistRule {
         if self.patterns.iter().any(|p| p.matches_path(path.as_ref())) {
             RuleResult::allowed(self.name())
         } else {
-            RuleResult::blocked(self.name(), format!("path does not match whitelist patterns"))
+            RuleResult::blocked(
+                self.name(),
+                format!("path does not match whitelist patterns"),
+            )
         }
     }
 }
@@ -82,7 +85,10 @@ impl GuardianRule for RegexPatternRule {
     fn evaluate(&self, ctx: &RuleContext) -> RuleResult {
         if let Some(ref cmd) = ctx.command {
             if self.patterns.iter().any(|p| p.is_match(cmd)) {
-                return RuleResult::blocked(self.name(), format!("command matches blocked pattern"));
+                return RuleResult::blocked(
+                    self.name(),
+                    format!("command matches blocked pattern"),
+                );
             }
         }
         let args_str = ctx.tool_args.to_string();
@@ -225,12 +231,11 @@ impl GuardianRule for YamlGuardianRule {
             if let Some(ref path) = ctx.file_path {
                 if pat.matches_path(path.as_ref()) {
                     return match self.action {
-                        RuleAction::Block => {
-                            RuleResult::blocked(self.name(), format!("YAML rule: path matches blocked glob"))
-                        }
-                        RuleAction::Allow => {
-                            RuleResult::allowed(self.name())
-                        }
+                        RuleAction::Block => RuleResult::blocked(
+                            self.name(),
+                            format!("YAML rule: path matches blocked glob"),
+                        ),
+                        RuleAction::Allow => RuleResult::allowed(self.name()),
                     };
                 }
             }
@@ -264,11 +269,17 @@ pub fn load_yaml_rules(path: &Path) -> Vec<Box<dyn GuardianRule>> {
     let content = match std::fs::read_to_string(path) {
         Ok(c) => c,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-            log::debug!("[guardian] No YAML rules file at {} — using compiled rules only", path.display());
+            log::debug!(
+                "[guardian] No YAML rules file at {} — using compiled rules only",
+                path.display()
+            );
             return Vec::new();
         }
         Err(e) => {
-            log::warn!("[guardian] Cannot read YAML rules file {}: {e}", path.display());
+            log::warn!(
+                "[guardian] Cannot read YAML rules file {}: {e}",
+                path.display()
+            );
             return Vec::new();
         }
     };
@@ -276,7 +287,10 @@ pub fn load_yaml_rules(path: &Path) -> Vec<Box<dyn GuardianRule>> {
     let doc: YamlRulesDoc = match serde_yaml::from_str(&content) {
         Ok(d) => d,
         Err(e) => {
-            log::warn!("[guardian] Malformed YAML rules file {}: {e}", path.display());
+            log::warn!(
+                "[guardian] Malformed YAML rules file {}: {e}",
+                path.display()
+            );
             return Vec::new();
         }
     };
@@ -344,7 +358,11 @@ pub fn load_yaml_rules(path: &Path) -> Vec<Box<dyn GuardianRule>> {
         }));
     }
 
-    log::info!("[guardian] Loaded {} YAML rules from {}", rules.len(), path.display());
+    log::info!(
+        "[guardian] Loaded {} YAML rules from {}",
+        rules.len(),
+        path.display()
+    );
     rules
 }
 
@@ -630,7 +648,8 @@ rules:
 
     #[test]
     fn yaml_missing_file_returns_empty() {
-        let rules = super::load_yaml_rules(std::path::Path::new("/nonexistent/guardian-rules.yaml"));
+        let rules =
+            super::load_yaml_rules(std::path::Path::new("/nonexistent/guardian-rules.yaml"));
         assert!(rules.is_empty());
     }
 
@@ -687,7 +706,11 @@ rules:
             file_path: Some("passwords.secret".into()),
         };
         let result = rules[0].evaluate(&ctx);
-        assert_eq!(result.action, RuleAction::Allow, "rule should not apply to file_read");
+        assert_eq!(
+            result.action,
+            RuleAction::Allow,
+            "rule should not apply to file_read"
+        );
     }
 
     #[test]

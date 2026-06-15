@@ -245,9 +245,7 @@ mod win {
     ///
     /// `handle` must be a valid process handle with `PROCESS_TERMINATE`
     /// access.
-    pub unsafe fn terminate_process(
-        handle: *mut core::ffi::c_void,
-    ) -> io::Result<()> {
+    pub unsafe fn terminate_process(handle: *mut core::ffi::c_void) -> io::Result<()> {
         if TerminateProcess(handle as isize, 1) == 0 {
             return Err(io::Error::last_os_error());
         }
@@ -385,7 +383,11 @@ mod tests {
     #[test]
     fn jailed_child_std_try_wait() {
         let mut child = {
-            let mut c = Command::new(if cfg!(target_os = "windows") { "cmd" } else { "true" });
+            let mut c = Command::new(if cfg!(target_os = "windows") {
+                "cmd"
+            } else {
+                "true"
+            });
             if cfg!(target_os = "windows") {
                 c.args(["/C", "exit"]);
             }

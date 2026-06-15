@@ -183,13 +183,13 @@ pub fn default_rules() -> Vec<AnalysisRule> {
             r##"require\s*\(\s*['"]child_process['"]\s*\)"##,
             "Child process module",
         ),
-        AnalysisRule::critical(r##"__import__\s*\(\s*['"]os['"]\s*\)"##, "Dynamic os import"),
+        AnalysisRule::critical(
+            r##"__import__\s*\(\s*['"]os['"]\s*\)"##,
+            "Dynamic os import",
+        ),
         // ── High: Network access ──
         AnalysisRule::high(r"import\s+socket", "Socket import"),
-        AnalysisRule::high(
-            r"requests\.(?:get|post|put|delete)\s*\(",
-            "HTTP request",
-        ),
+        AnalysisRule::high(r"requests\.(?:get|post|put|delete)\s*\(", "HTTP request"),
         AnalysisRule::high(r"TcpStream::connect", "TCP connection"),
         AnalysisRule::high(r"\bcurl\s", "curl command"),
         AnalysisRule::high(r"\bwget\s", "wget command"),

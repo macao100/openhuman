@@ -54,7 +54,10 @@ print("hello")
 "#;
     let rules = make_rules();
     let findings = scan_file(content, Path::new("test.py"), &rules);
-    assert!(!findings.is_empty(), "expected findings for os/subprocess imports");
+    assert!(
+        !findings.is_empty(),
+        "expected findings for os/subprocess imports"
+    );
 
     let verdict = compute_verdict(&findings, &default_perms());
     assert_eq!(verdict, AnalysisVerdict::Block);
@@ -121,7 +124,10 @@ fn safe() -> u32 {
 "#;
     let rules = make_rules();
     let findings = scan_file(content, Path::new("src/lib.rs"), &rules);
-    assert!(!findings.is_empty(), "expected findings for eval in comments");
+    assert!(
+        !findings.is_empty(),
+        "expected findings for eval in comments"
+    );
     let has_eval = findings.iter().any(|f| f.pattern == "Use of eval()");
     assert!(has_eval, "expected eval() finding");
 
@@ -206,9 +212,15 @@ fn severity_classification() {
         .iter()
         .filter(|r| r.severity == FindingSeverity::Medium)
         .count();
-    assert!(critical_count >= 5, "expected >=5 Critical rules, got {critical_count}");
+    assert!(
+        critical_count >= 5,
+        "expected >=5 Critical rules, got {critical_count}"
+    );
     assert!(high_count >= 5, "expected >=5 High rules, got {high_count}");
-    assert!(medium_count >= 3, "expected >=3 Medium rules, got {medium_count}");
+    assert!(
+        medium_count >= 3,
+        "expected >=3 Medium rules, got {medium_count}"
+    );
 }
 
 /// `eval()` is correctly detected in source code.
@@ -297,19 +309,37 @@ fn no_src_dir_returns_empty_result() {
 fn scan_skill_directory_with_mixed_files() {
     let dir = skill_dir();
 
-    write_source(dir.path(), "greet.rs", "pub fn greet(name: &str) -> String { format!(\"Hello, {}!\", name) }\n");
-    write_source(dir.path(), "danger.py", "def process(input_str):\n    eval(input_str)\n");
-    write_source(dir.path(), "runner.py", "import subprocess\nsubprocess.run([\"rm\", \"-rf\", \"/\"])\n");
+    write_source(
+        dir.path(),
+        "greet.rs",
+        "pub fn greet(name: &str) -> String { format!(\"Hello, {}!\", name) }\n",
+    );
+    write_source(
+        dir.path(),
+        "danger.py",
+        "def process(input_str):\n    eval(input_str)\n",
+    );
+    write_source(
+        dir.path(),
+        "runner.py",
+        "import subprocess\nsubprocess.run([\"rm\", \"-rf\", \"/\"])\n",
+    );
 
     let result = scan_skill(dir.path(), &default_perms()).unwrap();
-    assert!(!result.findings.is_empty(), "expected findings from mixed scan");
+    assert!(
+        !result.findings.is_empty(),
+        "expected findings from mixed scan"
+    );
 
     assert!(
         result.findings.iter().any(|f| f.pattern == "Use of eval()"),
         "expected eval() finding from danger.py"
     );
     assert!(
-        result.findings.iter().any(|f| f.pattern == "Subprocess execution"),
+        result
+            .findings
+            .iter()
+            .any(|f| f.pattern == "Subprocess execution"),
         "expected subprocess finding"
     );
     assert_eq!(result.verdict, AnalysisVerdict::Block);
@@ -319,30 +349,50 @@ fn scan_skill_directory_with_mixed_files() {
 #[test]
 fn network_allowed_in_permissions() {
     let dir = skill_dir();
-    write_source(dir.path(), "fetch.py", "import requests\nrequests.get(\"http://example.com/data\")\n");
+    write_source(
+        dir.path(),
+        "fetch.py",
+        "import requests\nrequests.get(\"http://example.com/data\")\n",
+    );
 
     // No network → Block.
     let result_no_net = scan_skill(dir.path(), &default_perms()).unwrap();
-    assert!(result_no_net.findings.iter().any(|f| f.pattern == "HTTP request"));
+    assert!(result_no_net
+        .findings
+        .iter()
+        .any(|f| f.pattern == "HTTP request"));
     assert_eq!(result_no_net.verdict, AnalysisVerdict::Block);
 
     // With network → Pass.
     let perms = Permissions {
         network: true,
-        filesystem: FilesystemPerms { read: vec![], write: vec![] },
+        filesystem: FilesystemPerms {
+            read: vec![],
+            write: vec![],
+        },
     };
-    assert_eq!(scan_skill(dir.path(), &perms).unwrap().verdict, AnalysisVerdict::Pass);
+    assert_eq!(
+        scan_skill(dir.path(), &perms).unwrap().verdict,
+        AnalysisVerdict::Pass
+    );
 }
 
 /// When write path matches `permissions.filesystem.write`, finding → Pass.
 #[test]
 fn write_path_allowed_in_permissions() {
     let dir = skill_dir();
-    write_source(dir.path(), "output.rs", "fn save() { std::fs::write(\"data/result.txt\", \"ok\").unwrap(); }\n");
+    write_source(
+        dir.path(),
+        "output.rs",
+        "fn save() { std::fs::write(\"data/result.txt\", \"ok\").unwrap(); }\n",
+    );
 
     // Without write permission → Block.
     let result_no_perm = scan_skill(dir.path(), &default_perms()).unwrap();
-    assert!(result_no_perm.findings.iter().any(|f| f.pattern == "Filesystem write"));
+    assert!(result_no_perm
+        .findings
+        .iter()
+        .any(|f| f.pattern == "Filesystem write"));
     assert_eq!(result_no_perm.verdict, AnalysisVerdict::Block);
 
     // With matching write permission → Pass.
@@ -353,7 +403,10 @@ fn write_path_allowed_in_permissions() {
             write: vec!["data/**".to_string()],
         },
     };
-    assert_eq!(scan_skill(dir.path(), &perms).unwrap().verdict, AnalysisVerdict::Pass);
+    assert_eq!(
+        scan_skill(dir.path(), &perms).unwrap().verdict,
+        AnalysisVerdict::Pass
+    );
 }
 
 /// Skill dir without `src/` returns empty findings, Pass verdict.
@@ -385,11 +438,18 @@ fn binary_file_skipped() {
 #[test]
 fn unsupported_extensions_skipped() {
     let dir = skill_dir();
-    write_source(dir.path(), "notes.md", "This contains eval() but .md is not supported.\n");
+    write_source(
+        dir.path(),
+        "notes.md",
+        "This contains eval() but .md is not supported.\n",
+    );
     write_source(dir.path(), "config.txt", "eval(\"harmless\")\n");
 
     let result = scan_skill(dir.path(), &default_perms()).unwrap();
-    assert!(result.findings.is_empty(), "expected no findings for unsupported extensions");
+    assert!(
+        result.findings.is_empty(),
+        "expected no findings for unsupported extensions"
+    );
     assert_eq!(result.verdict, AnalysisVerdict::Pass);
 }
 
@@ -397,10 +457,17 @@ fn unsupported_extensions_skipped() {
 #[test]
 fn medium_severity_produces_warn() {
     let dir = skill_dir();
-    write_source(dir.path(), "config.py", "import os\nhome = os.environ.get(\"HOME\")\n");
+    write_source(
+        dir.path(),
+        "config.py",
+        "import os\nhome = os.environ.get(\"HOME\")\n",
+    );
 
     let result = scan_skill(dir.path(), &default_perms()).unwrap();
-    let has_env = result.findings.iter().any(|f| f.pattern == "Environment access");
+    let has_env = result
+        .findings
+        .iter()
+        .any(|f| f.pattern == "Environment access");
     assert!(has_env, "expected Environment access finding");
 
     assert_eq!(result.verdict, AnalysisVerdict::Warn);
@@ -410,14 +477,27 @@ fn medium_severity_produces_warn() {
 #[test]
 fn scans_only_supported_extensions() {
     let dir = skill_dir();
-    write_source(dir.path(), "unsafe.rs", "std::process::Command::new(\"rm\");\n");
+    write_source(
+        dir.path(),
+        "unsafe.rs",
+        "std::process::Command::new(\"rm\");\n",
+    );
     write_source(dir.path(), "danger.py", "os.system(\"rm -rf /\")\n");
     write_source(dir.path(), "Cargo.toml", "[dependencies]\nhttp = \"0.1\"\n");
 
     let result = scan_skill(dir.path(), &default_perms()).unwrap();
-    assert!(!result.findings.is_empty(), "expected findings from .rs and .py files");
-    assert!(result.findings.iter().any(|f| f.pattern == "Process execution"));
-    assert!(result.findings.iter().any(|f| f.pattern == "Shell command execution"));
+    assert!(
+        !result.findings.is_empty(),
+        "expected findings from .rs and .py files"
+    );
+    assert!(result
+        .findings
+        .iter()
+        .any(|f| f.pattern == "Process execution"));
+    assert!(result
+        .findings
+        .iter()
+        .any(|f| f.pattern == "Shell command execution"));
     assert_eq!(result.verdict, AnalysisVerdict::Block);
 }
 
@@ -438,12 +518,23 @@ fn scan_with_partial_errors() {
 fn multiple_files_contributing_findings() {
     let dir = skill_dir();
     write_source(dir.path(), "app.js", "eval(userInput);\n");
-    write_source(dir.path(), "network.py", "import socket\ns = socket.socket()\n");
-    write_source(dir.path(), "storage.rs", "std::fs::write(\"/tmp/out\", data)?;\n");
+    write_source(
+        dir.path(),
+        "network.py",
+        "import socket\ns = socket.socket()\n",
+    );
+    write_source(
+        dir.path(),
+        "storage.rs",
+        "std::fs::write(\"/tmp/out\", data)?;\n",
+    );
 
     let result = scan_skill(dir.path(), &default_perms()).unwrap();
     assert!(result.findings.iter().any(|f| f.pattern == "Use of eval()"));
     assert!(result.findings.iter().any(|f| f.pattern == "Socket import"));
-    assert!(result.findings.iter().any(|f| f.pattern == "Filesystem write"));
+    assert!(result
+        .findings
+        .iter()
+        .any(|f| f.pattern == "Filesystem write"));
     assert_eq!(result.verdict, AnalysisVerdict::Block);
 }
