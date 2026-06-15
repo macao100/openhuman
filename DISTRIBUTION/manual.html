@@ -94,8 +94,11 @@ details .content{padding:12px;border-left:2px solid var(--border);margin-left:12
 <!-- ═══ DÉMARRAGE ═══ -->
 <h2 id="demarrage">&#x1F680; Démarrage rapide</h2>
 
-<div class="cmd"><span class="comment"># 1. Lancer le core (terminal)</span>
-.\target\release\openhuman-core.exe serve
+<div class="cmd"><span class="comment"># 0. Choisir le dossier workspace (optionnel)</span>
+$env:OPENHUMAN_WORKSPACE = "D:\MesProjets\DADOU"
+
+<span class="comment"># 1. Lancer le core (terminal)</span>
+.\target\release\dadou-core.exe serve
 
 <span class="comment"># 2. Ouvrir le dashboard</span>
 <span class="comment"># → http://127.0.0.1:7790</span>
@@ -104,9 +107,9 @@ details .content{padding:12px;border-left:2px solid var(--border);margin-left:12
 curl http://127.0.0.1:7788/health
 
 <span class="comment"># 4. Lister les skills installées</span>
-.\target\release\openhuman-core.exe skill list</div>
+.\target\release\dadou-core.exe skill list</div>
 
-<div class="note"><strong>Premier lancement</strong> : DADOU crée automatiquement <code>~/.openhuman/</code> avec sa configuration, sa base SQLite et son workspace. L'interface Tauri se lance sur le bureau.</div>
+<div class="note"><strong>Premier lancement</strong> : DADOU crée automatiquement le workspace dans <code>%USERPROFILE%\DADOU</code> (modifiable avec <code>$env:OPENHUMAN_WORKSPACE</code>) avec sa configuration, sa base SQLite et ses skills. Le mode offline est activé par défaut — aucun backend cloud requis.</div>
 
 <!-- ═══ CAS 1 : DÉVELOPPEUR ═══ -->
 <h2 id="cas1">&#x1F4BB; Cas 1 — Développeur : Analyse et refactoring d'un projet</h2>
@@ -165,10 +168,10 @@ SQL injection potentielle dans core/queries.py:142</div>
 
   <h4>1. Installation d'un skill Python</h4>
   <div class="cmd"><span class="comment"># Installer un skill d'analyse de données</span>
-openhuman-core skill install https://github.com/dadou/skill-pandas.git
+dadou-core skill install https://github.com/dadou/skill-pandas.git
 
 <span class="comment"># Vérifier l'installation</span>
-openhuman-core skill list
+dadou-core skill list
 → pandas-analyzer  v1.2.0  [enabled]  GPG ✓  runtime: python</div>
 
   <h4>2. Analyse interactive</h4>
@@ -212,10 +215,10 @@ Statistiques descriptives :
 
   <h4>2. DADOU gère le cron</h4>
   <div class="cmd"><span class="comment"># Configurer une tâche périodique</span>
-openhuman-core cron add temp-check "*/5 * * * *" "python temp_control.py"
+dadou-core cron add temp-check "*/5 * * * *" "python temp_control.py"
 
 <span class="comment"># Voir l'historique d'exécution</span>
-openhuman-core cron history
+dadou-core cron history
 → temp-check | 14:05 | OK (340ms) | Temp: 24°C, Aucune action
 → temp-check | 14:10 | OK (320ms) | Temp: 27°C, Clim allumée
 → temp-check | 14:15 | OK (310ms) | Temp: 25°C, Clim éteinte</div>
@@ -305,22 +308,22 @@ Privilégie les articles post-2022.
 
 <h3>Installer un skill</h3>
 <div class="cmd"><span class="comment"># Depuis un repo Git (WASM)</span>
-openhuman-core skill install https://github.com/dadou/skill-filesystem.git
+dadou-core skill install https://github.com/dadou/skill-filesystem.git
 
 <span class="comment"># Depuis un repo Git (Python)</span>
-openhuman-core skill install https://github.com/dadou/skill-pandas.git
+dadou-core skill install https://github.com/dadou/skill-pandas.git
 
 <span class="comment"># Lister les skills installées</span>
-openhuman-core skill list
+dadou-core skill list
 
 <span class="comment"># Mettre à jour</span>
-openhuman-core skill update skill-filesystem
+dadou-core skill update skill-filesystem
 
 <span class="comment"># Auditer (ré-analyse statique)</span>
-openhuman-core skill audit skill-filesystem
+dadou-core skill audit skill-filesystem
 
 <span class="comment"># Désinstaller</span>
-openhuman-core skill remove skill-filesystem</div>
+dadou-core skill remove skill-filesystem</div>
 
 <h3>Structure d'un skill (dadou-skill.yaml)</h3>
 <div class="cmd"><span class="comment"># Skill WASM</span>
@@ -431,7 +434,7 @@ timeout_ms = 450</div>
   <div class="content">
     <p>Changez le port dans la config :</p>
     <div class="cmd">set OPENHUMAN_CORE_PORT=7799
-openhuman-core serve</div>
+dadou-core serve</div>
   </div>
 </details>
 
@@ -495,19 +498,19 @@ sqlite3 ~\.openhuman\workspace\dashboard\dashboard.db \
 
 <h3>CLI Core</h3>
 <div class="cmd"><span class="comment"># Démarrer le serveur</span>
-openhuman-core serve [--port 7788] [--host 127.0.0.1]
+dadou-core serve [--port 7788] [--host 127.0.0.1]
 
 <span class="comment"># Dashboard standalone</span>
-openhuman-core dashboard [--port 7790]
+dadou-core dashboard [--port 7790]
 
 <span class="comment"># Appeler une méthode RPC directement</span>
-openhuman-core call &lt;namespace&gt; &lt;function&gt; [params...]
+dadou-core call &lt;namespace&gt; &lt;function&gt; [params...]
 
 <span class="comment"># Mode agent (chat CLI)</span>
-openhuman-core agent [--model &lt;model&gt;] [--prompt &lt;text&gt;]
+dadou-core agent [--model &lt;model&gt;] [--prompt &lt;text&gt;]
 
 <span class="comment"># Annuler la dernière modification</span>
-openhuman-core undo --last</div>
+dadou-core undo --last</div>
 
 <h3>RPC (JSON-RPC 2.0)</h3>
 <table>

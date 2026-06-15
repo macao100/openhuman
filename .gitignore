@@ -109,3 +109,9 @@ test-map.md
 .codex-tmp
 *.enc
 .planning/
+
+# DADOU portable binaries (released via GitHub Releases)
+DISTRIBUTION/dadou-core.exe
+DISTRIBUTION/dadou-v1.0.0-portable.zip
+DISTRIBUTION/vcruntime140.dll
+DISTRIBUTION/vcruntime140_1.dll

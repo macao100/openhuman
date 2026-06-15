@@ -19,6 +19,7 @@ use crate::api::jwt::bearer_authorization_value;
 use crate::openhuman::autocomplete::AutocompleteStatus;
 use crate::openhuman::config::rpc as config_rpc;
 use crate::openhuman::config::Config;
+use crate::openhuman::credentials::responses::AuthStateResponse;
 use crate::openhuman::credentials::session_support::{
     is_local_session_token, load_app_session_profile, session_state_from_profile,
     session_token_from_profile,
@@ -566,27 +567,46 @@ pub async fn snapshot() -> Result<RpcOutcome<AppStateSnapshot>, String> {
     let config_ms = t_config.elapsed().as_millis();
 
     let t_auth = Instant::now();
-    // Load the `app-session` auth profile exactly once and derive both
-    // the session-state view and the raw token from it. The previous
-    // implementation called `build_session_state` + `get_session_token`
-    // separately, which acquired the auth-profile file lock twice per
-    // snapshot. On Windows this doubled the surface area for the
-    // "Timed out waiting for auth profile lock" failure reported in
-    // Sentry against `openhuman.app_state_snapshot`.
-    //
-    // `load_app_session_profile` calls `acquire_lock()`, which busy-waits
-    // with `thread::sleep` for up to ~35s when the lock is contended. Calling
-    // it directly on a tokio worker thread blocks that thread for the entire
-    // wait, exhausting the thread pool under concurrent snapshot calls and
-    // triggering `ERR_CONNECTION_TIMED_OUT` on all RPC connections.
-    let config_for_profile = config.clone();
-    let session_profile =
-        tokio::task::spawn_blocking(move || load_app_session_profile(&config_for_profile))
-            .await
-            .unwrap_or_else(|e| Err(format!("[app_state] auth profile load task panicked: {e}")))?;
-    let mut auth = session_state_from_profile(session_profile.as_ref());
-    let session_token = session_token_from_profile(session_profile.as_ref());
-    let stored_user = sanitize_snapshot_user(auth.user.clone());
+    // In offline mode, skip the auth profile entirely and return a local
+    // session state — no backend call, no auth-profiles.json lock contention.
+    let (mut auth, session_token, stored_user) = if config.offline_mode {
+        let token = crate::openhuman::credentials::session_support::create_local_session_token();
+        let auth = AuthStateResponse {
+            is_authenticated: true,
+            user_id: Some(crate::openhuman::credentials::session_support::LOCAL_SESSION_USER_ID.to_string()),
+            user: Some(serde_json::json!({
+                "id": crate::openhuman::credentials::session_support::LOCAL_SESSION_USER_ID,
+                "name": "DADOU User",
+                "email": "local@dadou.app",
+            })),
+            profile_id: None,
+        };
+        let stored = sanitize_snapshot_user(auth.user.clone());
+        (auth, Some(token), stored)
+    } else {
+        // Load the `app-session` auth profile exactly once and derive both
+        // the session-state view and the raw token from it. The previous
+        // implementation called `build_session_state` + `get_session_token`
+        // separately, which acquired the auth-profile file lock twice per
+        // snapshot. On Windows this doubled the surface area for the
+        // "Timed out waiting for auth profile lock" failure reported in
+        // Sentry against `openhuman.app_state_snapshot`.
+        //
+        // `load_app_session_profile` calls `acquire_lock()`, which busy-waits
+        // with `thread::sleep` for up to ~35s when the lock is contended. Calling
+        // it directly on a tokio worker thread blocks that thread for the entire
+        // wait, exhausting the thread pool under concurrent snapshot calls and
+        // triggering `ERR_CONNECTION_TIMED_OUT` on all RPC connections.
+        let config_for_profile = config.clone();
+        let session_profile =
+            tokio::task::spawn_blocking(move || load_app_session_profile(&config_for_profile))
+                .await
+                .unwrap_or_else(|e| Err(format!("[app_state] auth profile load task panicked: {e}")))?;
+        let auth = session_state_from_profile(session_profile.as_ref());
+        let token = session_token_from_profile(session_profile.as_ref());
+        let stored = sanitize_snapshot_user(auth.user.clone());
+        (auth, token, stored)
+    };
     let auth_ms = t_auth.elapsed().as_millis();
 
     // Resolve the live current-user refresh and the runtime snapshot

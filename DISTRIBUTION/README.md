@@ -44,15 +44,20 @@
 ## Démarrage
 
 ```powershell
-# Lancer le core
-.\target\release\openhuman-core.exe serve
+# Tout-en-un : le core sert l'API + le chat + le dashboard
+.\target\release\dadou-core.exe serve
 
-# Dashboard
+# Chat (interface React)
+# → http://127.0.0.1:7788
+
+# Dashboard (observabilité temps réel)
 # → http://127.0.0.1:7790
 
 # Manuel
 # → DISTRIBUTION\manual.html
 ```
+
+**Un seul binaire, une seule commande.** Le frontend React est servi directement par le core depuis `app/dist/`.
 
 ---
 

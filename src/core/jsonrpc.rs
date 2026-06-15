@@ -5,7 +5,9 @@
 //! - Method dispatching to registered controllers.
 //! - SSE (Server-Sent Events) for real-time event streaming.
 //! - Helper routes for health checks, schema discovery, and Telegram authentication.
+//! - Static file serving for the React frontend (when `app/dist/` exists).
 
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use axum::extract::{Query, State, WebSocketUpgrade};
@@ -19,6 +21,9 @@ use serde::Serialize;
 use serde_json::{json, Map, Value};
 use tokio_stream::StreamExt;
 use tokio_util::sync::CancellationToken;
+
+/// Path to the built frontend directory, set at startup.
+static FRONTEND_DIST: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
 
 use crate::core::all;
 use crate::core::types::{AppState, RpcError, RpcFailure, RpcRequest, RpcSuccess};
@@ -856,8 +861,10 @@ async fn dictation_ws_handler(ws: WebSocketUpgrade) -> Response {
 /// 2. `rpc_auth_middleware`   — validates `Authorization: Bearer <token>` on protected paths
 /// 3. `http_request_log_middleware` — logs non-RPC HTTP requests with timing
 pub fn build_core_http_router(socketio_enabled: bool) -> Router {
+    let dist_dir = std::path::PathBuf::from("app").join("dist");
+    let has_frontend = dist_dir.exists() && dist_dir.join("index.html").exists();
+
     let router = Router::new()
-        .route("/", get(root_handler))
         .route("/health", get(health_handler))
         .route("/schema", get(schema_handler))
         .route("/events", get(events_handler))
@@ -867,8 +874,20 @@ pub fn build_core_http_router(socketio_enabled: bool) -> Router {
         .route("/auth", get(desktop_auth_handler))
         .route("/auth/telegram", get(telegram_auth_handler))
         // OpenAI-compatible inference endpoint (/v1/chat/completions, /v1/models)
-        .nest("/v1", crate::openhuman::inference::http::router())
-        .fallback(not_found_handler)
+        .nest("/v1", crate::openhuman::inference::http::router());
+
+    // Serve the React frontend from app/dist/ if it exists (production build).
+    if has_frontend {
+        FRONTEND_DIST.set(dist_dir).ok();
+        log::info!(
+            "[http] serving frontend from {}",
+            FRONTEND_DIST.get().unwrap().display()
+        );
+    }
+    let router = router
+        .route("/", get(frontend_root_or_default))
+        .route("/assets/{*path}", get(frontend_asset))
+        .fallback(frontend_fallback_or_default)
         .layer(middleware::from_fn(http_request_log_middleware))
         .layer(middleware::from_fn(crate::core::auth::rpc_auth_middleware))
         .layer(middleware::from_fn(cors_middleware))
@@ -1217,6 +1236,74 @@ async fn root_handler() -> impl IntoResponse {
 }
 
 /// Fallback handler for unknown routes.
+// ── Frontend static file serving ─────────────────────────────────────
+// Serves the React production build from the path stored in FRONTEND_DIST.
+// This makes DADOU self-contained: the core serves both API and UI.
+
+fn dist_dir() -> &'static Path {
+    FRONTEND_DIST.get().map(|p| p.as_path()).unwrap_or_else(|| Path::new("app/dist"))
+}
+
+fn mime_for_path(path: &Path) -> &'static str {
+    match path.extension().and_then(|e| e.to_str()) {
+        Some("html") => "text/html; charset=utf-8",
+        Some("js") => "application/javascript",
+        Some("css") => "text/css",
+        Some("svg") => "image/svg+xml",
+        Some("png") => "image/png",
+        Some("jpg") | Some("jpeg") => "image/jpeg",
+        Some("webp") => "image/webp",
+        Some("woff2") => "font/woff2",
+        Some("woff") => "font/woff",
+        Some("json") => "application/json",
+        _ => "application/octet-stream",
+    }
+}
+
+async fn serve_static_file(rel_path: &str) -> impl IntoResponse {
+    let safe_path = rel_path.trim_start_matches('/').trim_start_matches('\\');
+    if safe_path.contains("..") || safe_path.contains('\\') {
+        return (StatusCode::FORBIDDEN, "Forbidden").into_response();
+    }
+    let full_path = dist_dir().join(safe_path);
+    match tokio::fs::read(&full_path).await {
+        Ok(data) => {
+            let mime = mime_for_path(&full_path);
+            (
+                StatusCode::OK,
+                [(header::CONTENT_TYPE, HeaderValue::from_static(mime))],
+                data,
+            )
+                .into_response()
+        }
+        Err(_) => (StatusCode::NOT_FOUND, "Not found").into_response(),
+    }
+}
+
+/// Serves index.html if frontend dist exists, otherwise the default root response.
+async fn frontend_root_or_default() -> Response {
+    if FRONTEND_DIST.get().is_some() {
+        serve_static_file("index.html").await.into_response()
+    } else {
+        root_handler().await.into_response()
+    }
+}
+
+async fn frontend_asset(axum::extract::Path(path): axum::extract::Path<String>) -> Response {
+    // The route pattern /assets/{*path} captures only the filename;
+    // the files actually live under app/dist/assets/.
+    serve_static_file(&format!("assets/{}", path)).await.into_response()
+}
+
+/// Serves index.html (SPA fallback) if frontend dist exists, otherwise a 404 JSON response.
+async fn frontend_fallback_or_default() -> Response {
+    if FRONTEND_DIST.get().is_some() {
+        serve_static_file("index.html").await.into_response()
+    } else {
+        not_found_handler().await.into_response()
+    }
+}
+
 async fn not_found_handler() -> impl IntoResponse {
     (
         StatusCode::NOT_FOUND,
@@ -1977,43 +2064,50 @@ pub async fn bootstrap_core_runtime(embedded_core: bool) {
     }
 
     // --- Socket manager bootstrap ---
-    let socket_mgr = Arc::new(SocketManager::new());
-    set_global_socket_manager(socket_mgr.clone());
-    log::info!("[socket] SocketManager initialized and registered globally");
+    // In offline mode, skip socket initialization entirely — there is no
+    // cloud backend to connect to, and the retry loop would just generate
+    // log noise.
+    if cfg.offline_mode {
+        log::info!("[socket] offline mode: skipping socket initialization");
+    } else {
+        let socket_mgr = Arc::new(SocketManager::new());
+        set_global_socket_manager(socket_mgr.clone());
+        log::info!("[socket] SocketManager initialized and registered globally");
 
-    // Auto-connect socket to backend if a session token is already stored.
-    // This runs in the background so it doesn't block server startup.
-    tokio::spawn(async move {
-        log::info!("[socket] Checking for stored session to auto-connect...");
-        let config = match crate::openhuman::config::Config::load_or_init().await {
-            Ok(c) => c,
-            Err(e) => {
-                log::debug!("[socket] Config not available for auto-connect: {e}");
-                return;
+        // Auto-connect socket to backend if a session token is already stored.
+        // This runs in the background so it doesn't block server startup.
+        tokio::spawn(async move {
+            log::info!("[socket] Checking for stored session to auto-connect...");
+            let config = match crate::openhuman::config::Config::load_or_init().await {
+                Ok(c) => c,
+                Err(e) => {
+                    log::debug!("[socket] Config not available for auto-connect: {e}");
+                    return;
+                }
+            };
+            let api_url = crate::api::config::effective_backend_api_url(&config.api_url);
+            let token = match crate::api::jwt::get_session_token(&config) {
+                Ok(Some(t)) => t,
+                Ok(None) => {
+                    log::info!("[socket] No session token stored — skipping auto-connect (will connect after login)");
+                    return;
+                }
+                Err(e) => {
+                    log::warn!("[socket] Failed to read session token: {e}");
+                    return;
+                }
+            };
+            log::info!(
+                "[socket] Session token found — auto-connecting to {}",
+                api_url
+            );
+            if let Err(e) = socket_mgr.connect(&api_url, &token).await {
+                log::error!("[socket] Auto-connect failed: {e}");
+            } else {
+                log::info!("[socket] Auto-connect initiated successfully");
             }
-        };
-        let api_url = crate::api::config::effective_backend_api_url(&config.api_url);
-        let token = match crate::api::jwt::get_session_token(&config) {
-            Ok(Some(t)) => t,
-            Ok(None) => {
-                log::info!("[socket] No session token stored — skipping auto-connect (will connect after login)");
-                return;
-            }
-            Err(e) => {
-                log::warn!("[socket] Failed to read session token: {e}");
-                return;
-            }
-        };
-        log::info!(
-            "[socket] Session token found — auto-connecting to {}",
-            api_url
-        );
-        if let Err(e) = socket_mgr.connect(&api_url, &token).await {
-            log::error!("[socket] Auto-connect failed: {e}");
-        } else {
-            log::info!("[socket] Auto-connect initiated successfully");
-        }
-    });
+        });
+    }
 }
 
 /// JSON-serializable wrapper for the entire RPC schema dump.

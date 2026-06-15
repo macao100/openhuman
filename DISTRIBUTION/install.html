@@ -77,9 +77,83 @@ th{color:var(--muted);font-weight:500;text-transform:uppercase;font-size:.75rem}
   <button onclick="autoInstallMissing()" id="btn-install-missing" class="btn-outline hidden">&#x2699; Installer les outils manquants</button>
 </div>
 
-<!-- ═══ ÉTAPE 2 : Configuration ═══ -->
+<!-- ═══ ÉTAPE 2 : Workspace ═══ -->
 <div class="step hidden" id="step2">
-  <div class="step-header"><span class="step-num">2</span><span class="step-title">Configuration de l'environnement</span></div>
+  <div class="step-header"><span class="step-num">2</span><span class="step-title">Dossier de travail (workspace)</span></div>
+  <p style="color:var(--muted);font-size:.85rem;margin-bottom:12px">Choisissez le dossier où DADOU stockera sa configuration, ses skills, sa base SQLite et ses projets.</p>
+
+  <h3>Dossier workspace</h3>
+  <div style="display:flex;gap:8px;align-items:center;margin:12px 0">
+    <input type="text" id="workspace-path" style="flex:1;background:#0a0c10;border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:.85rem"
+           placeholder="C:\Users\Vous\DADOU" />
+    <button onclick="selectWorkspaceFolder()" class="btn-sm btn-outline">📁 Parcourir...</button>
+  </div>
+  <p style="font-size:.75rem;color:var(--muted)">Laissez vide pour utiliser le dossier par défaut : <code>%USERPROFILE%\.openhuman</code></p>
+
+  <div class="status-box status-info" style="margin-top:12px">
+    <strong>Structure créée automatiquement :</strong><br>
+    <code>config.toml</code> — Configuration de DADOU<br>
+    <code>skills/</code> — Skills WASM et Python installées<br>
+    <code>workspace/</code> — Projets, fichiers de l'agent<br>
+    <code>core.token</code> — Authentification locale
+  </div>
+
+  <button onclick="applyWorkspace()" class="btn-sm">✅ Appliquer ce dossier</button>
+  <span id="workspace-confirm" style="margin-left:8px;color:var(--green);font-size:.85rem;display:none">✓ Configuré</span>
+</div>
+
+<!-- ═══ ÉTAPE 3 : Modèle LLM ═══ -->
+<div class="step hidden" id="step3">
+  <div class="step-header"><span class="step-num">3</span><span class="step-title">Choix du modèle IA</span></div>
+  <p style="color:var(--muted);font-size:.85rem;margin-bottom:12px">DADOU fonctionne en mode 100% local ou avec vos propres clés API cloud.</p>
+
+  <h3>Option A — Ollama local (gratuit, sans compte)</h3>
+  <div class="cmd"><span class="comment"># Installer Ollama puis télécharger un modèle</span>
+winget install Ollama.Ollama
+ollama pull llama3.2:3b</div>
+  <div style="display:flex;align-items:center;gap:8px;margin:8px 0">
+    <input type="radio" name="provider-mode" id="mode-ollama" onchange="updateModelMode()" />
+    <label for="mode-ollama" style="font-size:.85rem">Utiliser Ollama (modèle local)</label>
+  </div>
+
+  <h3>Option B — Votre propre clé API</h3>
+  <p style="font-size:.8rem;color:var(--muted)">OpenAI, Anthropic, Groq, DeepSeek, ou tout endpoint compatible OpenAI.</p>
+  <div style="display:flex;align-items:center;gap:8px;margin:8px 0">
+    <input type="radio" name="provider-mode" id="mode-byok" onchange="updateModelMode()" />
+    <label for="mode-byok" style="font-size:.85rem">Utiliser mon propre provider cloud</label>
+  </div>
+  <div id="byok-config" style="display:none;margin:8px 0 0 24px">
+    <div style="margin:6px 0">
+      <label style="font-size:.8rem;color:var(--muted)">Slug (ex: openai, anthropic, groq)</label>
+      <input type="text" id="byok-slug" style="width:100%;background:#0a0c10;border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-family:var(--mono);font-size:.8rem" placeholder="openai" />
+    </div>
+    <div style="margin:6px 0">
+      <label style="font-size:.8rem;color:var(--muted)">Endpoint API</label>
+      <input type="text" id="byok-endpoint" style="width:100%;background:#0a0c10;border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-family:var(--mono);font-size:.8rem" placeholder="https://api.openai.com/v1" />
+    </div>
+    <div style="margin:6px 0">
+      <label style="font-size:.8rem;color:var(--muted)">Clé API (sera stockée chiffrée)</label>
+      <input type="password" id="byok-apikey" style="width:100%;background:#0a0c10;border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-family:var(--mono);font-size:.8rem" placeholder="sk-..." />
+    </div>
+    <div style="margin:6px 0">
+      <label style="font-size:.8rem;color:var(--muted)">Modèle par défaut</label>
+      <input type="text" id="byok-model" style="width:100%;background:#0a0c10;border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-family:var(--mono);font-size:.8rem" placeholder="gpt-4o" />
+    </div>
+  </div>
+
+  <h3>Option C — Plus tard</h3>
+  <div style="display:flex;align-items:center;gap:8px;margin:8px 0">
+    <input type="radio" name="provider-mode" id="mode-later" checked onchange="updateModelMode()" />
+    <label for="mode-later" style="font-size:.85rem">Configurer plus tard dans Settings → AI</label>
+  </div>
+
+  <button onclick="applyModelConfig()" class="btn-sm" style="margin-top:8px">✅ Appliquer</button>
+  <span id="model-confirm" style="margin-left:8px;color:var(--green);font-size:.85rem;display:none">✓ Configuré</span>
+</div>
+
+<!-- ═══ ÉTAPE 4 : Environnement ═══ -->
+<div class="step hidden" id="step4">
+  <div class="step-header"><span class="step-num">4</span><span class="step-title">Configuration de l'environnement</span></div>
   <p style="color:var(--muted);font-size:.85rem;margin-bottom:12px">Variables d'environnement nécessaires à la compilation et l'exécution.</p>
 
   <h3>Variables détectées</h3>
@@ -87,6 +161,8 @@ th{color:var(--muted);font-weight:500;text-transform:uppercase;font-size:.75rem}
     <tr><th>Variable</th><th>Valeur actuelle</th><th>Statut</th></tr>
     <tr><td>LIBCLANG_PATH</td><td id="env-libclang">—</td><td id="env-libclang-status">&#x23F3;</td></tr>
     <tr><td>OPENHUMAN_CORE_PORT</td><td id="env-port">—</td><td id="env-port-status">&#x23F3;</td></tr>
+    <tr><td>OPENHUMAN_OFFLINE_MODE</td><td id="env-offline">—</td><td id="env-offline-status">&#x23F3;</td></tr>
+    <tr><td>OPENHUMAN_WORKSPACE</td><td id="env-workspace">—</td><td id="env-workspace-status">&#x23F3;</td></tr>
     <tr><td>RUST_LOG</td><td id="env-rustlog">—</td><td id="env-rustlog-status">&#x23F3;</td></tr>
   </table>
 
@@ -94,6 +170,8 @@ th{color:var(--muted);font-weight:500;text-transform:uppercase;font-size:.75rem}
 <span class="comment"># Ajouter au profil PowerShell ($PROFILE) ou aux variables système</span>
 $env:LIBCLANG_PATH = "C:\Program Files\LLVM\bin"
 $env:OPENHUMAN_CORE_PORT = "7788"
+$env:OPENHUMAN_OFFLINE_MODE = "true"
+$env:OPENHUMAN_WORKSPACE = "%USERPROFILE%\DADOU"
 $env:RUST_LOG = "info"
   </div>
 
@@ -101,9 +179,9 @@ $env:RUST_LOG = "info"
   <button onclick="applyEnv()" class="btn-sm btn-outline">&#x1F4BE; Appliquer (session courante)</button>
 </div>
 
-<!-- ═══ ÉTAPE 3 : Build ═══ -->
-<div class="step hidden" id="step3">
-  <div class="step-header"><span class="step-num">3</span><span class="step-title">Compilation et installation</span></div>
+<!-- ═══ ÉTAPE 5 : Build ═══ -->
+<div class="step hidden" id="step5">
+  <div class="step-header"><span class="step-num">5</span><span class="step-title">Compilation et installation</span></div>
   <p style="color:var(--muted);font-size:.85rem;margin-bottom:12px">Compilation du core Rust et du frontend Tauri.</p>
 
   <h3>Étape 3a — Dépendances frontend</h3>
@@ -120,19 +198,19 @@ cargo check --manifest-path Cargo.toml</div>
 
   <h3>Étape 3c — Build production</h3>
   <div class="cmd"><span class="comment"># Build complet (core + UI)</span>
-cargo build --manifest-path Cargo.toml --bin openhuman-core --release
+cargo build --manifest-path Cargo.toml --bin dadou-core --release
 pnpm build</div>
-  <button onclick="runCommand('full-build','cargo build --manifest-path Cargo.toml --bin openhuman-core --release')" class="btn-sm">&#x25B6; Build Core</button>
+  <button onclick="runCommand('full-build','cargo build --manifest-path Cargo.toml --bin dadou-core --release')" class="btn-sm">&#x25B6; Build Core</button>
   <div class="log hidden" id="log-full-build"></div>
 </div>
 
-<!-- ═══ ÉTAPE 4 : Lancement ═══ -->
-<div class="step hidden" id="step4">
-  <div class="step-header"><span class="step-num">4</span><span class="step-title">Premier lancement</span></div>
+<!-- ═══ ÉTAPE 6 : Lancement ═══ -->
+<div class="step hidden" id="step6">
+  <div class="step-header"><span class="step-num">6</span><span class="step-title">Premier lancement</span></div>
   <p style="color:var(--muted);font-size:.85rem;margin-bottom:12px">Démarrez DADOU et ouvrez le dashboard.</p>
 
   <h3>Lancer le core</h3>
-  <div class="cmd">.\target\release\openhuman-core.exe serve</div>
+  <div class="cmd">.\target\release\dadou-core.exe serve</div>
 
   <h3>Dashboard</h3>
   <p>Ouvrez <a href="http://127.0.0.1:7790" target="_blank">http://127.0.0.1:7790</a> dans votre navigateur.</p>
@@ -229,6 +307,8 @@ async function runPrereqChecks() {
     document.getElementById('step2').classList.remove('hidden');
     document.getElementById('step3').classList.remove('hidden');
     document.getElementById('step4').classList.remove('hidden');
+    document.getElementById('step5').classList.remove('hidden');
+    document.getElementById('step6').classList.remove('hidden');
   } else {
     statusBox.className = 'status-box status-fail';
     const missing = required.filter(r => !checkResults[r] || !checkResults[r].ok).join(', ');
@@ -273,25 +353,78 @@ function updateProgress() {
   document.getElementById('progress-label').textContent = `${pct}% — ${pct>=100 ? 'Prêt !' : 'En cours...'}`;
 }
 
+// ── Workspace folder ─────────────────────────────────────────────────
+function selectWorkspaceFolder() {
+  const path = prompt("Chemin du dossier workspace :", "C:\\Users\\" + (navigator.userAgent.includes('Windows') ? 'Vous' : 'user') + "\\DADOU");
+  if (path) document.getElementById('workspace-path').value = path;
+}
+
+function applyWorkspace() {
+  const path = document.getElementById('workspace-path').value.trim();
+  if (path) {
+    document.getElementById('env-workspace').textContent = path;
+    document.getElementById('env-workspace-status').textContent = '✅';
+    document.getElementById('workspace-path').value = path;
+  } else {
+    document.getElementById('env-workspace').textContent = '%USERPROFILE%\\.openhuman';
+    document.getElementById('env-workspace-status').textContent = '✅ (défaut)';
+  }
+  document.getElementById('workspace-confirm').style.display = 'inline';
+}
+
+// ── Model configuration ──────────────────────────────────────────────
+function updateModelMode() {
+  const byok = document.getElementById('mode-byok');
+  document.getElementById('byok-config').style.display = byok.checked ? 'block' : 'none';
+}
+
+function applyModelConfig() {
+  let envLine = '';
+  if (document.getElementById('mode-ollama').checked) {
+    envLine = '$env:OPENHUMAN_MODEL = "ollama:llama3.2:3b"';
+  } else if (document.getElementById('mode-byok').checked) {
+    const slug = document.getElementById('byok-slug').value.trim();
+    const endpoint = document.getElementById('byok-endpoint').value.trim();
+    const model = document.getElementById('byok-model').value.trim();
+    if (!slug || !endpoint || !model) {
+      alert('Remplissez tous les champs (slug, endpoint, modèle).');
+      return;
+    }
+    envLine = `$env:OPENHUMAN_MODEL = "${slug}:${model}"`;
+  }
+  if (envLine) {
+    document.getElementById('env-commands').textContent += '\n' + envLine;
+  }
+  document.getElementById('model-confirm').style.display = 'inline';
+}
+
 // ── Environment check ───────────────────────────────────────────────
 async function checkEnv() {
-  const vars = ['LIBCLANG_PATH','OPENHUMAN_CORE_PORT','RUST_LOG'];
+  const vars = ['LIBCLANG_PATH','OPENHUMAN_CORE_PORT','OPENHUMAN_OFFLINE_MODE','OPENHUMAN_WORKSPACE','RUST_LOG'];
   for (const v of vars) {
     try {
       const result = await invokePS(`echo $env:${v}`);
       const val = (result.stdout || '').trim();
-      document.getElementById(`env-${v.toLowerCase().replace(/_/g,'')}`).textContent = val || '(non défini)';
-      document.getElementById(`env-${v.toLowerCase().replace(/_/g,'')}-status`).textContent = val ? '✅' : '⚠';
+      const id = v.toLowerCase().replace(/_/g,'');
+      const el = document.getElementById(`env-${id}`);
+      const statusEl = document.getElementById(`env-${id}-status`);
+      if (el) el.textContent = val || '(non défini)';
+      if (statusEl) statusEl.textContent = val ? '✅' : '⚠';
     } catch(e) {
-      document.getElementById(`env-${v.toLowerCase().replace(/_/g,'')}-status`).textContent = '❌';
+      const id = v.toLowerCase().replace(/_/g,'');
+      const statusEl = document.getElementById(`env-${id}-status`);
+      if (statusEl) statusEl.textContent = '❌';
     }
   }
 }
 
 function applyEnv() {
+  const wsPath = document.getElementById('workspace-path').value.trim();
   const cmds = [
     '$env:LIBCLANG_PATH = "C:\\Program Files\\LLVM\\bin"',
     '$env:OPENHUMAN_CORE_PORT = "7788"',
+    '$env:OPENHUMAN_OFFLINE_MODE = "true"',
+    wsPath ? `$env:OPENHUMAN_WORKSPACE = "${wsPath}"` : '$env:OPENHUMAN_WORKSPACE = "$env:USERPROFILE\\DADOU"',
     '$env:RUST_LOG = "info"'
   ];
   alert('Exécutez ces commandes dans PowerShell :\n\n' + cmds.join('\n') + '\n\nOu ajoutez-les à votre $PROFILE pour persistance.');
@@ -338,7 +471,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('env-commands').innerHTML =
       '<span class="comment"># PowerShell — exécuter une fois :</span>\n' +
       '[System.Environment]::SetEnvironmentVariable("LIBCLANG_PATH","C:\\Program Files\\LLVM\\bin","User")\n' +
-      '[System.Environment]::SetEnvironmentVariable("OPENHUMAN_CORE_PORT","7788","User")';
+      '[System.Environment]::SetEnvironmentVariable("OPENHUMAN_CORE_PORT","7788","User")\n' +
+      '[System.Environment]::SetEnvironmentVariable("OPENHUMAN_OFFLINE_MODE","true","User")\n' +
+      '[System.Environment]::SetEnvironmentVariable("OPENHUMAN_WORKSPACE","%USERPROFILE%\\DADOU","User")';
   }
 });
 </script>

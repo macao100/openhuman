@@ -177,7 +177,10 @@ pub async fn rpc_auth_middleware(req: axum::extract::Request, next: Next) -> Res
     let path = req.uri().path().to_string();
 
     // CORS preflight and public utility paths bypass auth.
-    if req.method() == Method::OPTIONS || PUBLIC_PATHS.contains(&path.as_str()) {
+    if req.method() == Method::OPTIONS
+        || PUBLIC_PATHS.contains(&path.as_str())
+        || path.starts_with("/assets/")
+    {
         return next.run(req).await;
     }
 

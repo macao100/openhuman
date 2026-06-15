@@ -382,6 +382,12 @@ pub(crate) fn create_local_chat_provider_from_string(
 
 /// Build the OpenHuman backend provider (session-JWT auth).
 fn make_openhuman_backend(config: &Config) -> anyhow::Result<(Box<dyn Provider>, String)> {
+    if config.offline_mode {
+        anyhow::bail!(
+            "[chat-factory] cannot use OpenHuman backend provider in offline mode — \
+             configure a local or BYOK provider (e.g. ollama:<model>)"
+        );
+    }
     let model = config
         .default_model
         .clone()
@@ -453,6 +459,11 @@ fn make_openhuman_backend(config: &Config) -> anyhow::Result<(Box<dyn Provider>,
 /// `<slug>:<model>`) are only reachable when the workspace holds a valid
 /// `app-session` JWT.
 fn verify_session_active(config: &Config) -> anyhow::Result<()> {
+    // Offline mode: no cloud session required.
+    if config.offline_mode {
+        log::debug!("[chat-factory] offline mode: skipping session verification");
+        return Ok(());
+    }
     // Fast path: the scheduler gate already knows the session is dead.
     if crate::openhuman::scheduler_gate::is_signed_out() {
         anyhow::bail!(

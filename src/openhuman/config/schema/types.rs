@@ -356,6 +356,13 @@ pub struct Config {
     /// to the orchestrator regardless of this flag's value.
     #[serde(default)]
     pub chat_onboarding_completed: bool,
+
+    /// When true, DADOU operates fully offline with no cloud backend dependency.
+    /// Session JWT checks are bypassed, socket connections are skipped, and API
+    /// URLs are not resolved to cloud defaults. Local/Ollama/BYOK providers work
+    /// without requiring a backend login.
+    #[serde(default)]
+    pub offline_mode: bool,
 }
 
 /// Shared default so `#[serde(default)]` and `Config::default()` stay in sync.
@@ -719,6 +726,7 @@ impl Default for Config {
             meet: MeetConfig::default(),
             onboarding_completed: false,
             chat_onboarding_completed: false,
+            offline_mode: false,
         }
     }
 }

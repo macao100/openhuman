@@ -505,6 +505,15 @@ export default function CoreStateProvider({ children }: { children: ReactNode })
     void load();
     let timeoutId: number | null = null;
     const scheduleNext = () => {
+      // In offline mode (local session token), skip continuous polling
+      // after the initial bootstrap — the core state is static.
+      const state = getCoreStateSnapshot();
+      if (
+        !state.isBootstrapping &&
+        isLocalSessionToken(state.snapshot.sessionToken)
+      ) {
+        return;
+      }
       const delay =
         bootstrapFailCountRef.current >= MAX_BOOTSTRAP_RETRIES ? BACKOFF_POLL_MS : POLL_MS;
       timeoutId = window.setTimeout(async () => {

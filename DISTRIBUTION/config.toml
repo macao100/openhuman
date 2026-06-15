@@ -1,0 +1,58 @@
+# DADOU v1.0.0 — Configuration portable
+# Ce fichier est au même niveau que dadou-core.exe.
+# Pour ajouter vos clés API, lancez DADOU puis allez dans Settings → AI,
+# ou utilisez la commande CLI :
+#   dadou-core call openhuman auth_store_provider_credentials '{"provider":"provider:deepseek","profile":"default","token":"VOTRE_CLE"}'
+
+schema_version = 6
+default_model = ""
+default_temperature = 0.7
+
+# ── Providers cloud ──────────────────────────────────────────────
+# Décommentez et remplissez avec vos propres clés API.
+# Format du slug : "<slug>:<model>" (ex: "deepseek:deepseek-v4-pro")
+
+cloud_providers = [
+    # { id = "deepseek-1", slug = "deepseek", label = "DeepSeek", endpoint = "https://api.deepseek.com/v1", auth_style = "bearer" },
+    # { id = "mistral-1",  slug = "mistral",  label = "Mistral",  endpoint = "https://api.mistral.ai/v1",  auth_style = "bearer" },
+    # { id = "openai-1",   slug = "openai",   label = "OpenAI",   endpoint = "https://api.openai.com/v1",   auth_style = "bearer" },
+    # { id = "groq-1",     slug = "groq",     label = "Groq",     endpoint = "https://api.groq.com/openai/v1", auth_style = "bearer" },
+]
+
+# ── Providers locaux ─────────────────────────────────────────────
+# Pour utiliser Ollama ou LM Studio en local, décommentez :
+#
+# cloud_providers = [
+#     { id = "ollama-1", slug = "ollama", label = "Ollama", endpoint = "http://localhost:11434/v1", auth_style = "none" },
+# ]
+
+# ── Routage par workload ─────────────────────────────────────────
+# Une fois les providers configurés, assignez chaque workload à un provider.
+# Format : "<slug>:<model>"
+
+chat_provider = ""
+reasoning_provider = ""
+agentic_provider = ""
+coding_provider = ""
+memory_provider = ""
+heartbeat_provider = ""
+learning_provider = ""
+subconscious_provider = ""
+
+# ── Mode offline ─────────────────────────────────────────────────
+# true = aucune connexion à api.tinyhumans.ai, session locale autosignée
+offline_mode = true
+
+# ── Workspace ────────────────────────────────────────────────────
+# Le dossier workspace/ (créé automatiquement) contient :
+#   - La base SQLite (état, mémoire, événements)
+#   - Les logs
+#   - Les skills installées
+#   - Le token RPC (core.token)
+
+[observability]
+analytics_enabled = false
+
+[autonomy]
+level = "supervised"
+workspace_only = true

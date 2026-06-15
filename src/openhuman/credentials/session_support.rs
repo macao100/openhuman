@@ -61,6 +61,30 @@ pub fn is_local_session_token(token: &str) -> bool {
     )
 }
 
+/// Create a self-signed local session token for offline mode.
+///
+/// Format: `header.payload.local` where the payload is a minimal JWT with
+/// `sub`, `iat`, and `exp` claims (1-year expiry). The `local` signature
+/// marker is recognised by [`is_local_session_token`].
+pub fn create_local_session_token() -> String {
+    use base64::Engine;
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let header = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(br#"{"alg":"none","typ":"JWT"}"#);
+    let payload = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(
+        format!(
+            r#"{{"sub":"{}","iat":{},"exp":{}}}"#,
+            LOCAL_SESSION_USER_ID,
+            now,
+            now + 31_536_000, // 1 year
+        )
+        .as_bytes(),
+    );
+    format!("{header}.{payload}.local")
+}
+
 pub fn parse_fields_value(
     input: Option<serde_json::Value>,
 ) -> Result<std::collections::HashMap<String, String>, String> {
@@ -234,6 +258,20 @@ mod tests {
         assert!(!is_local_session_token("header.payload.remote"));
         assert!(!is_local_session_token("header.payload.local.extra"));
         assert!(!is_local_session_token("not-a-jwt"));
+    }
+
+    #[test]
+    fn create_local_session_token_produces_valid_local_token() {
+        let token = create_local_session_token();
+        assert!(
+            is_local_session_token(&token),
+            "token must be recognized as local"
+        );
+        assert_eq!(
+            token.split('.').count(),
+            3,
+            "token must have exactly 3 dot-separated parts"
+        );
     }
 
     #[test]

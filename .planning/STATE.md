@@ -1,9 +1,21 @@
 # DADOU — Project State
 
-**Last updated:** 2026-06-05 18:00
-**Current phase:** 7 (Python Skills) — COMPLETED
-**Milestone:** v1 — ALL PHASES DONE
-**Global progress:** 7/7 phases (100%)
+**Last updated:** 2026-06-06
+**Current phase:** E (Build & Distribution) — IN PROGRESS
+**Milestone:** v1 standalone
+**Global progress:** 7/7 phases coded + standalone mode + rebranding
+
+## Standalone Mode (2026-06-06)
+
+- `offline_mode: bool` added to Config (opt-in via `OPENHUMAN_OFFLINE_MODE=true`)
+- Session checks bypassed in offline mode (factory.rs `verify_session_active`)
+- OpenHuman backend blocked in offline mode (clear error message)
+- Socket initialization skipped in offline mode (no cloud retry noise)
+- `app_state_snapshot` returns local user identity in offline mode
+- `create_local_session_token()` in Rust (mirrors frontend implementation)
+- Frontend polling stops after bootstrap when using local session token
+- Rebranded: `openhuman` → `dadou`, `openhuman-core` → `dadou-core`, v1.0.0
+- Brave Search documented in `.env.example`
 
 ---
 

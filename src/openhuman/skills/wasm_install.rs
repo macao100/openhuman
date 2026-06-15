@@ -948,8 +948,8 @@ mod tests {
     fn rejects_file_url() {
         let err = validate_git_url("file:///tmp/skill").unwrap_err();
         assert!(
-            matches!(err, InstallError::InvalidUrl(s) if s.contains("file://")),
-            "expected InvalidUrl, got: {err}"
+            matches!(err, InstallError::InvalidUrl(ref s) if s.contains("file://")),
+            "expected InvalidUrl, got: {err:?}"
         );
     }
 
@@ -963,8 +963,8 @@ mod tests {
     fn rejects_plain_ssh() {
         let err = validate_git_url("ssh://host").unwrap_err();
         assert!(
-            matches!(err, InstallError::InvalidUrl(s) if s.contains("ssh://")),
-            "expected InvalidUrl, got: {err}"
+            matches!(err, InstallError::InvalidUrl(ref s) if s.contains("ssh://")),
+            "expected InvalidUrl, got: {err:?}"
         );
     }
 

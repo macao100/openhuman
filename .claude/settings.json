@@ -2,5 +2,8 @@
   "attribution": {
     "commit": "",
     "pr": ""
+  },
+  "enabledPlugins": {
+    "context-mode@context-mode": true
   }
 }

@@ -8,13 +8,14 @@
 
 ## Phases
 
-- [ ] **Phase 1: Security Foundation** — Guardian N1 deterministic rules, Windows sandbox fix, file rollback/undo
-- [ ] **Phase 2: Memory & Continuity** — Provenance, confidence, contradictions, cross-session context persistence
-- [ ] **Phase 3: Guardian N2+N3** — Classifier for exfiltration patterns, lightweight LLM validation for ambiguous plans
-- [ ] **Phase 4: Skills WASM** — Manifest, wasmtime sandbox, GPG verification, static analysis, CLI, store
-- [ ] **Phase 5: Anti-Injection** — External data tagging, structured skill output, semantic validation, plan verification
-- [ ] **Phase 6: Dashboard & Semantic Router** — Local observability dashboard, embedding-based skill discovery
-- [ ] **Phase 7: Python Skills** — Docker sidecar sandbox for complex Python skill execution
+- [x] **Phase 1: Security Foundation** — Guardian N1 deterministic rules, Windows sandbox fix, file rollback/undo
+- [x] **Phase 2: Memory & Continuity** — Provenance, confidence, contradictions, cross-session context persistence
+- [x] **Phase 3: Guardian N2+N3** — Classifier for exfiltration patterns, lightweight LLM validation for ambiguous plans
+- [x] **Phase 4: Skills WASM** — Manifest, wasmtime sandbox, GPG verification, static analysis, CLI, store
+- [x] **Phase 5: Anti-Injection** — External data tagging, structured skill output, semantic validation, plan verification
+- [x] **Phase 6: Dashboard & Semantic Router** — Local observability dashboard, embedding-based skill discovery
+- [x] **Phase 7: Python Skills** — Docker sidecar sandbox for complex Python skill execution
+- [x] **Standalone Mode** — Offline mode, no cloud backend, local session, rebranded to DADOU
 
 ---
 

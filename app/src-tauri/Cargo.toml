@@ -1,8 +1,8 @@
 [package]
-name = "OpenHuman"
-version = "0.56.0"
-description = "OpenHuman - AI-powered Super Assistant"
-authors = ["OpenHuman"]
+name = "DADOU"
+version = "1.0.0"
+description = "DADOU - Assistant IA personnel open-source"
+authors = ["DADOU"]
 edition = "2021"
 default-run = "OpenHuman"
 autobins = false

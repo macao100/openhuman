@@ -2135,6 +2135,19 @@ impl Config {
             );
             self.context.tool_result_budget_bytes = self.agent.tool_result_budget_bytes;
         }
+
+        // --- Offline mode ---
+        // Set `OPENHUMAN_OFFLINE_MODE=1` (or `true`) to skip all cloud backend
+        // dependencies: no JWT session checks, no socket connection, no auth
+        // profile loading. Local/BYOK/Ollama providers work without login.
+        if let Some(flag) = env.get("OPENHUMAN_OFFLINE_MODE") {
+            let normalized = flag.trim().to_ascii_lowercase();
+            match normalized.as_str() {
+                "1" | "true" | "yes" | "on" => self.offline_mode = true,
+                "0" | "false" | "no" | "off" => self.offline_mode = false,
+                _ => {}
+            }
+        }
     }
 
     pub async fn save(&self) -> Result<()> {

@@ -3,7 +3,8 @@
 param(
     [switch]$SkipPrereqs,
     [switch]$SkipBuild,
-    [switch]$InstallDocker
+    [switch]$InstallDocker,
+    [string]$Workspace = "$env:USERPROFILE\DADOU"
 )
 
 $ErrorActionPreference = "Stop"
@@ -60,7 +61,7 @@ if (-not $SkipPrereqs) {
 }
 
 # ── Étape 2 : Variables d'environnement ──────────────────────────────
-Write-Host "`n[2/4] Configuration de l'environnement..." -ForegroundColor Yellow
+Write-Host "`n[2/5] Configuration de l'environnement..." -ForegroundColor Yellow
 
 $LlvmPath = "C:\Program Files\LLVM\bin"
 if (Test-Path $LlvmPath) {
@@ -80,8 +81,22 @@ if ((Test-Path $CmakePath) -and ($UserPath -notlike "*CMake*")) {
     Write-Host "  ✅ CMake + LLVM ajoutés au PATH" -ForegroundColor Green
 }
 
+# ── Étape 2.5 : Dossier workspace ───────────────────────────────────
+Write-Host "`n[2.5/5] Configuration du workspace..." -ForegroundColor Yellow
+[System.Environment]::SetEnvironmentVariable("OPENHUMAN_WORKSPACE", $Workspace, "User")
+$env:OPENHUMAN_WORKSPACE = $Workspace
+New-Item -ItemType Directory -Force -Path $Workspace | Out-Null
+Write-Host "  ✅ Workspace = $Workspace" -ForegroundColor Green
+
+# Activer le mode offline par défaut (pas de backend cloud requis)
+[System.Environment]::SetEnvironmentVariable("OPENHUMAN_OFFLINE_MODE", "true", "User")
+$env:OPENHUMAN_OFFLINE_MODE = "true"
+Write-Host "  ✅ Mode offline activé" -ForegroundColor Green
+    Write-Host "  ✅ CMake + LLVM ajoutés au PATH" -ForegroundColor Green
+}
+
 # ── Étape 3 : Dépendances ────────────────────────────────────────────
-Write-Host "`n[3/4] Installation des dépendances..." -ForegroundColor Yellow
+Write-Host "`n[3/5] Installation des dépendances..." -ForegroundColor Yellow
 
 Set-Location $ProjectDir
 
@@ -93,7 +108,7 @@ if (Test-Path "pnpm-lock.yaml") {
 
 # ── Étape 4 : Build ───────────────────────────────────────────────────
 if (-not $SkipBuild) {
-    Write-Host "`n[4/4] Compilation..." -ForegroundColor Yellow
+    Write-Host "`n[4/5] Compilation..." -ForegroundColor Yellow
 
     Write-Host "  → cargo check (vérification du core)..." -ForegroundColor Cyan
     cargo check --manifest-path Cargo.toml 2>&1 | Select-Object -Last 5
@@ -104,12 +119,12 @@ if (-not $SkipBuild) {
     Write-Host "  ✅ cargo check OK" -ForegroundColor Green
 
     Write-Host "  → cargo build --release (compilation du core)..." -ForegroundColor Cyan
-    cargo build --manifest-path Cargo.toml --bin openhuman-core --release 2>&1 | Select-Object -Last 5
+    cargo build --manifest-path Cargo.toml --bin dadou-core --release 2>&1 | Select-Object -Last 5
     if ($LASTEXITCODE -ne 0) {
         Write-Host "  ❌ Build échoué. Vérifiez les erreurs ci-dessus." -ForegroundColor Red
         exit 1
     }
-    Write-Host "  ✅ Core compilé : target\release\openhuman-core.exe" -ForegroundColor Green
+    Write-Host "  ✅ Core compilé : target\release\dadou-core.exe" -ForegroundColor Green
 }
 
 # ── Résumé ────────────────────────────────────────────────────────────
@@ -121,13 +136,22 @@ Write-Host @"
 
 Pour lancer DADOU :
 
-  .\target\release\openhuman-core.exe serve
+  .\target\release\dadou-core.exe serve
+
+Workspace :
+  → $Workspace
 
 Dashboard :
   → http://127.0.0.1:7790
 
 Manuel :
   → DISTRIBUTION\manual.html
+
+Pour changer le workspace :
+  $env:OPENHUMAN_WORKSPACE = "C:\MonDossier"
+
+Pour utiliser un provider cloud :
+  → Settings > AI dans le chat, ou config.toml
 
 ========================================
 "@ -ForegroundColor Green
