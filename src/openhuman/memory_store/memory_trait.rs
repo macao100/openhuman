@@ -110,9 +110,7 @@ impl Memory for UnifiedMemory {
             .enumerate()
             .filter(|(_, r)| r.score >= min_score)
             .map(|(idx, r)| MemoryEntry {
-                id: format!("{namespace,
-            provenance: None,
-        }:{idx}"),
+                id: format!("{namespace}:{idx}"),
                 key: r.key,
                 content: r.content,
                 namespace: Some(namespace.to_string()),
@@ -164,9 +162,7 @@ impl Memory for UnifiedMemory {
                 let ts_rfc3339 = timestamp_to_rfc3339(entry.timestamp);
 
                 out.push(MemoryEntry {
-                    id: format!("episodic:{,
-            provenance: None,
-        }", entry.id.unwrap_or(0)),
+                    id: format!("episodic:{}", entry.id.unwrap_or(0)),
                     key: format!("{}:{}", entry.session_id, entry.role),
                     content: entry.content,
                     namespace: Some(namespace.to_string()),
@@ -237,9 +233,7 @@ impl Memory for UnifiedMemory {
                 }
                 let ts_rfc3339 = timestamp_to_rfc3339(entry.timestamp);
                 out.push(MemoryEntry {
-                    id: format!("episodic-cross:{,
-            provenance: None,
-        }", entry.id.unwrap_or(0)),
+                    id: format!("episodic-cross:{}", entry.id.unwrap_or(0)),
                     key: format!("{}:{}", entry.session_id, entry.role),
                     content: entry.content,
                     namespace: Some(namespace.to_string()),
@@ -359,9 +353,7 @@ impl Memory for UnifiedMemory {
                     .to_string(),
                 namespace: Some(ns.to_string()),
                 category: cat,
-                timestamp: format!("idx-{idx,
-            provenance: None,
-        }"),
+                timestamp: format!("idx-{idx}"),
                 session_id: None,
                 score: None,
                 provenance: None,
