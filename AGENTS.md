@@ -1,4 +1,4 @@
-# OpenHuman
+# DADOU
 
 **AI assistant for communities — React + Tauri v2 desktop app with a Rust core (JSON-RPC / CLI) embedded in-process.**
 
@@ -85,7 +85,7 @@ pnpm pr:sync-main --execute     # merge latest main into each matching PR branch
 
 Before opening AI-authored PRs from Codex web sessions or Linear-launched implementation agents, follow [`docs/agent-workflows/codex-pr-checklist.md`](docs/agent-workflows/codex-pr-checklist.md).
 
-This checklist is required for remote agents because OpenHuman has several merge gates that are easy to miss in partial environments: Prettier, Rust formatting, TypeScript typecheck, focused Vitest coverage, controller dispatch parity, and Tauri vendored dependency availability. If a command cannot run in the remote environment, the PR body must report the exact blocked command and error instead of claiming validation passed.
+This checklist is required for remote agents because DADOU has several merge gates that are easy to miss in partial environments: Prettier, Rust formatting, TypeScript typecheck, focused Vitest coverage, controller dispatch parity, and Tauri vendored dependency availability. If a command cannot run in the remote environment, the PR body must report the exact blocked command and error instead of claiming validation passed.
 
 ### Agent debug runners (`scripts/debug/`)
 
@@ -277,7 +277,7 @@ Order matters for auth and realtime:
 
 ### State (`app/src/store/`)
 
-Redux Toolkit slices: `accounts`, `channelConnections`, `chatRuntime`, `coreMode`, `deepLinkAuth`, `mascot`, `notification`, `providerSurface`, `socket` (+ `socketSelectors`), `thread`. Plus `userScopedStorage` for per-user persistence keys. Prefer Redux (and redux-persist where configured) over ad hoc `localStorage` for app state. Documented exception: ephemeral UI state like upsell-banner dismiss flags use `localStorage` with the `openhuman:upsell:` prefix.
+Redux Toolkit slices: `accounts`, `channelConnections`, `chatRuntime`, `coreMode`, `deepLinkAuth`, `mascot`, `notification`, `providerSurface`, `socket` (+ `socketSelectors`), `thread`. Plus `userScopedStorage` for per-user persistence keys. Prefer Redux (and redux-persist where configured) over ad hoc `localStorage` for app state. Documented exception: ephemeral UI state like upsell-banner dismiss flags use `localStorage` with the `dadou:upsell:` prefix.
 
 ### Services (`app/src/services/`)
 
@@ -301,9 +301,9 @@ Bundled prompts live under **`src/openhuman/agent/prompts/`** at the **repositor
 
 Thin desktop host. Top-level modules: `core_process`, `core_rpc`, `cdp`, `cef_preflight`, `cef_profile`, `dictation_hotkeys`, `file_logging`, `mascot_native_window`, `native_notifications`, `notification_settings`, `process_kill`, `process_recovery`, `screen_capture`, `window_state`, plus per-provider scanners (`discord_scanner`, `gmessages_scanner`, `imessage_scanner`, `meet_scanner`, `slack_scanner`, `telegram_scanner`, `whatsapp_scanner`), `meet_audio` / `meet_call` / `meet_video`, `fake_camera`, `webview_accounts`, `webview_apis`.
 
-**Core lifecycle**: `core_process::CoreProcessHandle` spawns the in-process JSON-RPC server and authenticates inbound RPC with a hex bearer (`OPENHUMAN_CORE_TOKEN`). Stale-listener policy (#1130): on conflict the handle probes `GET /`, decides if the listener is an OpenHuman core, then `kill_pid_term` → `kill_pid_force` with PID revalidation guarding against PID reuse. `restart_core_process` / `start_core_process` Tauri commands let the frontend cycle it for updates.
+**Core lifecycle**: `core_process::CoreProcessHandle` spawns the in-process JSON-RPC server and authenticates inbound RPC with a hex bearer (`OPENHUMAN_CORE_TOKEN`). Stale-listener policy (#1130): on conflict the handle probes `GET /`, decides if the listener is an DADOU core, then `kill_pid_term` → `kill_pid_force` with PID revalidation guarding against PID reuse. `restart_core_process` / `start_core_process` Tauri commands let the frontend cycle it for updates.
 
-Registered IPC commands (see [`gitbooks/developing/architecture/tauri-shell.md`](gitbooks/developing/architecture/tauri-shell.md)) include `greet`, `write_ai_config_file`, `ai_get_config`, `ai_refresh_config`, `core_rpc_relay`, `core_rpc_token`, `start_core_process`, `restart_core_process`, window commands, and `openhuman_*` daemon helpers.
+Registered IPC commands (see [`gitbooks/developing/architecture/tauri-shell.md`](gitbooks/developing/architecture/tauri-shell.md)) include `greet`, `write_ai_config_file`, `ai_get_config`, `ai_refresh_config`, `core_rpc_relay`, `core_rpc_token`, `start_core_process`, `restart_core_process`, window commands, and `dadou_*` daemon helpers.
 
 Deep link plugin is registered where supported; behavior is platform-specific (see platform notes below).
 
@@ -470,7 +470,7 @@ let resp: BillingChargeResponse = request_native_global(
 
 ## Desktop shell (Tauri) vs application code
 
-In the parent **OpenHuman** desktop app, **Tauri / Rust is a delivery vehicle**: windowing, process lifecycle, IPC to the core sidecar, and other host concerns. **Keep as much UI behavior and product logic as practical in TypeScript/React** (`app/`). Avoid growing Rust in the shell for flows that belong in the web layer unless there is a hard platform or security reason.
+In the parent **DADOU** desktop app, **Tauri / Rust is a delivery vehicle**: windowing, process lifecycle, IPC to the core sidecar, and other host concerns. **Keep as much UI behavior and product logic as practical in TypeScript/React** (`app/`). Avoid growing Rust in the shell for flows that belong in the web layer unless there is a hard platform or security reason.
 
 ## Git workflow
 
@@ -507,7 +507,7 @@ In the parent **OpenHuman** desktop app, **Tauri / Rust is a delivery vehicle**:
 
 Follow this order so behavior is **specified**, **proven in Rust**, **proven over RPC**, then **surfaced in the UI** with matching tests.
 
-1. **Specify against the current codebase** — Ground the design in **existing** domains, controller/registry patterns, and JSON-RPC naming (`openhuman.<namespace>_<function>`). Reuse or extend documented flows in [`gitbooks/developing/architecture.md`](gitbooks/developing/architecture.md) and sibling guides; avoid parallel architectures.
+1. **Specify against the current codebase** — Ground the design in **existing** domains, controller/registry patterns, and JSON-RPC naming (`dadou.<namespace>_<function>`). Reuse or extend documented flows in [`gitbooks/developing/architecture.md`](gitbooks/developing/architecture.md) and sibling guides; avoid parallel architectures.
 2. **Implement in Rust** — Add domain logic under `src/openhuman/<domain>/`, wire **schemas + registered handlers** into the shared registry, and land **unit tests** in the crate (`cargo test -p openhuman`, focused modules) until the feature is correct in isolation.
 3. **JSON-RPC E2E** — Add or extend **integration-style tests** that call the real HTTP JSON-RPC surface (e.g. [`tests/json_rpc_e2e.rs`](tests/json_rpc_e2e.rs), mock backend / [`scripts/test-rust-with-mock.sh`](scripts/test-rust-with-mock.sh) as appropriate) so methods, params, and outcomes match what the UI will call.
 4. **UI in the Tauri app** — Build **React** screens, state, and **`core_rpc_relay` / `coreRpcClient`** usage in `app/`; keep **business rules** in the core, not duplicated in the shell.
