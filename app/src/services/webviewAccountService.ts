@@ -1420,20 +1420,6 @@ export async function purgeWebviewAccount(accountId: string): Promise<void> {
 // ────────────────────────── Notification bypass helpers ─────────────────────
 
 /**
- * Mute or unmute OS notification toasts for a specific embedded account.
- * When muted, toasts from that account are suppressed regardless of focus state.
- */
-export async function setAccountMuted(accountId: string, muted: boolean): Promise<void> {
-  if (!isTauri()) return;
-  try {
-    await invoke('webview_notification_mute_account', { accountId, muted });
-    log('notify-bypass: account=%s muted=%s', accountId, muted);
-  } catch (e) {
-    log('notify-bypass: setAccountMuted error %o', e);
-  }
-}
-
-/**
  * Enable or disable global Do Not Disturb mode for embedded webview notifications.
  * When enabled, all OS notification toasts from embedded accounts are suppressed.
  */
@@ -1471,7 +1457,7 @@ export async function getBypassPrefs(): Promise<{
  * Rust uses this together with the window-focus state to suppress
  * notifications while the user is actively looking at that account.
  */
-export async function setFocusedAccount(accountId: string | null): Promise<void> {
+async function setFocusedAccount(accountId: string | null): Promise<void> {
   if (!isTauri()) return;
   try {
     await invoke('webview_set_focused_account', { accountId });

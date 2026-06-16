@@ -28,7 +28,7 @@ export type MascotVoiceGender = 'male' | 'female';
  * voice) so new users see consistent state in the Mascot settings
  * panel without any extra writes.
  */
-export const DEFAULT_MASCOT_VOICE_GENDER: MascotVoiceGender = 'male';
+const DEFAULT_MASCOT_VOICE_GENDER: MascotVoiceGender = 'male';
 
 /**
  * Maximum length of a stored mascot voice id. ElevenLabs voice ids are
@@ -354,5 +354,5 @@ export const selectEffectiveMascotVoiceId = (state: {
   return MASCOT_VOICE_ID || ELEVENLABS_VOICE_PRESETS[0].id;
 };
 
-export { mascotSlice };
+
 export default mascotSlice.reducer;

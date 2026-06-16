@@ -354,4 +354,4 @@ export function MemoryTreeStatusPanel({ onToast }: MemoryTreeStatusPanelProps) {
 
 // Re-export the hook so unit tests can opt into the polling subscription
 // directly without re-implementing it.
-export { useMemoryTreeStatus };
+

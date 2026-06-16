@@ -1,7 +1,11 @@
+import debug from 'debug';
+
 import type { ApiError } from '../types/api';
 import { IS_DEV } from '../utils/config';
 import { getBackendUrl } from './backendUrl';
 import { getClientVersionHeaders } from './clientVersionHeaders';
+
+const log = debug('app:api-client');
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -75,7 +79,7 @@ class ApiClient {
     const headers = await this.buildHeaders({ ...options, requireAuth });
 
     if (IS_DEV) {
-      console.log('request', { url, headers: this.sanitizeRequestLogHeaders(headers), method });
+      log('request', { url, headers: this.sanitizeRequestLogHeaders(headers), method });
     }
 
     const controller = new AbortController();

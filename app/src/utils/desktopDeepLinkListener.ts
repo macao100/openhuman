@@ -1,8 +1,11 @@
 import * as Sentry from '@sentry/react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { getCurrent, onOpenUrl } from '@tauri-apps/plugin-deep-link';
+import debug from 'debug';
 
 import { getCoreStateSnapshot, patchCoreStateSnapshot } from '../lib/coreState/store';
+
+const log = debug('app:desktop-deep-link');
 import { consumeLoginToken } from '../services/api/authApi';
 import { clearCoreRpcTokenCache, clearCoreRpcUrlCache } from '../services/coreRpcClient';
 import {
@@ -204,7 +207,7 @@ const handlePaymentDeepLink = async (parsed: URL) => {
       return;
     }
 
-    console.log('[DeepLink] Payment success, session_id:', sessionId);
+    log('Payment success, session_id:', sessionId);
 
     // Broadcast to the app in case any listeners still care about legacy
     // payment completion events.
@@ -213,7 +216,7 @@ const handlePaymentDeepLink = async (parsed: URL) => {
     await openUrl(BILLING_DASHBOARD_URL);
     window.location.hash = '/home';
   } else if (path === 'cancel') {
-    console.log('[DeepLink] Payment cancelled');
+    log('Payment cancelled');
     window.dispatchEvent(new CustomEvent('payment:cancel', {}));
     await openUrl(BILLING_DASHBOARD_URL);
     window.location.hash = '/home';
@@ -288,9 +291,7 @@ const handleOAuthDeepLink = async (parsed: URL) => {
       );
       return;
     }
-    console.log(
-      `[DeepLink] OAuth success for integration=${integrationId}${toolkit ? ` toolkit=${toolkit}` : ''}`
-    );
+    log(`OAuth success for integration=${integrationId}${toolkit ? ` toolkit=${toolkit}` : ''}`);
     window.dispatchEvent(new CustomEvent('oauth:success', { detail: { integrationId, toolkit } }));
     window.location.hash = '/skills';
   } else if (path === 'error') {

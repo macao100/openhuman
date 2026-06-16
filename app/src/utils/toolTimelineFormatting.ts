@@ -99,7 +99,7 @@ export function promptFromArgsBuffer(argsBuffer?: string): string | undefined {
 const KNOWN_TOOLKIT_RE =
   /^(gmail|notion|github|slack|discord|linear|jira|google_calendar|google_drive|calendar)$/i;
 
-export function inferIntegrationName(input?: string): string | undefined {
+function inferIntegrationName(input?: string): string | undefined {
   if (!input) return undefined;
 
   const delegateMatch = input.match(/^delegate_(.+)$/);

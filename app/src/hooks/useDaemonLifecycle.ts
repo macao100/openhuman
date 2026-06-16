@@ -7,6 +7,7 @@
  * - Exponential backoff for restart attempts
  * - Error recovery logic
  */
+import debug from 'debug';
 import { useCallback, useEffect, useRef } from 'react';
 
 import {
@@ -17,6 +18,8 @@ import {
 } from '../features/daemon/store';
 import { isTauri } from '../utils/tauriCommands';
 import { useDaemonHealth } from './useDaemonHealth';
+
+const log = debug('app:daemon-lifecycle');
 
 // Configuration constants
 const MAX_RECONNECTION_ATTEMPTS = 5;
@@ -73,14 +76,14 @@ export const useDaemonLifecycle = (userId?: string) => {
 
     // Only auto-start if daemon is disconnected and not already recovering
     if (status === 'disconnected' && !isRecovering && connectionAttempts === 0) {
-      console.log('[DaemonLifecycle] Attempting auto-start of daemon');
+      log('Attempting auto-start of daemon');
 
       try {
         setIsRecovering(uid, true);
         const result = await startDaemon();
 
         if (result?.result && result.result.state === 'Running') {
-          console.log('[DaemonLifecycle] Auto-start successful');
+          log('Auto-start successful');
           resetConnectionAttempts(uid);
         } else {
           console.warn('[DaemonLifecycle] Auto-start failed:', result);
@@ -115,9 +118,7 @@ export const useDaemonLifecycle = (userId?: string) => {
     }
 
     const retryDelay = calculateRetryDelay(connectionAttempts + 1);
-    console.log(
-      `[DaemonLifecycle] Scheduling retry attempt ${connectionAttempts + 1} in ${retryDelay}ms`
-    );
+    log(`Scheduling retry attempt ${connectionAttempts + 1} in ${retryDelay}ms`);
 
     // Clear existing timeout
     if (retryTimeoutRef.current) {
@@ -136,7 +137,7 @@ export const useDaemonLifecycle = (userId?: string) => {
         const result = await startDaemon();
 
         if (result?.result && result.result.state === 'Running') {
-          console.log('[DaemonLifecycle] Retry successful');
+          log('Retry successful');
           resetConnectionAttempts(uid);
         } else {
           console.warn('[DaemonLifecycle] Retry failed:', result);
@@ -158,7 +159,7 @@ export const useDaemonLifecycle = (userId?: string) => {
     const { isAutoStartEnabled, status, isRecovering } = latestLifecycleRef.current;
 
     if (document.visibilityState === 'visible') {
-      console.log('[DaemonLifecycle] App became visible - checking daemon status');
+      log('App became visible - checking daemon status');
 
       // Check if daemon needs to be started when app comes back to foreground
       if (isAutoStartEnabled && status === 'disconnected' && !isRecovering) {
@@ -177,7 +178,7 @@ export const useDaemonLifecycle = (userId?: string) => {
     if (!isTauri()) return;
 
     isMountedRef.current = true;
-    console.log('[DaemonLifecycle] Setting up daemon lifecycle management');
+    log('Setting up daemon lifecycle management');
 
     // Setup auto-start with delay on mount
     if (isAutoStartEnabled) {
@@ -192,7 +193,7 @@ export const useDaemonLifecycle = (userId?: string) => {
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      console.log('[DaemonLifecycle] Cleaning up daemon lifecycle management');
+      log('Cleaning up daemon lifecycle management');
       isMountedRef.current = false;
 
       // Clear timeouts
@@ -222,7 +223,7 @@ export const useDaemonLifecycle = (userId?: string) => {
       !isRecovering &&
       isAutoStartEnabled
     ) {
-      console.log('[DaemonLifecycle] Scheduling retry for daemon recovery');
+      log('Scheduling retry for daemon recovery');
       scheduleRetry();
     }
 
@@ -237,7 +238,7 @@ export const useDaemonLifecycle = (userId?: string) => {
   // Reset connection attempts when daemon becomes healthy
   useEffect(() => {
     if (status === 'running' && connectionAttempts > 0) {
-      console.log('[DaemonLifecycle] Daemon healthy - resetting connection attempts');
+      log('Daemon healthy - resetting connection attempts');
       resetConnectionAttempts(uid);
 
       // Clear retry timeout if running

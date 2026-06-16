@@ -12,7 +12,7 @@ import {
 import { getCoreStateSnapshot } from '../lib/coreState/store';
 import { callCoreRpc } from './coreRpcClient';
 
-export class DaemonHealthService {
+class DaemonHealthService {
   private healthTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private readonly HEALTH_TIMEOUT_MS = 30000;
   private pollingIntervalId: ReturnType<typeof setInterval> | null = null;

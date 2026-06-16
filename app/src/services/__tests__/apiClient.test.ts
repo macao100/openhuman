@@ -8,6 +8,11 @@ vi.mock('@tauri-apps/api/app', () => ({ getVersion: vi.fn() }));
 vi.mock('../coreRpcClient', () => ({ callCoreRpc: vi.fn() }));
 
 const configMock = vi.hoisted(() => ({ isDev: true }));
+const logMock = vi.hoisted(() => vi.fn());
+
+vi.mock('debug', () => ({
+  default: () => logMock,
+}));
 
 vi.mock('../../utils/config', () => ({
   APP_VERSION: '0.0.0-test',
@@ -20,6 +25,7 @@ describe('apiClient version headers', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    logMock.mockClear();
     configMock.isDev = true;
     vi.mocked(isTauri).mockReturnValue(false);
     vi.mocked(callCoreRpc).mockResolvedValue({ result: { version: '0.0.0-core' } });
@@ -82,7 +88,6 @@ describe('apiClient version headers', () => {
     const requestHeaders = requestInit.headers as Record<string, string>;
     expect(requestHeaders.Authorization).toBe('Bearer secret-session-token');
 
-    const logMock = vi.mocked(console.log);
     expect(logMock).toHaveBeenCalledWith(
       'request',
       expect.objectContaining({
@@ -110,7 +115,7 @@ describe('apiClient version headers', () => {
 
     await apiClient.get('/version-check');
 
-    expect(console.log).not.toHaveBeenCalledWith('request', expect.anything());
+    expect(logMock).not.toHaveBeenCalledWith('request', expect.anything());
   });
 
   it('retries tauri version lookup after a transient failure', async () => {

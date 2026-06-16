@@ -21,13 +21,3 @@ export const CUSTOM_WIZARD_ROUTES: Record<CustomStepKey, string> = {
   memory: '/onboarding/custom/memory',
 };
 
-/** Deep-link target inside Settings for users who pick "Configure" and want
- *  to finish wiring this domain up after onboarding. */
-export const CUSTOM_WIZARD_SETTINGS_ROUTES: Record<CustomStepKey, string> = {
-  inference: '/settings/llm',
-  voice: '/settings/voice',
-  oauth: '/settings/composio-routing',
-  search: '/settings/tools',
-  embeddings: '/settings/embeddings',
-  memory: '/settings/memory-data',
-};

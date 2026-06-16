@@ -70,14 +70,14 @@ const updateUserState = (
   emitChange();
 };
 
-export const subscribeDaemonStore = (listener: () => void): (() => void) => {
+const subscribeDaemonStore = (listener: () => void): (() => void) => {
   listeners.add(listener);
   return () => {
     listeners.delete(listener);
   };
 };
 
-export const getDaemonUserState = (userId?: string): DaemonUserState =>
+const getDaemonUserState = (userId?: string): DaemonUserState =>
   currentUserState(userId || '__pending__');
 
 export const useDaemonUserState = (userId?: string): DaemonUserState =>

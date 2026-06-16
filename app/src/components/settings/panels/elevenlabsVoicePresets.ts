@@ -93,7 +93,7 @@ export const ELEVENLABS_VOICE_PRESETS: readonly ElevenLabsVoicePreset[] = [
  * `en` covers the default. Other locales fall back to it via
  * `defaultVoiceIdForLocale()` when a specific entry is missing.
  */
-export const DEFAULT_VOICE_BY_LOCALE: Readonly<
+const DEFAULT_VOICE_BY_LOCALE: Readonly<
   Partial<Record<Locale, Readonly<Record<'female' | 'male', string>>>>
 > = {
   // Female default: Rachel — neutral, widely-used. Male default: Adam.

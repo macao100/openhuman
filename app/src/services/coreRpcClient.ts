@@ -72,15 +72,6 @@ let resolvingCoreRpcToken: Promise<string | null> | null = null;
 let _activeTransport: CoreTransport | null = null;
 
 /**
- * Override the active transport used by `callCoreRpc`.
- * Set to null to revert to the default local HTTP path.
- */
-export function setActiveCoreTransport(transport: CoreTransport | null): void {
-  _activeTransport = transport;
-  coreRpcLog('[transport] active transport set kind=%s', transport?.kind ?? 'null');
-}
-
-/**
  * Stable classification of an RPC failure. Callers (hooks, providers, Sentry
  * filters) should branch on `kind` — never on raw message regexes. The shape
  * exists so a single 401 from the Rust backend (`Session expired. Please log
