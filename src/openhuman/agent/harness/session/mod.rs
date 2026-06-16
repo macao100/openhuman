@@ -25,6 +25,7 @@ pub mod migration;
 mod runtime;
 pub(crate) mod transcript;
 mod turn;
+mod turn_system_prompt;
 mod types;
 
 pub use migration::{migrate_session_layout_if_needed, MigrationOutcome};
