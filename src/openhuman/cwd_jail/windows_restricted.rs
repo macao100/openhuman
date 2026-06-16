@@ -112,24 +112,27 @@ extern "system" {
 // Source: WinNT.h, Security.h.
 
 #[repr(C)]
+#[allow(non_snake_case)]
 struct LUID_AND_ATTRIBUTES {
     Luid: i64,
     Attributes: u32,
 }
 
 #[repr(C)]
+#[allow(non_snake_case)]
 struct SID_IDENTIFIER_AUTHORITY {
     Value: [u8; 6],
 }
 
 #[repr(C)]
+#[allow(non_snake_case)]
 struct SID_AND_ATTRIBUTES {
     Sid: *mut core::ffi::c_void,
     Attributes: u32,
 }
 
 #[repr(C)]
-#[allow(dead_code)]
+#[allow(dead_code, non_snake_case)]
 struct TOKEN_MANDATORY_LABEL {
     Label: SID_AND_ATTRIBUTES,
 }

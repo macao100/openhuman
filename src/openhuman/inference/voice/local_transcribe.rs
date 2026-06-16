@@ -203,7 +203,6 @@ pub async fn transcribe_whisper(
     // platforms without the extension trait.
     #[cfg(windows)]
     {
-        use std::os::windows::process::CommandExt;
         cmd.creation_flags(0x08000000);
     }
     // Cap the subprocess so a stalled whisper-cli never hangs the RPC

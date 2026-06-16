@@ -112,7 +112,7 @@ impl DashboardEventStore {
         kind_filter: Option<&str>,
     ) -> Result<Vec<StoredDashboardEvent>> {
         self.with_connection(|conn| {
-            let mut stmt = if let Some(kind) = kind_filter {
+            let stmt = if let Some(kind) = kind_filter {
                 let mut s = conn.prepare(
                     "SELECT id, kind, payload, recorded_at FROM dashboard_events
                      WHERE kind = ?1

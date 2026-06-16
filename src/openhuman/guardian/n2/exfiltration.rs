@@ -14,7 +14,6 @@
 //! the confidence level (0.3 = suspicious, 1.0 = definite exfiltration).
 
 use regex::Regex;
-use std::time::Instant;
 
 use crate::openhuman::guardian::n2::types::N2Score;
 

@@ -17,7 +17,7 @@ pub(crate) const COOKIES_DB_ENV: &str = "OPENHUMAN_CEF_COOKIES_DB";
 /// trailing-wildcard SQL `LIKE`. `session_cookie_names` are the cookie
 /// `name` values that indicate an active login — any one match is
 /// sufficient.
-struct Provider {
+pub(crate) struct Provider {
     /// Stable key surfaced in the JSON snapshot (e.g. `"gmail"`).
     key: &'static str,
     /// Host suffix the auth cookie must live under. Chromium stores

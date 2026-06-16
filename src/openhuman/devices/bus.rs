@@ -207,7 +207,7 @@ async fn handle_tunnel_frame(channel_id: &str, payload_b64: &str) {
         };
         // Decrypt: nonce(24) || ciphertext+tag at offset 33.
         let inner_frame = &frame_bytes[33..];
-        let cipher = crate::openhuman::devices::crypto::TunnelCipher::new(&dh_key);
+        let _cipher = crate::openhuman::devices::crypto::TunnelCipher::new(&dh_key);
         // Reconstruct frame with version byte 0x01 so TunnelCipher::open can
         // validate the version — prepend it back.
         let mut framed = vec![0x01u8];

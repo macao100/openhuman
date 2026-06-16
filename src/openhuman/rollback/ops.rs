@@ -8,7 +8,7 @@
 //! Restoration uses the COMPLETE SNAPSHOT (not the diff) for reliability.
 //! `rolled_back_at` prevents double restoration.
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use serde_json::Value;
 

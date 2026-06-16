@@ -14,8 +14,8 @@
 pub mod llm_check;
 pub mod rules;
 
-use self::llm_check::{llm_deep_check, LlmVerdict, LlmVerdictKind};
-use self::rules::{check_injection_patterns, FindingSeverity, InjectionFinding, InjectionRule};
+use self::llm_check::{llm_deep_check, LlmVerdict};
+use self::rules::{check_injection_patterns, FindingSeverity, InjectionFinding};
 
 /// How strictly the validator treats suspicious output.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]

@@ -20,7 +20,7 @@ use std::path::{Path, PathBuf};
 use anyhow::Context;
 use wasmtime::{Config, Engine, Linker, Module, Store};
 
-use super::types::{ExecutionStatus, SkillOutputEnvelope};
+use super::types::SkillOutputEnvelope;
 
 // `WasmConfig`, `Permissions`, `FilesystemPerms` are defined in the sibling
 // `manifest` module (Plan 01) and re-exported via `super::`.

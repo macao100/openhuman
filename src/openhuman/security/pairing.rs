@@ -7,7 +7,6 @@
 use parking_lot::Mutex;
 use sha2::{Digest, Sha256};
 use std::collections::HashSet;
-use std::io::Write as _;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Instant;

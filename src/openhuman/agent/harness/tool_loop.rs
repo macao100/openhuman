@@ -1545,7 +1545,7 @@ fn build_pipeline_block_reason(
 /// checks `call_succeeded` and empty output before calling this.
 pub(crate) fn should_wrap_external_data(
     tool_name: &str,
-    arguments: &serde_json::Value,
+    _arguments: &serde_json::Value,
 ) -> Option<(&'static str, &'static str)> {
     match tool_name {
         // Skill outputs: any tool in the dadou.* namespace

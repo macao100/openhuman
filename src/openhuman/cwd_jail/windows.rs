@@ -35,7 +35,7 @@ use std::process::Command;
 use std::ptr;
 
 use windows_sys::core::PWSTR;
-use windows_sys::Win32::Foundation::{CloseHandle, LocalFree, HANDLE, HLOCAL};
+use windows_sys::Win32::Foundation::{CloseHandle, LocalFree, HLOCAL};
 use windows_sys::Win32::Security::Authorization::{
     GetNamedSecurityInfoW, SetEntriesInAclW, SetNamedSecurityInfoW, EXPLICIT_ACCESS_W, SET_ACCESS,
     SE_FILE_OBJECT, TRUSTEE_IS_GROUP, TRUSTEE_IS_SID, TRUSTEE_W,
@@ -222,7 +222,7 @@ unsafe fn grant_sid_access(path: &Path, sid: PSID, access: u32) -> io::Result<()
     // locking out the owner / SYSTEM / Administrators. Merge instead.
     let mut sd_ptr: *mut std::ffi::c_void = ptr::null_mut();
     let mut existing_dacl: *mut ACL = ptr::null_mut();
-    let mut dacl_present: i32 = 0;
+    let dacl_present: i32 = 0;
     let rc = GetNamedSecurityInfoW(
         path_w.as_ptr(),
         SE_FILE_OBJECT,
