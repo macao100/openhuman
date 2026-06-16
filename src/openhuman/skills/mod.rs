@@ -52,7 +52,7 @@ pub use verify::{
 #[cfg(test)]
 mod integration_tests {
     use super::*;
-    use crate::openhuman::skills::store::SkillsStore;
+    use crate::openhuman::skills::store::{InstalledSkill, SkillRuntime, SkillsStore};
     use anyhow::Result;
 
     #[test]
@@ -99,6 +99,8 @@ dependencies:
             installed_at: "2026-06-05T12:00:00Z".to_string(),
             last_audit_at: None,
             audit_result: None,
+            runtime: SkillRuntime::Wasm,
+            python_config: None,
         };
         store.upsert(installed)?;
         assert_eq!(store.len(), 1);
