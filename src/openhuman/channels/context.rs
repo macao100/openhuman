@@ -321,6 +321,7 @@ mod tests {
             timestamp: "now".into(),
             session_id: None,
             score,
+            provenance: None,
         }
     }
 

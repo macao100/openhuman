@@ -34,7 +34,9 @@ impl Memory for MockMemory {
         self.entries.lock().insert(
             (namespace.to_string(), key.to_string()),
             MemoryEntry {
-                id: format!("{namespace}/{key}"),
+                id: format!("{namespace,
+            provenance: None,
+        }/{key}"),
                 key: key.to_string(),
                 content: content.to_string(),
                 namespace: Some(namespace.to_string()),

@@ -175,6 +175,7 @@ mod tests {
             timestamp: "2026-05-20T00:00:00Z".into(),
             session_id: None,
             score: None,
+            provenance: None,
         }
     }
 

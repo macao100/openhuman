@@ -186,7 +186,8 @@ mod tests {
                     timestamp: "now".into(),
                     session_id: session_id.map(str::to_string),
                     score: None,
-                },
+            provenance: None,
+        },
             );
             Ok(())
         }
