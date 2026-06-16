@@ -19,9 +19,10 @@ use std::time::Instant;
 
 use crate::openhuman::guardian::n2::GuardianN2;
 use crate::openhuman::guardian::n3::GuardianN3;
+use crate::openhuman::guardian::n3::N3Config;
 use crate::openhuman::guardian::rules::RuleSet;
 use crate::openhuman::guardian::types::{
-    GuardianPipelineResult, N1Result, PlanValidationResult, RuleAction,
+    GuardianPipelineResult, N1Result, PlanStep, PlanValidationResult, RuleAction,
     RuleContext, RuleResult, StructuredPlan,
 };
 use crate::openhuman::security::policy::SecurityPolicy;
@@ -708,7 +709,7 @@ rules:
     }
 
     #[tokio::test]
-    async fn pipeline_allows_safe_operation() {
+    async fn pipeline_with_n2_allows_safe_operation() {
         let pipeline = test_pipeline(0.7, 0.3, true);
         let result = pipeline
             .evaluate(

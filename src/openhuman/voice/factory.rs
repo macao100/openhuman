@@ -979,6 +979,7 @@ pub fn default_tts_provider() -> Arc<dyn TtsProvider> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::openhuman::config::schema::voice_providers::VoiceCapability;
 
     fn cfg() -> Config {
         Config::default()

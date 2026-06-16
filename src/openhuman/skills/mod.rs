@@ -52,6 +52,7 @@ pub use verify::{
 #[cfg(test)]
 mod integration_tests {
     use super::*;
+    use crate::openhuman::skills::store::SkillsStore;
     use anyhow::Result;
 
     #[test]

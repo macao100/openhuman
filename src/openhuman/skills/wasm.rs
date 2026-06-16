@@ -492,6 +492,7 @@ fn call_with_timeout(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::openhuman::skills::ExecutionStatus;
     use std::sync::OnceLock;
     use tempfile::TempDir;
 
