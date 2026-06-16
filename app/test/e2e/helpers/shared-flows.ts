@@ -92,7 +92,7 @@ export async function waitForHomePage(timeout = 15_000) {
   return null;
 }
 
-export async function waitForTextToDisappear(text, timeout = 10_000) {
+async function waitForTextToDisappear(text, timeout = 10_000) {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
     if (!(await textExists(text))) return true;
@@ -104,7 +104,7 @@ export async function waitForTextToDisappear(text, timeout = 10_000) {
 /**
  * Click the first matching text from a list of candidates.
  */
-export async function clickFirstMatch(candidates, timeout = 5_000) {
+async function clickFirstMatch(candidates, timeout = 5_000) {
   for (const text of candidates) {
     if (await textExists(text)) {
       await clickText(text, timeout);
@@ -437,7 +437,7 @@ export async function navigateToConversations() {
   await navigateViaHash('/chat');
 }
 
-export async function navigateToNotifications() {
+async function navigateToNotifications() {
   await navigateViaHash('/notifications');
 }
 
@@ -447,7 +447,7 @@ export async function navigateToNotifications() {
 // ---------------------------------------------------------------------------
 
 /** Labels used to detect the onboarding overlay (same strings as Onboarding copy). */
-export const ONBOARDING_OVERLAY_TEXTS = [
+const ONBOARDING_OVERLAY_TEXTS = [
   'Skip',
   'Welcome',
   "Hi. I'm OpenHuman.",
@@ -483,7 +483,7 @@ async function onboardingOverlayLikelyVisible(): Promise<boolean> {
   return false;
 }
 
-export async function isOnboardingOverlayVisible(): Promise<boolean> {
+async function isOnboardingOverlayVisible(): Promise<boolean> {
   return onboardingOverlayLikelyVisible();
 }
 
@@ -496,7 +496,7 @@ export async function waitForOnboardingOverlayVisible(timeout = 10_000): Promise
   return false;
 }
 
-export async function waitForOnboardingOverlayHidden(timeout = 10_000): Promise<boolean> {
+async function waitForOnboardingOverlayHidden(timeout = 10_000): Promise<boolean> {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
     if (!(await onboardingOverlayLikelyVisible())) return true;

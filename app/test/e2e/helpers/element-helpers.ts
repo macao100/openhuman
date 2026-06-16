@@ -148,7 +148,7 @@ export async function waitForText(
  * - Mac2: XCUIElementTypeButton XPath
  * - tauri-driver: CSS button / [role="button"] / a selector
  */
-export async function waitForButton(
+async function waitForButton(
   text: string,
   timeout: number = 15_000
 ): Promise<ChainablePromiseElement> {

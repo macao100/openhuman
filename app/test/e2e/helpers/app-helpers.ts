@@ -68,7 +68,7 @@ const BOOT_CHECK_GATE_PICKER_HEADING_REGEX = /Select a Runtime|Connect to Your R
  * "Local" is pre-selected on desktop builds, so a single Continue click is
  * enough — no need to fill cloud URL/token.
  */
-export async function dismissBootCheckGate(timeout: number = 5_000): Promise<void> {
+async function dismissBootCheckGate(timeout: number = 5_000): Promise<void> {
   if (!isTauriDriver()) return;
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
@@ -217,7 +217,7 @@ export async function waitForAuthBootstrap(timeout: number = 20_000): Promise<vo
  * For cross-platform specs, prefer the helpers in element-helpers.ts
  * (hasAppChrome, textExists, etc.) over calling this directly.
  */
-export async function elementExists(predicate: string): Promise<boolean> {
+async function elementExists(predicate: string): Promise<boolean> {
   try {
     if (isTauriDriver()) {
       // Treat predicate as a CSS selector on Linux
