@@ -1035,6 +1035,8 @@ permissions:
             installed_at: Utc::now().to_rfc3339(),
             last_audit_at: Some(Utc::now().to_rfc3339()),
             audit_result: Some("pass".to_string()),
+            runtime: crate::openhuman::skills::store::SkillRuntime::Wasm,
+            python_config: None,
         };
         installer.store_mut().upsert(skill).unwrap();
 
