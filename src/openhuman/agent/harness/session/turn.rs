@@ -1182,58 +1182,6 @@ impl Agent {
         result
     }
 
-    async fn inject_agent_experience_context(
-        &self,
-        user_message: &str,
-        enriched: String,
-    ) -> String {
-        const MAX_EXPERIENCE_HITS: usize = 3;
-        const MAX_EXPERIENCE_BLOCK_BYTES: usize = 2048;
-
-        if !self.learning_enabled {
-            return enriched;
-        }
-
-        let tools = self
-            .visible_tool_specs
-            .iter()
-            .map(|spec| spec.name.clone())
-            .collect();
-        let store = AgentExperienceStore::new(self.memory.clone());
-        let query = ExperienceQuery {
-            query: user_message.to_string(),
-            tools,
-            tags: Vec::new(),
-            agent_id: Some(self.agent_definition_id.clone()).filter(|id| !id.trim().is_empty()),
-            entrypoint: Some(self.event_channel.clone())
-                .filter(|entrypoint| !entrypoint.trim().is_empty()),
-            max_hits: MAX_EXPERIENCE_HITS,
-        };
-
-        match store.retrieve(query).await {
-            Ok(hits) => {
-                let matched_hits: Vec<_> = hits
-                    .into_iter()
-                    .filter(|hit| !hit.match_reasons.is_empty())
-                    .collect();
-                let block = render_experience_hits(&matched_hits, MAX_EXPERIENCE_BLOCK_BYTES);
-                if block.is_empty() {
-                    return enriched;
-                }
-                log::debug!(
-                    "[agent-experience] injected {} experience hit(s) bytes={}",
-                    matched_hits.len(),
-                    block.len()
-                );
-                prepend_experience_block(&enriched, &block)
-            }
-            Err(err) => {
-                log::warn!("[agent-experience] retrieval failed (non-fatal): {err}");
-                enriched
-            }
-        }
-    }
-
     // ─────────────────────────────────────────────────────────────────
     // Per-call tool execution
     // ─────────────────────────────────────────────────────────────────
@@ -1580,15 +1528,6 @@ impl Agent {
     /// higher-frequency streamed deltas that share the same `on_progress`
     /// channel — dropping one of these would desync the web-channel
     /// progress bridge (e.g. a tool row stuck in `running` forever).
-    /// A closed sink is logged and ignored; no progress subscriber is
-    /// equivalent to success.
-    async fn emit_progress(&self, event: AgentProgress) {
-        if let Some(ref tx) = self.on_progress {
-            if let Err(e) = tx.send(event).await {
-                log::warn!("[agent] progress sink closed while emitting lifecycle event: {e}");
-            }
-        }
-    }
 
     /// Truncates the conversation history to the configured maximum message count.
     ///
