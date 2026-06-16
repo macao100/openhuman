@@ -13,7 +13,7 @@ export {
   resetRequestCallCount,
   classifyTool,
   isStateOnlyTool,
-  isReadOnlyTool,
+  // isReadOnlyTool removed — use isStateOnlyTool (deprecated alias)
   isHeavyTool,
   getRateLimitStatus,
   RATE_LIMIT_CONFIG,

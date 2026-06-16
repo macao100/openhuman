@@ -1,12 +1,58 @@
 /**
  * Global test setup for Vitest.
  *
+ * - Forces en-US locale for deterministic number/date formatting in tests
  * - Extends expect with @testing-library/jest-dom matchers
  * - Starts local HTTP mock backend for API mocking
  * - Silences console output during tests (unless DEBUG_TESTS=1)
  * - Mocks Tauri-specific modules that aren't available in test env
  * - Resets rate limiter module-level state between tests
  */
+
+// Force en-US locale for deterministic formatting in tests.
+// On Windows, Node.js ICU follows the OS locale and ignores
+// LC_ALL / LANG env vars, so we override both APIs directly.
+const _origNumberToLocaleString = Number.prototype.toLocaleString;
+Number.prototype.toLocaleString = function (
+  this: number,
+  locales?: string | string[],
+  options?: Intl.NumberFormatOptions,
+): string {
+  if (typeof locales === 'object' || locales === undefined) {
+    return _origNumberToLocaleString.call(
+      this,
+      'en-US',
+      (typeof locales === 'object' ? locales : options) as Intl.NumberFormatOptions | undefined,
+    );
+  }
+  return _origNumberToLocaleString.call(this, locales, options);
+};
+
+const _origNumberFormat = Intl.NumberFormat;
+Intl.NumberFormat = function (
+  this: Intl.NumberFormat,
+  locales?: string | string[] | Intl.NumberFormatOptions,
+  options?: Intl.NumberFormatOptions,
+): Intl.NumberFormat {
+  // Force en-US as default locale. Distinguish:
+  // - undefined / plain object (no locale)  → en-US + options
+  // - array of strings (explicit locale list) → pass through
+  // - string (explicit locale)               → pass through
+  if (locales === undefined || (typeof locales === 'object' && !Array.isArray(locales))) {
+    return new _origNumberFormat(
+      'en-US',
+      (typeof locales === 'object' ? locales : options) as Intl.NumberFormatOptions | undefined,
+    );
+  }
+  return new _origNumberFormat(locales as string | string[], options);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+} as any as typeof Intl.NumberFormat;
+Object.defineProperty(Intl.NumberFormat, 'supportedLocalesOf', {
+  value: _origNumberFormat.supportedLocalesOf.bind(_origNumberFormat),
+  writable: true,
+  configurable: true,
+});
+
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import type React from 'react';

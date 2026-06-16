@@ -67,7 +67,7 @@ export const evaluateComposerSend = (args: ComposerSendDecisionArgs): ComposerSe
   return { shouldSend: true, trimmedText };
 };
 
-export const isComposerImeComposing = (
+const isComposerImeComposing = (
   event: ComposerKeyDownEventLike,
   compositionActive = false
 ): boolean =>

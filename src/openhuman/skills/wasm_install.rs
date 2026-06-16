@@ -565,7 +565,7 @@ impl GitSkillInstaller {
     ///
     /// Does NOT re-fetch from git — operates on the locally-installed copy.
     pub fn audit_skill(&mut self, name: &str) -> Result<AuditOutcome, InstallError> {
-        let installed = self
+        let _installed = self
             .store
             .get(name)
             .ok_or_else(|| InstallError::NotFound(name.to_string()))?

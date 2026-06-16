@@ -46,7 +46,7 @@ export interface RefreshPermissionsResult {
   restartSummary: string;
 }
 
-export async function fetchScreenIntelligenceStatus(): Promise<AccessibilityStatus> {
+async function fetchScreenIntelligenceStatus(): Promise<AccessibilityStatus> {
   const response = await openhumanAccessibilityStatus();
   return response.result;
 }

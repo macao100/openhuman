@@ -46,5 +46,5 @@ import process from 'process';
 })();
 
 // Export for use in modules
-export { Buffer, process, util };
-export default Buffer;
+
+Buffer;

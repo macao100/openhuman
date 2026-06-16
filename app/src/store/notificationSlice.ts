@@ -191,5 +191,5 @@ export const {
   addIntegrationNotification,
 } = notificationSlice.actions;
 
-export { notificationSlice };
+
 export default notificationSlice.reducer;

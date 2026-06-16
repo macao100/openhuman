@@ -54,7 +54,9 @@ impl Memory for InMemory {
             return Ok(());
         }
         e.push(MemoryEntry {
-            id: format!("id-{}-{}", namespace, key),
+            id: format!("id-{,
+            provenance: None,
+        }-{}", namespace, key),
             key: key.to_string(),
             content: content.to_string(),
             namespace: Some(namespace.to_string()),

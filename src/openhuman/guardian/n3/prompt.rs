@@ -137,7 +137,6 @@ impl N3PromptBuilder {
     pub fn plan_intent_user_prompt(
         plan: &crate::openhuman::guardian::types::StructuredPlan,
     ) -> String {
-        use crate::openhuman::guardian::types::StructuredPlan;
         format!(
             "Plan goal: {}\nSteps:\n{}",
             plan.goal,

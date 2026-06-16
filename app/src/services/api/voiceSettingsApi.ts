@@ -225,19 +225,6 @@ function stripHasKey(p: VoiceProviderView): VoiceProviderCreds {
   return rest;
 }
 
-// ---- Model listing ----
-
-export async function listVoiceModels(
-  providerId: string,
-  capability?: VoiceWorkloadId
-): Promise<VoiceModelInfo[]> {
-  const result = await callCoreRpc<{ models: VoiceModelInfo[] }>({
-    method: 'openhuman.voice_list_models',
-    params: { provider_id: providerId, capability },
-  });
-  return result.models ?? [];
-}
-
 // ---- Provider testing ----
 
 const VOICE_TEST_TIMEOUT_MS = 30_000;

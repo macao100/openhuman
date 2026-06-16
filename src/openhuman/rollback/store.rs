@@ -128,7 +128,7 @@ impl RollbackStore {
     /// if the table does not exist.  Exposed for schema verification in tests.
     pub fn column_names(&self) -> Result<Vec<String>, RollbackError> {
         let conn = self.conn.lock().unwrap();
-        let mut stmt = conn.prepare("SELECT * FROM rollback_history LIMIT 0")?;
+        let stmt = conn.prepare("SELECT * FROM rollback_history LIMIT 0")?;
         let cols: Vec<String> = stmt
             .column_names()
             .into_iter()
@@ -663,7 +663,7 @@ impl RollbackStore {
     }
 
     /// Formats edit operations into a unified-diff string.
-    fn format_unified_diff(a: &[&str], b: &[&str], ops: &[DiffOp]) -> String {
+    fn format_unified_diff(_a: &[&str], _b: &[&str], ops: &[DiffOp]) -> String {
         if ops.is_empty() {
             return String::new();
         }
@@ -724,14 +724,14 @@ impl RollbackStore {
 
         let mut output = String::new();
         for hunk in &hunks {
-            let first_op_idx = hunk.first().unwrap().0;
-            let last_op_idx = hunk.last().unwrap().0;
+            let _first_op_idx = hunk.first().unwrap().0;
+            let _last_op_idx = hunk.last().unwrap().0;
 
             // Compute old/new line ranges for the @@ header.
             // Find the first old/new index among non-eq ops for the hunk start.
             let mut old_start = 1usize;
             let mut new_start = 1usize;
-            for (idx, op) in hunk {
+            for (_idx, op) in hunk {
                 match op {
                     DiffOp::Eq {
                         old_idx, new_idx, ..

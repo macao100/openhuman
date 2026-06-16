@@ -546,7 +546,9 @@ mod tests {
 
     fn entry(key: &str, content: &str, score: Option<f64>) -> MemoryEntry {
         MemoryEntry {
-            id: format!("id-{key}"),
+            id: format!("id-{key,
+            provenance: None,
+        }"),
             key: key.to_string(),
             content: content.to_string(),
             namespace: Some("test".to_string()),
@@ -582,7 +584,8 @@ mod tests {
                     timestamp: "2026-04-22T00:00:00Z".into(),
                     session_id: None,
                     score: Some(0.9),
-                },
+            provenance: None,
+        },
             ]);
 
         let loader = DefaultMemoryLoader::default();
@@ -632,7 +635,9 @@ mod tests {
         score: Option<f64>,
     ) -> MemoryEntry {
         MemoryEntry {
-            id: format!("episodic-cross:{cross_id}"),
+            id: format!("episodic-cross:{cross_id,
+            provenance: None,
+        }"),
             key: format!("{session_id}:user"),
             content: content.into(),
             namespace: None,

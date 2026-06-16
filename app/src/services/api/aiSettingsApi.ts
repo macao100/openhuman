@@ -55,7 +55,7 @@ export type WorkloadId =
   | 'subconscious';
 
 export const CHAT_WORKLOADS: WorkloadId[] = ['chat', 'reasoning', 'agentic', 'coding'];
-export const BACKGROUND_WORKLOADS: WorkloadId[] = [
+const BACKGROUND_WORKLOADS: WorkloadId[] = [
   'memory',
   'heartbeat',
   'learning',

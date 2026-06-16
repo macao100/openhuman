@@ -1,3 +1,4 @@
+import debug from 'debug';
 import { useEffect, useRef } from 'react';
 
 import { useDaemonLifecycle } from '../hooks/useDaemonLifecycle';
@@ -15,6 +16,7 @@ import { useCoreState } from './CoreStateProvider';
  * for both desktop and web.
  */
 const SocketProvider = ({ children }: { children: React.ReactNode }) => {
+  const log = debug('app:socket-provider');
   const { snapshot } = useCoreState();
   const token = snapshot.sessionToken;
   const previousTokenRef = useRef<string | null>(null);
@@ -24,7 +26,7 @@ const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (IS_DEV) {
-      console.log('[SocketProvider] Daemon lifecycle state:', {
+      log('Daemon lifecycle state:', {
         isAutoStartEnabled: daemonLifecycle.isAutoStartEnabled,
         connectionAttempts: daemonLifecycle.connectionAttempts,
         isRecovering: daemonLifecycle.isRecovering,
@@ -36,6 +38,7 @@ const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     daemonLifecycle.connectionAttempts,
     daemonLifecycle.isRecovering,
     daemonLifecycle.maxAttemptsReached,
+    log,
   ]);
 
   // Handle socket connection based on token

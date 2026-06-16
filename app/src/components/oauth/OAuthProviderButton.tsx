@@ -272,9 +272,9 @@ const OAuthProviderButton = ({
       }
 
       if (IS_DEV) {
-        console.log(`[dev] OAuth debug mode enabled. OAuth URL: ${loginUrl}`);
-        console.log('[dev] In debug mode, OAuth will return JSON response instead of redirect.');
-        console.log(
+        log(`[dev] OAuth debug mode enabled. OAuth URL: ${loginUrl}`);
+        log('[dev] In debug mode, OAuth will return JSON response instead of redirect.');
+        log(
           '[dev] After OAuth completion, copy the loginToken and use: window.__simulateDeepLink("openhuman://auth?token=YOUR_TOKEN")'
         );
       }

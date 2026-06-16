@@ -1,7 +1,10 @@
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
+import debug from 'debug';
 import { type FC, useCallback, useEffect, useRef, useState } from 'react';
 
 import { RiveMascot } from '../human/Mascot';
+
+const log = debug('meet:mascot-frame-producer');
 
 const PRODUCER_FPS = 24;
 const FRAME_W = 320;
@@ -24,7 +27,7 @@ export const MascotFrameProducer: FC = () => {
     listen<BusSession>('meet-video:bus-started', event => {
       const payload = event.payload;
       if (!payload || !payload.port) return;
-      console.log('[meet-video-producer] bus-started', payload);
+      log('bus-started', payload);
       setSession(payload);
     })
       .then(stop => {
@@ -34,7 +37,7 @@ export const MascotFrameProducer: FC = () => {
       .catch(() => {});
 
     listen<{ requestId?: string; request_id?: string }>('meet-video:bus-stopped', event => {
-      console.log('[meet-video-producer] bus-stopped', event.payload);
+      log('bus-stopped', event.payload);
       setSession(null);
     })
       .then(stop => {
@@ -139,11 +142,11 @@ const ProducerSession: FC<{ session: BusSession }> = ({ session }) => {
     wsRef.current = ws;
     ws.onopen = () => {
       wsReadyRef.current = true;
-      console.log('[meet-video-producer] ws connected', url);
+      log('ws connected', url);
     };
     ws.onclose = () => {
       wsReadyRef.current = false;
-      console.log('[meet-video-producer] ws closed');
+      log('ws closed');
     };
     ws.onerror = err => {
       console.warn('[meet-video-producer] ws error', err);
@@ -206,4 +209,4 @@ const ProducerSession: FC<{ session: BusSession }> = ({ session }) => {
   );
 };
 
-export default MascotFrameProducer;
+MascotFrameProducer;

@@ -4,7 +4,7 @@
 //! which project and phase the user was working on, the last conversation
 //! topic, and a timestamp. It survives restarts via SQLite persistence.
 
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
 /// Persistent session state that survives restarts.

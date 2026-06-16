@@ -279,6 +279,7 @@ mod tests {
             timestamp: "now".into(),
             session_id: None,
             score,
+            provenance: None,
         }
     }
 
@@ -289,7 +290,9 @@ mod tests {
         score: Option<f64>,
     ) -> MemoryEntry {
         MemoryEntry {
-            id: format!("episodic-cross:{cross_id}"),
+            id: format!("episodic-cross:{cross_id,
+            provenance: None,
+        }"),
             key: format!("{session_id}:user"),
             content: content.into(),
             namespace: None,

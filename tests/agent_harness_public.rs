@@ -8,7 +8,7 @@ use openhuman_core::openhuman::agent::hooks::{
 };
 use openhuman_core::openhuman::config::AgentConfig;
 use openhuman_core::openhuman::inference::provider::{
-    ChatMessage, ChatRequest, ChatResponse, Provider,
+    ChatRequest, ChatResponse, Provider,
 };
 use openhuman_core::openhuman::memory::{Memory, MemoryCategory, MemoryEntry};
 use parking_lot::Mutex;

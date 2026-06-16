@@ -331,7 +331,9 @@ async fn main() -> Result<()> {
         enum Outcome {
             Ok,
             Ratelimit,
+            #[allow(dead_code)]
             OtherFail(String),
+            #[allow(dead_code)]
             Transport(String),
         }
         let mut outcomes: Vec<(u32, std::time::Duration, Outcome)> = Vec::with_capacity(n as usize);

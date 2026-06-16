@@ -1,0 +1,288 @@
+Unused exports (88)
+Buffer                                                   src/polyfills.ts:49:10                                         
+process                                                  src/polyfills.ts:49:18                                         
+util                                                     src/polyfills.ts:49:27                                         
+default                                                  src/polyfills.ts:50:16                                         
+resolveCoreRpcUrl                              function  test/e2e/helpers/core-rpc-node.ts:132:23                       
+getProviderConfig                                        src/components/oauth/providerConfigs.tsx:88:14                 
+BACKGROUND_WORKLOADS                                     src/services/api/aiSettingsApi.ts:58:14                        
+setActiveCoreTransport                         function  src/services/coreRpcClient.ts:78:17                            
+notificationSlice                                        src/store/notificationSlice.ts:194:10                          
+isIOS                                                    src/lib/platform.ts:97:14                                      
+isAndroid                                                src/lib/platform.ts:98:14                                      
+Ghosty                                                   src/features/human/Mascot/index.ts:1:10                        
+lerpViseme                                               src/features/human/Mascot/index.ts:7:10                        
+VISEMES                                                  src/features/human/Mascot/index.ts:7:22                        
+visemePath                                               src/features/human/Mascot/index.ts:7:31                        
+personaSlice                                             src/store/personaSlice.ts:91:10                                
+useMemoryTreeStatus                                      src/components/intelligence/MemoryTreeStatusPanel.tsx:357:10   
+UnifiedSkillCard                               function  src/components/skills/SkillCard.tsx:41:17                      
+resetSessionTokenUsage                                   src/store/chatRuntimeSlice.ts:369:3                            
+DEFAULT_MASCOT_VOICE_GENDER                              src/store/mascotSlice.ts:31:14                                 
+mascotSlice                                              src/store/mascotSlice.ts:357:10                                
+updateThreadLabels                 threadSli…            src/store/threadSlice.ts:280:14                                
+purgeThreads                       threadSli…            src/store/threadSlice.ts:308:14                                
+subscribeDaemonStore                                     src/features/daemon/store.ts:73:14                             
+getDaemonUserState                                       src/features/daemon/store.ts:80:14                             
+setAccountMuted                                function  src/services/webviewAccountService.ts:1426:23                  
+setFocusedAccount                              function  src/services/webviewAccountService.ts:1474:23                  
+META_OAUTH_TOOLKITS                                      src/lib/composio/oauthHandoff.ts:9:14                          
+isReadOnlyTool                                           src/lib/mcp/rateLimiter.ts:211:14                              
+isComposerImeComposing                                   src/pages/conversations/composerSendDecision.ts:70:14          
+listVoiceModels                                function  src/services/api/voiceSettingsApi.ts:230:23                    
+sanitizeClientVersion                          function  src/services/clientVersionHeaders.ts:12:17                     
+selectInternet                                           src/store/connectivitySelectors.ts:15:14                       
+selectCore                                               src/store/connectivitySelectors.ts:16:14                       
+selectBackend                                            src/store/connectivitySelectors.ts:17:14                       
+selectConnectivityErrors                                 src/store/connectivitySelectors.ts:18:14                       
+openhumanVaultGet                              function  src/utils/tauriCommands/vault.ts:83:23                         
+openhumanVaultFiles                            function  src/utils/tauriCommands/vault.ts:91:23                         
+inferIntegrationName                           function  src/utils/toolTimelineFormatting.ts:102:17                     
+dismissBootCheckGate                           function  test/e2e/helpers/app-helpers.ts:71:23                          
+elementExists                                  function  test/e2e/helpers/app-helpers.ts:220:23                         
+isMac2                                         function  test/e2e/helpers/platform.ts:28:17                             
+waitForTextToDisappear                         function  test/e2e/helpers/shared-flows.ts:95:23                         
+clickFirstMatch                                function  test/e2e/helpers/shared-flows.ts:107:23                        
+navigateToNotifications                        function  test/e2e/helpers/shared-flows.ts:440:23                        
+ONBOARDING_OVERLAY_TEXTS                                 test/e2e/helpers/shared-flows.ts:450:14                        
+isOnboardingOverlayVisible                     function  test/e2e/helpers/shared-flows.ts:486:23                        
+waitForOnboardingOverlayHidden                 function  test/e2e/helpers/shared-flows.ts:499:23                        
+emitMockAgentAudioStream                                 test/e2e/mock-server.ts:10:3                                   
+getMockBehavior                                          test/e2e/mock-server.ts:11:3                                   
+captureFailureArtifacts                        function  test/e2e/helpers/artifacts.ts:143:23                           
+resetArtifactRun                               function  test/e2e/helpers/artifacts.ts:183:17                           
+waitForButton                                  function  test/e2e/helpers/element-helpers.ts:151:23                     
+formatRpcCallFailure                                     test/e2e/helpers/core-rpc.ts:20:23                             
+waitForToolCallInMockLog                       function  test/e2e/helpers/chat-harness.ts:218:23                        
+configTomlPath                                 function  test/e2e/helpers/config-toml.ts:24:17                          
+sectionValue                                   function  test/e2e/helpers/config-toml.ts:60:17                          
+resetCoreForWebUser                            function  test/playwright/helpers/core-rpc.ts:44:23                      
+seedBrowserCoreMode                            function  test/playwright/helpers/core-rpc.ts:50:23                      
+resetCoreForWebGuest                           function  test/playwright/helpers/core-rpc.ts:99:23                      
+ApprovalRequestCard                                      src/components/chat/ApprovalRequestCard.tsx:34:14              
+MEMORY_WINDOW_PRESET_META                                …c/components/settings/components/MemoryWindowControl.tsx:27:14
+getPlanMeta                                    function  src/components/settings/panels/billingHelpers.ts:105:17        
+formatUsdAmount                                function  src/components/settings/panels/billingHelpers.ts:109:17        
+setAttrOnId                                    function  src/features/human/Mascot/backend/renderCore.ts:95:17          
+default                                        variable  src/features/meet/MascotFrameProducer.tsx:212:16               
+ensureNotificationPermission                             src/lib/nativeNotifications/index.ts:2:10                      
+showNativeNotification                                   src/lib/nativeNotifications/index.ts:2:40                      
+handleNotificationClick                                  src/lib/webviewNotifications/index.ts:2:3                      
+WEBVIEW_NOTIFICATION_FIRED_EVENT                         src/lib/webviewNotifications/index.ts:6:10                     
+callOpenhumanRpcWebView                        function  test/e2e/helpers/core-rpc-webview.ts:15:23                     
+DEFAULT_VOICE_BY_LOCALE                                  src/components/settings/panels/elevenlabsVoicePresets.ts:96:14 
+formatRelativeTime                             function  src/hooks/useDaemonHealth.ts:238:17                            
+Toast                                          function  src/components/intelligence/Toast.tsx:50:17                    
+SkillIconBadge                                 function  src/components/skills/skillIcons.tsx:26:17                     
+enforceRateLimit                                         src/lib/mcp/index.ts:12:3                                      
+resetRequestCallCount                                    src/lib/mcp/index.ts:13:3                                      
+classifyTool                                             src/lib/mcp/index.ts:14:3                                      
+isStateOnlyTool                                          src/lib/mcp/index.ts:15:3                                      
+isReadOnlyTool                                           src/lib/mcp/index.ts:16:3                                      
+isHeavyTool                                              src/lib/mcp/index.ts:17:3                                      
+getRateLimitStatus                                       src/lib/mcp/index.ts:18:3                                      
+RATE_LIMIT_CONFIG                                        src/lib/mcp/index.ts:19:3                                      
+resolveOutboundRoute                           function  src/lib/channels/routing.ts:31:17                              
+fetchScreenIntelligenceStatus                  function  src/features/screen-intelligence/api.ts:49:23                  
+CUSTOM_WIZARD_SETTINGS_ROUTES                            src/pages/onboarding/customWizardSteps.ts:26:14                
+DaemonHealthService                            class     src/services/daemonHealthService.ts:15:14                      
+useIntelligenceEvents                                    src/hooks/useIntelligenceSocket.ts:68:14                       
+Unused exported types (181)
+ThreadCreateData                              interface  src/types/thread.ts:32:18                                      
+SendMessageResponseData                       interface  src/types/thread.ts:41:18                                      
+PurgeRequestBody                              interface  src/types/thread.ts:46:18                                      
+ThreadQueryState                              interface  src/hooks/useThreadQueries.ts:9:18                             
+ProviderModelTestResult                       interface  src/services/api/aiSettingsApi.ts:115:18                       
+ModelPresetResult                             type       src/services/api/aiSettingsApi.ts:426:15                       
+UsageState                                    interface  src/hooks/useUsageState.ts:15:18                               
+CoreRpcErrorKind                              type       src/services/coreRpcClient.ts:90:13                            
+NotificationSettings                          interface  src/types/notifications.ts:28:18                               
+GhostyProps                                   type       src/features/human/Mascot/index.ts:2:15                        
+CustomGifMascotProps                          type       src/features/human/Mascot/index.ts:4:15                        
+RiveMascotProps                               type       src/features/human/Mascot/index.ts:6:15                        
+VisemeId                                      type       src/features/human/Mascot/index.ts:8:15                        
+VisemeShape                                   type       src/features/human/Mascot/index.ts:8:25                        
+MascotColor                                   type       src/features/human/Mascot/index.ts:10:15                       
+MascotPalette                                 type       src/features/human/Mascot/index.ts:10:28                       
+CoreCommandResponse                           interface  src/services/coreCommandClient.ts:3:18                         
+OnboardingTasks                   coreState…  interface  src/services/coreStateApi.ts:9:18                              
+UpdateCoreLocalStateParams        coreState…  interface  src/services/coreStateApi.ts:18:18                             
+WalletChain                                   type       src/services/walletApi.ts:3:13                                 
+WalletSetupSource                             type       src/services/walletApi.ts:4:13                                 
+WalletAccount                                 interface  src/services/walletApi.ts:6:18                                 
+WalletStatus                                  interface  src/services/walletApi.ts:12:18                                
+SetupWalletParams                             interface  src/services/walletApi.ts:23:18                                
+PersonaState                                  interface  src/store/personaSlice.ts:23:18                                
+WalletChain                                   type       src/utils/cryptoKeys.ts:16:13                                  
+WalletAccountIdentity                         interface  src/utils/cryptoKeys.ts:19:18                                  
+OllamaUrlValidationResult                     interface  src/utils/ollamaUrlValidation.ts:1:18                          
+ToolDefinition                                interface  src/utils/toolDefinitions.ts:1:18                              
+ToolCategory                                  type       src/utils/toolDefinitions.ts:10:13                             
+WorkspaceLinkTarget                           interface  src/utils/workspaceLinks.ts:1:18                               
+PromptInjectionVerdict                        type       src/chat/promptInjectionGuard.ts:1:13                          
+PromptInjectionReason                         interface  src/chat/promptInjectionGuard.ts:3:18                          
+PromptInjectionCheck                          interface  src/chat/promptInjectionGuard.ts:8:18                          
+ComposioConnectionState                       type       src/lib/composio/types.ts:132:13                               
+TriggerTogglesProps                           interface  src/components/composio/TriggerToggles.tsx:40:18               
+ActionableItemAction                          interface  src/types/intelligence.ts:50:18                                
+IntelligencePageState                         interface  src/types/intelligence.ts:63:18                                
+ChatMessage                                   interface  src/types/intelligence.ts:106:18                               
+UnifiedSkillCardProps                         interface  src/components/skills/SkillCard.tsx:5:18                       
+ButtonVariant                                 type       src/components/ui/Button.tsx:3:13                              
+ButtonSize                                    type       src/components/ui/Button.tsx:4:13                              
+ButtonProps                                   interface  src/components/ui/Button.tsx:6:18                              
+ShowNativeNotificationArgs                    interface  src/lib/nativeNotifications/tauriBridge.ts:14:18               
+ShowNativeNotificationResult                  interface  src/lib/nativeNotifications/tauriBridge.ts:20:18               
+InferenceStatus                               interface  src/store/chatRuntimeSlice.ts:18:18                            
+InferenceTurnLifecycle                        type       src/store/chatRuntimeSlice.ts:110:13                           
+SessionTokenUsage                             interface  src/store/chatRuntimeSlice.ts:113:18                           
+MascotState                                   interface  src/store/mascotSlice.ts:86:18                                 
+MicComposerProps                              interface  src/features/human/MicComposer.tsx:34:18                       
+SubMascotModel                                interface  src/features/human/SubMascotLayer.tsx:23:18                    
+SubMascotLayerProps                           interface  src/features/human/SubMascotLayer.tsx:34:18                    
+ChatSendParams                    chatServi…  interface  src/services/chatService.ts:666:18                             
+UseHumanMascotOptions                         interface  src/features/human/useHumanMascot.ts:113:18                    
+UseHumanMascotResult                          interface  src/features/human/useHumanMascot.ts:122:18                    
+AlignmentFrame                                interface  src/features/human/voice/ttsClient.ts:18:18                    
+TtsResponse                                   interface  src/features/human/voice/ttsClient.ts:29:18                    
+TtsOptions                                    interface  src/features/human/voice/ttsClient.ts:36:18                    
+PrivacyLeaveItem                              interface  src/features/privacy/whatLeavesItems.ts:1:18                   
+WhatLeavesLinkProps                           interface  src/features/privacy/WhatLeavesLink.tsx:6:18                   
+WhatLeavesMyComputerSheetProps                interface  src/features/privacy/WhatLeavesMyComputerSheet.tsx:8:18        
+AppUpdatePhase                                type       src/hooks/useAppUpdate.ts:32:13                                
+AppUpdateProgress                             interface  src/hooks/useAppUpdate.ts:43:18                                
+UseAppUpdateOptions                           interface  src/hooks/useAppUpdate.ts:50:18                                
+UseAppUpdateResult                            interface  src/hooks/useAppUpdate.ts:71:18                                
+BackendProbeStatus                            type       src/hooks/useBackendReachable.ts:8:13                          
+DaemonStatus                                  type       src/features/daemon/store.ts:3:13                              
+DaemonUserState                               interface  src/features/daemon/store.ts:21:18                             
+DictationHotkeyState                          interface  src/hooks/useDictationHotkey.ts:48:18                          
+MemoryIngestionStatus                         interface  src/hooks/useMemoryIngestionStatus.ts:5:18                     
+UseOAuthConnectionListenerOptio…              interface  src/hooks/useOAuthConnectionListener.ts:49:18                  
+WebviewAccountErrorKind                       type       src/services/webviewAccountService.ts:48:13                    
+UseComposioIntegrationsResult                 interface  src/lib/composio/hooks.ts:12:18                                
+UseAgentReadyComposioToolkitsRe…              interface  src/lib/composio/hooks.ts:202:18                               
+MetaOAuthToolkit                              type       src/lib/composio/oauthHandoff.ts:11:13                         
+ToolTier                                      type       src/lib/mcp/rateLimiter.ts:34:13                               
+MCPServerConfig                               interface  src/lib/mcp/types.ts:5:18                                      
+MCPToolInputSchema                            interface  src/lib/mcp/types.ts:10:18                                     
+MCPTool                                       interface  src/lib/mcp/types.ts:16:18                                     
+MCPToolCall                                   interface  src/lib/mcp/types.ts:23:18                                     
+ComposerSendBlockReason                       type       src/pages/conversations/composerSendDecision.ts:1:13           
+SlashCommandDecision                          type       src/pages/conversations/composerSendDecision.ts:8:13           
+ComposerSendDecisionArgs                      interface  src/pages/conversations/composerSendDecision.ts:10:18          
+ComposerSendDecision                          interface  src/pages/conversations/composerSendDecision.ts:18:18          
+ComposerBlockedSendFeedback                   interface  src/pages/conversations/composerSendDecision.ts:24:18          
+ComposerKeyDownEventLike                      interface  src/pages/conversations/composerSendDecision.ts:28:18          
+SocketConnectionStatus                        type       src/store/socketSlice.ts:5:13                                  
+SocketUserState                               interface  src/store/socketSlice.ts:7:18                                  
+SkillResourceContent                          interface  src/services/api/skillsApi.ts:58:18                            
+InstallSkillFromUrlInput                      interface  src/services/api/skillsApi.ts:104:18                           
+DeepLinkAuthState                             interface  src/store/deepLinkAuthState.ts:3:18                            
+TelegramLoginStartResult                      interface  src/services/api/channelConnectionsApi.ts:22:18                
+DiscordLinkStartResult                        interface  src/services/api/channelConnectionsApi.ts:28:18                
+DiscordLinkCheckResult                        interface  src/services/api/channelConnectionsApi.ts:33:18                
+TelegramLoginCheckResult                      interface  src/services/api/channelConnectionsApi.ts:38:18                
+TunnelBandwidthUsage                          interface  src/services/api/tunnelsApi.ts:20:18                           
+CreateTunnelRequest                           interface  src/services/api/tunnelsApi.ts:24:18                           
+UpdateTunnelRequest                           interface  src/services/api/tunnelsApi.ts:29:18                           
+VoiceWorkloadId                               type       src/services/api/voiceSettingsApi.ts:21:13                     
+VoiceModelInfo                                interface  src/services/api/voiceSettingsApi.ts:56:18                     
+VoiceTestResult                               interface  src/services/api/voiceSettingsApi.ts:61:18                     
+BackendHealthFailureReason                    type       src/services/backendHealth.ts:5:13                             
+BackendHealthResult                           type       src/services/backendHealth.ts:11:13                            
+CoreSocketOptions                             interface  src/services/coreSocket.ts:17:18                               
+ConnectCoreSocketOptions                      interface  src/services/coreSocket.ts:53:18                               
+MeetJoinCallInput                             type       src/services/meetCallService.ts:18:13                          
+MeetJoinCallResult                            type       src/services/meetCallService.ts:20:13                          
+MascotJoinMeetingInput                        interface  src/services/meetCallService.ts:100:18                         
+MascotJoinMeetingResult                       interface  src/services/meetCallService.ts:106:18                         
+CoreRpcMethod                                 type       src/services/rpcMethods.ts:40:13                               
+BlockingState                                 type       src/store/connectivitySelectors.ts:13:13                       
+RewardsApiError                               type       src/services/api/rewardsApi.ts:10:13                           
+CoreVaultFileStatus                           type       src/utils/tauriCommands/vault.ts:20:13                         
+CoreVaultFile                                 interface  src/utils/tauriCommands/vault.ts:22:18                         
+ParsedMarkdownTable                           interface  src/utils/agentMessageBubbles.ts:83:18                         
+ClearAllAppDataOptions                        interface  src/utils/clearAllAppData.ts:55:18                             
+OAuthAuthReadinessFailure                     type       src/utils/oauthAppVersionGate.ts:18:8                          
+OAuthAuthReadinessResult                      type       src/utils/oauthAppVersionGate.ts:19:8                          
+OAuthAppVersionGateResult                     type       src/utils/oauthAppVersionGate.ts:22:13                         
+LocalAiPresetResolution                       interface  src/utils/localAiBootstrap.ts:45:18                            
+OpenRouterOAuthDeps                           interface  src/utils/openrouterOAuth.ts:19:18                             
+RpcCallResult                                 type       test/e2e/helpers/core-rpc.ts:19:15                             
+TelegramConnectOptions                        interface  test/e2e/helpers/telegram.ts:34:18                             
+TelegramConnectResult                         interface  test/e2e/helpers/telegram.ts:50:18                             
+TelegramStatusEntry                           interface  test/e2e/helpers/telegram.ts:58:18                             
+TelegramUpdate                                interface  test/e2e/helpers/telegram.ts:65:18                             
+SentMessage                                   interface  test/e2e/helpers/telegram.ts:82:18                             
+HotkeyManager                                 interface  src/lib/commands/hotkeyManager.ts:21:18                        
+Registry                                      interface  src/lib/commands/registry.ts:4:18                              
+PressKeyOptions                               interface  src/test/commandTestUtils.ts:3:18                              
+UseScreenIntelligenceStateOptio…              interface  …atures/screen-intelligence/useScreenIntelligenceState.ts:50:18
+ReembedState                                  interface  src/components/settings/panels/useReembedBackfillModal.ts:15:18
+ReembedBackfillModal                          interface  src/components/settings/panels/useReembedBackfillModal.ts:20:18
+Locale                                        type       src/lib/i18n/I18nContext.tsx:103:15                            
+AutocompleteSkillStatus                       interface  src/features/autocomplete/useAutocompleteSkillStatus.ts:10:18  
+CustomGifMascotProps                          interface  src/features/human/Mascot/CustomGifMascot.tsx:3:18             
+GhostyProps                                   interface  src/features/human/Mascot/Ghosty.tsx:35:18                     
+MascotPalette                                 interface  src/features/human/Mascot/mascotPalette.ts:3:18                
+CloudTranscribeOptions                        interface  src/features/human/voice/sttClient.ts:7:18                     
+CloudTranscribeResult                         interface  src/features/human/voice/sttClient.ts:18:18                    
+FactoryTranscribeOptions                      interface  src/features/human/voice/sttClient.ts:87:18                    
+FactoryTranscribeResult                       interface  src/features/human/voice/sttClient.ts:100:18                   
+TimedFrame                                    interface  src/features/human/voice/visemeMap.ts:61:18                    
+ParsedWorkerThreadRef                         interface  src/pages/conversations/utils/workerThreadRef.ts:19:18         
+TopUpResult                                   interface  src/services/api/creditsApi.ts:82:18                           
+PaginatedTransactions                         interface  src/services/api/creditsApi.ts:98:18                           
+AutoRechargeSettings                          interface  src/services/api/creditsApi.ts:105:18                          
+AutoRechargeUpdatePayload                     interface  src/services/api/creditsApi.ts:120:18                          
+BillingAddress                                interface  src/services/api/creditsApi.ts:127:18                          
+CardBillingDetails                            interface  src/services/api/creditsApi.ts:135:18                          
+SavedCard                                     interface  src/services/api/creditsApi.ts:141:18                          
+CardsData                                     interface  src/services/api/creditsApi.ts:151:18                          
+SetupIntentData                               interface  src/services/api/creditsApi.ts:157:18                          
+UpdateCardPayload                             interface  src/services/api/creditsApi.ts:163:18                          
+CouponRedeemResult                            interface  src/services/api/creditsApi.ts:170:18                          
+ReferralRpcFailure                            type       src/services/api/referralApi.ts:11:13                          
+InstallWhisperParams                          interface  src/services/api/voiceInstallApi.ts:46:18                      
+InstallPiperParams                            interface  src/services/api/voiceInstallApi.ts:53:18                      
+SettingsRoute                                 type       src/components/settings/hooks/useSettingsNavigation.ts:4:13    
+BreadcrumbItem                                interface  src/components/settings/hooks/useSettingsNavigation.ts:44:18   
+BackgroundLoopControlsView                    type       src/components/settings/panels/AIPanel.tsx:938:13              
+BackgroundLoopProviderView                    type       src/components/settings/panels/AIPanel.tsx:945:13              
+GetMeResponse                                 type       src/types/api.ts:99:13                                         
+PairedDevice                                  interface  src/components/settings/panels/DevicesPanel.tsx:18:18          
+BackendMascotProps                            interface  src/features/human/Mascot/backend/BackendMascot.tsx:19:18      
+WebviewNotificationFired                      type       src/lib/webviewNotifications/index.ts:6:49                     
+OAuthLoginResponse                            interface  src/types/oauth.ts:17:18                                       
+OAuthError                                    interface  src/types/oauth.ts:22:18                                       
+RiveMascotProps                               interface  src/features/human/Mascot/RiveMascot.tsx:16:18                 
+ElevenLabsVoicePreset                         interface  src/components/settings/panels/elevenlabsVoicePresets.ts:25:18 
+OpenhumanLinkSegment                          interface  src/pages/conversations/utils/format.ts:86:18                  
+TextSegment                                   interface  src/pages/conversations/utils/format.ts:92:18                  
+BubbleSegment                                 type       src/pages/conversations/utils/format.ts:97:13                  
+ScreenIntelligenceSkillStatus                 interface  …/screen-intelligence/useScreenIntelligenceSkillStatus.ts:10:18
+ToolTier                                      type       src/lib/mcp/index.ts:21:15                                     
+RefreshPermissionsResult                      interface  src/features/screen-intelligence/api.ts:44:18                  
+ProviderErrorPresentation                     type       …c/components/settings/panels/ProviderSetupErrorNotice.tsx:3:13
+SettingsSectionItem                           interface  src/components/settings/SettingsSectionPage.tsx:7:18           
+EmbeddingsUpdateResult                        interface  src/services/api/embeddingsApi.ts:38:18                        
+UseSubconsciousResult                         interface  src/hooks/useSubconscious.ts:29:18                             
+ComposeioTriggerHistoryState                  interface  src/hooks/useComposeioTriggerHistory.ts:13:18                  
+Unused exported enum members (8)
+CONTACT  ErrorCategory  src/lib/mcp/errorHandler.ts:10:3
+GROUP    ErrorCategory  src/lib/mcp/errorHandler.ts:11:3
+MEDIA    ErrorCategory  src/lib/mcp/errorHandler.ts:12:3
+PROFILE  ErrorCategory  src/lib/mcp/errorHandler.ts:13:3
+AUTH     ErrorCategory  src/lib/mcp/errorHandler.ts:14:3
+ADMIN    ErrorCategory  src/lib/mcp/errorHandler.ts:15:3
+SEARCH   ErrorCategory  src/lib/mcp/errorHandler.ts:17:3
+DRAFT    ErrorCategory  src/lib/mcp/errorHandler.ts:18:3
+Duplicate exports (6)
+SecretPromptDialog|default      src/components/mcp-setup/SecretPromptDialog.tsx
+UnifiedSkillCard|default        src/components/skills/SkillCard.tsx            
+MicComposer|default             src/features/human/MicComposer.tsx             
+isStateOnlyTool|isReadOnlyTool  src/lib/mcp/rateLimiter.ts                     
+ApprovalRequestCard|default     src/components/chat/ApprovalRequestCard.tsx    
+MascotFrameProducer|default     src/features/meet/MascotFrameProducer.tsx      
+Configuration hints (2)

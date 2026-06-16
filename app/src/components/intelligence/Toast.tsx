@@ -47,7 +47,7 @@ const TOAST_STYLES = {
   info: 'bg-primary-500 text-white',
 };
 
-export function Toast({ notification, onRemove }: ToastProps) {
+function Toast({ notification, onRemove }: ToastProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
 

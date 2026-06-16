@@ -11,7 +11,7 @@ use crate::core::all::{ControllerFuture, RegisteredController};
 use crate::core::{ControllerSchema, FieldSchema, TypeSchema};
 use crate::rpc::RpcOutcome;
 
-use super::validator::{SemanticOutputValidator, ValidatorConfig};
+use super::validator::SemanticOutputValidator;
 
 pub fn all_controller_schemas() -> Vec<ControllerSchema> {
     vec![

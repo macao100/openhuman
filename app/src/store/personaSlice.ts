@@ -88,5 +88,5 @@ export const selectPersonaDisplayName = (state: { persona: PersonaState }): stri
 export const selectPersonaDescription = (state: { persona: PersonaState }): string =>
   state.persona.description;
 
-export { personaSlice };
+
 export default personaSlice.reducer;
