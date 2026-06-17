@@ -279,8 +279,8 @@ mod tests {
         fn dimensions(&self) -> usize {
             0
         }
-        fn signature(&self) -> u64 {
-            0
+        fn signature(&self) -> String {
+            "0".to_string()
         }
         async fn embed(&self, _texts: &[&str]) -> anyhow::Result<Vec<Vec<f32>>> {
             Ok(vec![])
@@ -293,7 +293,7 @@ mod tests {
     fn test_store(skills: &[(&str, &str)]) -> SkillsStore {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("store.toml");
-        let mut store = SkillsStore::new(path).unwrap();
+        let mut store = SkillsStore::load_from(&path).unwrap();
         for (name, version) in skills {
             store.upsert(InstalledSkill {
                 name: name.to_string(),

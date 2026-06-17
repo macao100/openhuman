@@ -546,9 +546,7 @@ mod tests {
 
     fn entry(key: &str, content: &str, score: Option<f64>) -> MemoryEntry {
         MemoryEntry {
-            id: format!("id-{key,
-            provenance: None,
-        }"),
+            id: format!("id-{key}"),
             key: key.to_string(),
             content: content.to_string(),
             namespace: Some("test".to_string()),
@@ -556,6 +554,7 @@ mod tests {
             timestamp: "2026-04-22T00:00:00Z".to_string(),
             session_id: None,
             score,
+            provenance: None,
         }
     }
 
@@ -574,6 +573,7 @@ mod tests {
                     timestamp: "2026-04-22T00:00:00Z".into(),
                     session_id: Some("thr_old".into()),
                     score: Some(0.9),
+                    provenance: None,
                 },
                 MemoryEntry {
                     id: "id-2".into(),
@@ -584,8 +584,8 @@ mod tests {
                     timestamp: "2026-04-22T00:00:00Z".into(),
                     session_id: None,
                     score: Some(0.9),
-            provenance: None,
-        },
+                    provenance: None,
+                },
             ]);
 
         let loader = DefaultMemoryLoader::default();
@@ -635,9 +635,7 @@ mod tests {
         score: Option<f64>,
     ) -> MemoryEntry {
         MemoryEntry {
-            id: format!("episodic-cross:{cross_id,
-            provenance: None,
-        }"),
+            id: format!("episodic-cross:{cross_id}"),
             key: format!("{session_id}:user"),
             content: content.into(),
             namespace: None,
@@ -645,6 +643,7 @@ mod tests {
             timestamp: "2026-05-15T00:00:00Z".into(),
             session_id: Some(session_id.into()),
             score,
+            provenance: None,
         }
     }
 

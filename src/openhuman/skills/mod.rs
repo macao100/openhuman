@@ -81,7 +81,7 @@ dependencies:
         let manifest = parse_manifest(yaml).map_err(|e| anyhow::anyhow!("{e}"))?;
         assert_eq!(manifest.name, "integration-skill");
         assert_eq!(manifest.version, "0.3.0");
-        assert_eq!(manifest.wasm.entry, "run");
+        assert_eq!(manifest.wasm.unwrap().entry, "run");
 
         // 2. Create a temp store.
         let dir = tempfile::tempdir()?;

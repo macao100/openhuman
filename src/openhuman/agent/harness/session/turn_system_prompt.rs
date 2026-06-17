@@ -1,38 +1,12 @@
 //! System prompt builder for agent turns.
 //! Extracted from turn.rs — Sprint 2.
 
-use super::transcript;
 use super::types::Agent;
-use crate::core::event_bus::{publish_global, DomainEvent};
-use crate::openhuman::agent::dispatcher::{ParsedToolCall, ToolExecutionResult};
-use crate::openhuman::agent::harness;
-use crate::openhuman::agent::hooks::{self, ToolCallRecord, TurnContext};
-use crate::openhuman::agent::memory_loader::collect_recall_citations;
-use crate::openhuman::agent::progress::AgentProgress;
-use crate::openhuman::agent::tool_policy::{
-    ToolCallContext, ToolPolicyDecision, ToolPolicyRequest,
-};
-use crate::openhuman::agent_experience::{
-    prepend_experience_block, render_experience_hits, AgentExperienceStore, ExperienceQuery,
-};
 use crate::openhuman::agent_tool_policy::render_tool_policy_boundary;
 use crate::openhuman::context::prompt::{LearnedContextData, PromptContext, PromptTool};
-use crate::openhuman::context::{ReductionOutcome, ARCHIVIST_EXTRACTION_PROMPT};
-use crate::openhuman::inference::model_context::context_window_for_model;
-use crate::openhuman::inference::provider::{
-    ChatMessage, ChatRequest, ConversationMessage, ProviderDelta, UsageInfo,
-};
-use crate::openhuman::memory::MemoryCategory;
-use crate::openhuman::tools::traits::ToolCallOptions;
 use crate::openhuman::tools::Tool;
-use crate::openhuman::util::truncate_with_ellipsis;
 
-use crate::openhuman::agent::harness::token_budget::{
-    trim_chat_messages_to_budget, trim_conversation_history_to_budget,
-};
 use anyhow::Result;
-use std::hash::{Hash, Hasher};
-use std::sync::Arc;
 
 impl Agent {
     /// Builds the system prompt for the current turn, including tool

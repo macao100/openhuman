@@ -97,7 +97,8 @@ mod tests {
 
     fn setup_client() -> (TempDir, MemoryClient) {
         let tmp = TempDir::new().unwrap();
-        MemoryClient::from_workspace_dir(tmp.path().join("ws")).unwrap()
+        let client = MemoryClient::from_workspace_dir(tmp.path().join("ws")).unwrap();
+        (tmp, client)
     }
 
     fn make_fact(

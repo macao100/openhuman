@@ -226,7 +226,7 @@ mod tests {
     #[test]
     fn schemas_have_unique_functions() {
         let schemas = all_dashboard_controller_schemas();
-        let mut names: Vec<&str> = schemas.iter().map(|s| s.function.as_str()).collect();
+        let mut names: Vec<&str> = schemas.iter().map(|s| s.function.as_ref()).collect();
         names.sort();
         let len_before = names.len();
         names.dedup();

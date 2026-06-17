@@ -2,10 +2,6 @@
 //! Extracted from turn.rs — Sprint 2.
 
 use super::types::Agent;
-use crate::openhuman::agent::harness;
-use crate::openhuman::agent::tool_policy::ToolPolicyRequest;
-use crate::openhuman::inference::provider::ChatMessage;
-use anyhow::Result;
 use std::sync::Arc;
 
 impl Agent {

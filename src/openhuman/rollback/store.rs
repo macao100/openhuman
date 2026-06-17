@@ -1060,6 +1060,7 @@ mod tests {
             diff_filename: format!("{}.diff", uuid),
             tool_name: "apply_patch".into(),
             metadata: Some(serde_json::json!({"retries": 3})),
+            rolled_back_at: None,
         };
         store.save_entry(&entry).unwrap();
         let retrieved = store.get_by_action_id(&uuid).unwrap().unwrap();

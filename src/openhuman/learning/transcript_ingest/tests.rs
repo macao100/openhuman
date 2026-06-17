@@ -54,9 +54,7 @@ impl Memory for InMemory {
             return Ok(());
         }
         e.push(MemoryEntry {
-            id: format!("id-{,
-            provenance: None,
-        }-{}", namespace, key),
+            id: format!("id-{}-{}", namespace, key),
             key: key.to_string(),
             content: content.to_string(),
             namespace: Some(namespace.to_string()),
@@ -64,6 +62,7 @@ impl Memory for InMemory {
             timestamp: "2026-05-09T12:00:00Z".to_string(),
             session_id: session_id.map(|s| s.to_string()),
             score: None,
+            provenance: None,
         });
         Ok(())
     }

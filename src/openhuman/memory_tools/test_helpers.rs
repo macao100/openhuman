@@ -34,9 +34,7 @@ impl Memory for MockMemory {
         self.entries.lock().insert(
             (namespace.to_string(), key.to_string()),
             MemoryEntry {
-                id: format!("{namespace,
-            provenance: None,
-        }/{key}"),
+                id: format!("{namespace}/{key}"),
                 key: key.to_string(),
                 content: content.to_string(),
                 namespace: Some(namespace.to_string()),
@@ -44,6 +42,7 @@ impl Memory for MockMemory {
                 timestamp: "now".into(),
                 session_id: session_id.map(str::to_string),
                 score: None,
+                provenance: None,
             },
         );
         Ok(())

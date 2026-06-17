@@ -12,8 +12,10 @@ const LATEST_PROTOCOL_VERSION: &str = "2025-11-25";
 
 #[tokio::test]
 async fn stdio_client_talks_to_openhuman_mcp_server() {
+    let bin_path = std::env::var("CARGO_BIN_EXE_openhuman-core")
+        .expect("CARGO_BIN_EXE_openhuman-core must be set at build time");
     let client = McpStdioClient::new(
-        env!("CARGO_BIN_EXE_openhuman-core").to_string(),
+        bin_path,
         vec!["mcp".into()],
         Vec::new(),
         Some(PathBuf::from(env!("CARGO_MANIFEST_DIR"))),

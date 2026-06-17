@@ -284,7 +284,7 @@ fn binary_file_read_returns_empty_findings() {
     let dir = tempfile::tempdir().unwrap();
     let bin_path = dir.path().join("src").join("output.wasm");
     std::fs::create_dir_all(bin_path.parent().unwrap()).unwrap();
-    std::fs::write(&bin_path, &[0u8, 0x9Au, 0x9Bu, 0x9Cu]).unwrap();
+    std::fs::write(&bin_path, &[0u8, 0x9Au8, 0x9Bu8, 0x9Cu8]).unwrap();
 
     let result = scan_skill(dir.path(), &default_perms()).unwrap();
     assert!(result.findings.is_empty());
@@ -424,7 +424,7 @@ fn binary_file_skipped() {
     let dir = tempfile::TempDir::new().unwrap();
     let wasm_path = dir.path().join("src").join("module.wasm");
     std::fs::create_dir_all(wasm_path.parent().unwrap()).unwrap();
-    std::fs::write(&wasm_path, &[0u8, 0x9Au, 0x9Bu, 0x9Cu, 0xFFu8]).unwrap();
+    std::fs::write(&wasm_path, &[0u8, 0x9Au8, 0x9Bu8, 0x9Cu8, 0xFFu8]).unwrap();
 
     let png_path = dir.path().join("src").join("icon.png");
     std::fs::write(&png_path, &[0x89u8, b'P', b'N', b'G']).unwrap();

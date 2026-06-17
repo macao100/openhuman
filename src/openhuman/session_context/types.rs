@@ -45,6 +45,7 @@ impl Default for SessionState {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::DateTime;
 
     // ── Test 1: SessionState serializes/deserializes all fields ──
 

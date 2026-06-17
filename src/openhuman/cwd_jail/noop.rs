@@ -84,13 +84,13 @@ mod tests {
         let backend = NoopBackend;
         let dir = std::env::temp_dir();
         let jail = Jail::new(&dir, "test.permissive");
-        let mut cmd = Command::new(if cfg!(target_os = "windows") {
+        let mut cmd = if cfg!(target_os = "windows") {
             let mut c = Command::new("cmd");
             c.args(["/C", "exit"]);
             c
         } else {
             Command::new("true")
-        });
+        };
         // Use Command to avoid borrowing issues - just spawn a
         // placeholder command to verify the path works.
         let result = backend.spawn(&jail, cmd);

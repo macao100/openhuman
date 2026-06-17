@@ -291,8 +291,8 @@ mod tests {
         assert_eq!(required, 0, "update_state has no required inputs");
     }
 
-    #[test]
-    fn get_state_handler_returns_state_from_current() {
+    #[tokio::test]
+    async fn get_state_handler_returns_state_from_current() {
         // Set a known state
         let state = session_context::types::SessionState {
             active_project: Some("test-project".to_string()),
@@ -317,11 +317,11 @@ mod tests {
             .get("state")
             .expect("response should have 'state' key");
         assert_eq!(
-            state_obj.get("active_project").and_then(|v| v.as_str()),
+            state_obj.get("active_project").and_then(|v: &Value| v.as_str()),
             Some("test-project")
         );
         assert_eq!(
-            state_obj.get("last_topic").and_then(|v| v.as_str()),
+            state_obj.get("last_topic").and_then(|v: &Value| v.as_str()),
             Some("Testing")
         );
     }

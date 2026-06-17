@@ -19,10 +19,9 @@ use std::time::Instant;
 
 use crate::openhuman::guardian::n2::GuardianN2;
 use crate::openhuman::guardian::n3::GuardianN3;
-use crate::openhuman::guardian::n3::N3Config;
 use crate::openhuman::guardian::rules::RuleSet;
 use crate::openhuman::guardian::types::{
-    GuardianPipelineResult, N1Result, PlanStep, PlanValidationResult, RuleAction,
+    GuardianPipelineResult, N1Result, PlanValidationResult, RuleAction,
     RuleContext, RuleResult, StructuredPlan,
 };
 use crate::openhuman::security::policy::SecurityPolicy;
@@ -478,6 +477,8 @@ impl GuardianPipeline {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::openhuman::guardian::n3::N3Config;
+    use crate::openhuman::guardian::PlanStep;
     use crate::openhuman::security::policy::SecurityPolicy;
     use serde_json::json;
 

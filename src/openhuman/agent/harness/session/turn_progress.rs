@@ -3,8 +3,6 @@
 
 use super::types::Agent;
 use crate::openhuman::agent::progress::AgentProgress;
-use crate::openhuman::inference::provider::ChatMessage;
-use anyhow::Result;
 
 impl Agent {
     /// Emit a lifecycle progress event. Uses `send().await` so control

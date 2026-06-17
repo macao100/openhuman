@@ -267,7 +267,7 @@ mod tests {
         // Reset cache.
         g.reset_cache();
         {
-            let cache = g.cache.lock();
+            let mut cache = g.cache.lock();
             assert!(cache.get("test-key").is_none());
         }
     }

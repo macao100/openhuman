@@ -28,11 +28,7 @@ use crate::openhuman::agent::progress::AgentProgress;
 use crate::openhuman::agent::tool_policy::{
     ToolCallContext, ToolPolicyDecision, ToolPolicyRequest,
 };
-use crate::openhuman::agent_experience::{
-    prepend_experience_block, render_experience_hits, AgentExperienceStore, ExperienceQuery,
-};
-use crate::openhuman::agent_tool_policy::render_tool_policy_boundary;
-use crate::openhuman::context::prompt::{LearnedContextData, PromptContext, PromptTool};
+use crate::openhuman::context::prompt::LearnedContextData;
 use crate::openhuman::context::{ReductionOutcome, ARCHIVIST_EXTRACTION_PROMPT};
 use crate::openhuman::inference::model_context::context_window_for_model;
 use crate::openhuman::inference::provider::{
