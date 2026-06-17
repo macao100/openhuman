@@ -36,7 +36,6 @@ use crate::openhuman::inference::provider::{
 };
 use crate::openhuman::memory::MemoryCategory;
 use crate::openhuman::tools::traits::ToolCallOptions;
-use crate::openhuman::tools::Tool;
 use crate::openhuman::util::truncate_with_ellipsis;
 
 use crate::openhuman::agent::harness::token_budget::{
