@@ -217,7 +217,7 @@ export async function waitForAuthBootstrap(timeout: number = 20_000): Promise<vo
  * For cross-platform specs, prefer the helpers in element-helpers.ts
  * (hasAppChrome, textExists, etc.) over calling this directly.
  */
-async function elementExists(predicate: string): Promise<boolean> {
+async function _elementExists(predicate: string): Promise<boolean> {
   try {
     if (isTauriDriver()) {
       // Treat predicate as a CSS selector on Linux

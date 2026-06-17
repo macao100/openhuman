@@ -25,7 +25,7 @@ export function isTauriDriver(): boolean {
  * Always false. The Mac2 accessibility-tree backend is retired; macOS now
  * speaks CDP just like Linux/Windows.
  */
-function isMac2(): boolean {
+function _isMac2(): boolean {
   return false;
 }
 

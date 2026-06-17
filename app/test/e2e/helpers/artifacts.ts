@@ -140,7 +140,7 @@ export async function captureCheckpoint(name: string): Promise<void> {
  * Always-on failure hook: screenshot + source named after the failing test.
  * Safe to call from wdio afterTest without crashing the runner.
  */
-async function captureFailureArtifacts(testName: string): Promise<void> {
+async function _captureFailureArtifacts(testName: string): Promise<void> {
   try {
     const dir = getArtifactDir();
     const base = `failure-${sanitize(testName)}`;
@@ -180,7 +180,7 @@ export function saveMockRequestLog(label: string, log: unknown[]): string {
 /**
  * Reset helper for tests that create multiple runs in one process.
  */
-function resetArtifactRun(): void {
+function _resetArtifactRun(): void {
   runDir = null;
   meta = null;
   checkpointIndex = 0;

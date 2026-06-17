@@ -69,7 +69,7 @@ let resolvingCoreRpcToken: Promise<string | null> | null = null;
 // ---------------------------------------------------------------------------
 
 /** Active transport set by TransportManager for non-local profiles. */
-let _activeTransport: CoreTransport | null = null;
+const _activeTransport: CoreTransport | null = null;
 
 /**
  * Stable classification of an RPC failure. Callers (hooks, providers, Sentry

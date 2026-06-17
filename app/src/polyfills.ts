@@ -47,4 +47,4 @@ import process from 'process';
 
 // Export for use in modules
 
-Buffer;
+void Buffer;

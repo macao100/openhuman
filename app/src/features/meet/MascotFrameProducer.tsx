@@ -209,4 +209,4 @@ const ProducerSession: FC<{ session: BusSession }> = ({ session }) => {
   );
 };
 
-MascotFrameProducer;
+void MascotFrameProducer;

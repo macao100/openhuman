@@ -92,7 +92,7 @@ export async function waitForHomePage(timeout = 15_000) {
   return null;
 }
 
-async function waitForTextToDisappear(text, timeout = 10_000) {
+async function _waitForTextToDisappear(text, timeout = 10_000) {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
     if (!(await textExists(text))) return true;
@@ -437,7 +437,7 @@ export async function navigateToConversations() {
   await navigateViaHash('/chat');
 }
 
-async function navigateToNotifications() {
+async function _navigateToNotifications() {
   await navigateViaHash('/notifications');
 }
 
@@ -483,7 +483,7 @@ async function onboardingOverlayLikelyVisible(): Promise<boolean> {
   return false;
 }
 
-async function isOnboardingOverlayVisible(): Promise<boolean> {
+async function _isOnboardingOverlayVisible(): Promise<boolean> {
   return onboardingOverlayLikelyVisible();
 }
 
@@ -496,7 +496,7 @@ export async function waitForOnboardingOverlayVisible(timeout = 10_000): Promise
   return false;
 }
 
-async function waitForOnboardingOverlayHidden(timeout = 10_000): Promise<boolean> {
+async function _waitForOnboardingOverlayHidden(timeout = 10_000): Promise<boolean> {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
     if (!(await onboardingOverlayLikelyVisible())) return true;

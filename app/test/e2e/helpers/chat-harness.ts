@@ -215,7 +215,7 @@ export function hexEncodeThreadId(s: string): string {
  * Returns the matching request entry when found, or `undefined` on timeout.
  * Logs richly with the supplied `logPrefix` so CI output is grep-friendly.
  */
-async function waitForToolCallInMockLog(
+async function _waitForToolCallInMockLog(
   toolName: string,
   options: { timeoutMs?: number; source?: 'composio' | 'llm' | 'any'; logPrefix?: string } = {}
 ): Promise<Record<string, unknown> | undefined> {
