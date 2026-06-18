@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DADOU — Manuel d'installation macOS</title>
+<style>
+  :root {
+    --bg: #faf9f7; --fg: #1a1a1a; --accent: #4A83DD; --warn: #D97706;
+    --code-bg: #f0efed; --border: #e5e3e0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font: 16px/1.7 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--fg); max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem; }
+  h1 { font-size: 2.2rem; margin-bottom: .3rem; color: var(--accent); }
+  h2 { font-size: 1.5rem; margin: 2.5rem 0 .8rem; padding-bottom: .4rem; border-bottom: 2px solid var(--border); }
+  h3 { font-size: 1.15rem; margin: 1.5rem 0 .5rem; }
+  p, li { margin-bottom: .6rem; }
+  ul, ol { padding-left: 1.5rem; }
+  code { font: .9em "SF Mono", "JetBrains Mono", "Fira Code", monospace; background: var(--code-bg); padding: .15em .4em; border-radius: 4px; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.2rem; overflow-x: auto; margin: 1rem 0; font-size: .85em; line-height: 1.5; }
+  .step { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+  .step::before { content: "Étape " counter(step); counter-increment: step; font-weight: 700; color: var(--accent); display: block; margin-bottom: .5rem; }
+  body { counter-reset: step; }
+  .warn { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 6px; padding: .8rem 1rem; margin: 1rem 0; color: #92400e; }
+  .ok { background: #ecfdf5; border: 1px solid #6ee7b7; border-radius: 6px; padding: .8rem 1rem; margin: 1rem 0; color: #065f46; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+  th, td { border: 1px solid var(--border); padding: .5rem .8rem; text-align: left; }
+  th { background: var(--code-bg); font-weight: 600; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<h1>🧠 DADOU — Manuel d'installation</h1>
+<p><strong>macOS 14+ (Sonoma / Sequoia)</strong> · Déploiement local · Rust + Tauri v2</p>
+
+<div class="ok"><strong>Prêt en 15 minutes.</strong> Ce guide couvre l'installation complète : prérequis, compilation, configuration et lancement.</div>
+
+<!-- ─────────────────────────────────────────────────────── -->
+<h2>1. Prérequis</h2>
+<table>
+  <tr><th>Composant</th><th>Version min</th><th>Vérification</th></tr>
+  <tr><td>macOS</td><td>14 (Sonoma)</td><td><code>sw_vers -productVersion</code></td></tr>
+  <tr><td>Xcode CLI Tools</td><td>—</td><td><code>xcode-select -p</code></td></tr>
+  <tr><td>Homebrew</td><td>—</td><td><code>brew --version</code></td></tr>
+  <tr><td>Rust</td><td>1.93</td><td><code>rustc --version</code></td></tr>
+  <tr><td>Node.js</td><td>≥24</td><td><code>node --version</code></td></tr>
+  <tr><td>pnpm</td><td>≥10.10</td><td><code>pnpm --version</code></td></tr>
+  <tr><td>Git</td><td>—</td><td><code>git --version</code></td></tr>
+  <tr><td><em>Ollama (optionnel)</em></td><td>—</td><td><code>ollama --version</code></td></tr>
+</table>
+
+<div class="step">
+<h3>Vérification automatique</h3>
+<pre><code>cd "DISTRIBUTION MAC"
+bash prerequis-mac.sh --install</code></pre>
+<p>Ce script vérifie tous les prérequis et installe les composants manquants via Homebrew.</p>
+</div>
+
+<!-- ─────────────────────────────────────────────────────── -->
+<h2>2. Installation rapide</h2>
+
+<div class="step">
+<h3>Installation automatisée</h3>
+<pre><code>cd "DISTRIBUTION MAC"
+bash install.sh</code></pre>
+<p>Ce script exécute les 5 étapes : prérequis → clonage → build → configuration → vérification.</p>
+</div>
+
+<div class="step">
+<h3>Mode hors-ligne (sans backend cloud)</h3>
+<pre><code>bash install.sh --offline</code></pre>
+<p>Configure DADOU pour fonctionner sans connexion au backend cloud. L'IA locale (Ollama) est nécessaire.</p>
+</div>
+
+<div class="step">
+<h3>Installation manuelle</h3>
+<pre><code># 1. Cloner
+git clone https://github.com/macao100/openhuman.git ~/dadou
+cd ~/dadou
+
+# 2. Submodules Tauri
+git submodule update --init --recursive
+
+# 3. Dépendances
+pnpm install --frozen-lockfile
+
+# 4. Compiler le core Rust (release)
+cargo build --release --bin openhuman-core
+
+# 5. Compiler le frontend
+pnpm build
+
+# 6. Configurer l'environnement
+cp .env.example .env
+cp app/.env.example app/.env.local
+mkdir -p ~/.openhuman</code></pre>
+</div>
+
+<!-- ─────────────────────────────────────────────────────── -->
+<h2>3. Configuration post-installation</h2>
+
+<h3>Variables d'environnement essentielles</h3>
+<table>
+  <tr><th>Variable</th><th>Défaut</th><th>Description</th></tr>
+  <tr><td><code>OPENHUMAN_OFFLINE_MODE</code></td><td>false</td><td>true = sans backend, IA locale uniquement</td></tr>
+  <tr><td><code>OPENHUMAN_MODEL</code></td><td><em>auto</em></td><td>Modèle LLM par défaut (ex: llama3.2)</td></tr>
+  <tr><td><code>OPENHUMAN_CORE_PORT</code></td><td>7788</td><td>Port du serveur JSON-RPC</td></tr>
+  <tr><td><code>OPENHUMAN_WORKSPACE</code></td><td>~/.openhuman</td><td>Répertoire de travail</td></tr>
+  <tr><td><code>RUST_LOG</code></td><td>info</td><td>Niveau de log (debug, info, warn, error)</td></tr>
+</table>
+
+<p>Éditer <code>.env</code> (racine) et <code>app/.env.local</code> pour personnaliser. Voir le template complet dans <code>.env.example</code>.</p>
+
+<!-- ─────────────────────────────────────────────────────── -->
+<h2>4. Lancement</h2>
+
+<h3>Mode desktop (Tauri)</h3>
+<pre><code>cd ~/dadou
+pnpm dev:app</code></pre>
+<p>Lance l'application desktop complète avec interface graphique.</p>
+
+<h3>Mode serveur (JSON-RPC headless)</h3>
+<pre><code>cd ~/dadou
+cargo run --release -- serve</code></pre>
+<p>Démarre le serveur JSON-RPC sur <code>http://127.0.0.1:7788/rpc</code>.</p>
+
+<h3>Mode CLI</h3>
+<pre><code>cd ~/dadou
+cargo run --release -- help</code></pre>
+
+<!-- ─────────────────────────────────────────────────────── -->
+<h2>5. Vérification</h2>
+
+<div class="ok">
+<strong>Tests unitaires :</strong> <code>cargo test --lib -p dadou</code><br>
+<strong>ESLint :</strong> <code>cd app && pnpm lint</code><br>
+<strong>TypeScript :</strong> <code>pnpm compile</code><br>
+<strong>Format :</strong> <code>cargo fmt --check</code>
+</div>
+
+<div class="warn">
+<strong>Note :</strong> Sur macOS, les tests Guardian N2 (float) et les tests de sandbox (cwd_jail) passent correctement. Les tests WASM/Python sont ignorés (runtime retiré). Attendu : 0 échec.
+</div>
+
+</body>
+</html>

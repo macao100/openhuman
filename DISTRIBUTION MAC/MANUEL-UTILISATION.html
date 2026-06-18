@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DADOU — Manuel d'utilisation</title>
+<style>
+  :root { --bg:#faf9f7; --fg:#1a1a1a; --accent:#4A83DD; --code-bg:#f0efed; --border:#e5e3e0; --ok-bg:#ecfdf5; --ok:#065f46; --warn-bg:#fffbeb; --warn:#92400e; --tip-bg:#eff6ff; --tip:#1e40af; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--fg); max-width:900px; margin:0 auto; padding:2rem 1.5rem; }
+  h1 { font-size:2.2rem; color:var(--accent); margin-bottom:.3rem; }
+  h2 { font-size:1.5rem; margin:2.5rem 0 .8rem; padding-bottom:.4rem; border-bottom:2px solid var(--border); }
+  h3 { font-size:1.15rem; margin:1.5rem 0 .5rem; }
+  code { font:.9em "SF Mono","JetBrains Mono","Fira Code",monospace; background:var(--code-bg); padding:.15em .4em; border-radius:4px; border:1px solid var(--border); }
+  pre { background:var(--code-bg); border:1px solid var(--border); border-radius:8px; padding:1rem 1.2rem; overflow-x:auto; margin:1rem 0; font-size:.85em; line-height:1.5; }
+  pre .cm { color:#6b7280; }
+  pre .in { color:var(--accent); font-weight:600; }
+  pre .out { color:#059669; }
+  .example { background:#fff; border:1px solid var(--border); border-radius:8px; margin:1.5rem 0; overflow:hidden; }
+  .example-title { background:var(--code-bg); padding:.6rem 1.2rem; font-weight:700; border-bottom:1px solid var(--border); }
+  .example-body { padding:1rem 1.2rem; }
+  .tip { background:var(--tip-bg); border:1px solid #bfdbfe; border-radius:6px; padding:.8rem 1rem; margin:1rem 0; color:var(--tip); }
+  .ok { background:var(--ok-bg); border:1px solid #6ee7b7; border-radius:6px; padding:.8rem 1rem; margin:1rem 0; color:var(--ok); }
+  a { color:var(--accent); }
+</style>
+</head>
+<body>
+
+<h1>📖 DADOU — Manuel d'utilisation</h1>
+<p>Exemples concrets d'utilisation de DADOU : desktop, CLI, JSON-RPC, et mode headless.</p>
+
+<!-- ─────────────────────────────────────────────────────── -->
+<h2>1. Lancement</h2>
+
+<div class="example">
+<div class="example-title">Mode desktop — Interface graphique</div>
+<div class="example-body">
+<pre><code><span class="cm"># Depuis le répertoire du projet</span>
+<span class="in">cd ~/dadou</span>
+<span class="in">pnpm dev:app</span>
+
+<span class="cm"># L'application s'ouvre dans une fenêtre native.
+# Le core JSON-RPC démarre automatiquement en arrière-plan.</span></code></pre>
+</div>
+</div>
+
+<div class="example">
+<div class="example-title">Mode serveur — JSON-RPC headless</div>
+<div class="example-body">
+<pre><code><span class="in">cd ~/dadou</span>
+<span class="in">cargo run --release -- serve</span>
+
+<span class="out">[2026-06-18T10:00:00Z INFO] JSON-RPC server listening on http://127.0.0.1:7788/rpc
+[2026-06-18T10:00:00Z INFO] Core token: ~/.openhuman/core.token</span></code></pre>
+<p>Le serveur JSON-RPC accepte les appels authentifiés. Utilisable avec n'importe quel client HTTP.</p>
+</div>
+</div>
+
+<div class="example">
+<div class="example-title">Mode CLI — Commande ponctuelle</div>
+<div class="example-body">
+<pre><code><span class="cm"># Aide générale</span>
+<span class="in">cargo run --release -- help</span>
+
+<span class="cm"># Statut du système</span>
+<span class="in">cargo run --release -- status</span>
+
+<span class="cm"># Health check</span>
+<span class="in">cargo run --release -- health</span>
+<span class="out">{ "status": "ok", "version": "0.56.0" }</span></code></pre>
+</div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────── -->
+<h2>2. Exemples — Mode hors-ligne (Ollama)</h2>
+
+<div class="tip"><strong>Prérequis :</strong> Ollama installé, modèle téléchargé (<code>ollama pull llama3.2</code>), <code>OPENHUMAN_OFFLINE_MODE=true</code> dans <code>.env</code>.</div>
+
+<div class="example">
+<div class="example-title">Conversation simple</div>
+<div class="example-body">
+<pre><code><span class="cm"># Via le desktop (pnpm dev:app) : l'interface de chat est disponible.
+# Ou en CLI :</span>
+<span class="in">cargo run --release -- chat "Explique-moi le pattern Observer en Rust"</span></code></pre>
+</div>
+</div>
+
+<div class="example">
+<div class="example-title">Analyse de code local</div>
+<div class="example-body">
+<pre><code><span class="cm"># Dans l'interface desktop : ouvrir le Chat, taper :</span>
+<span class="in">Analyse le fichier src/main.rs et propose des améliorations</span>
+
+<span class="cm"># DADOU lit le fichier, l'envoie au modèle local, et répond.
+# Toute l'analyse reste sur la machine — rien ne part sur le réseau.</span></code></pre>
+</div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────── -->
+<h2>3. Exemples — Gestion de fichiers</h2>
+
+<div class="example">
+<div class="example-title">Créer un projet</div>
+<div class="example-body">
+<pre><code><span class="cm"># Demander à DADOU de créer un nouveau projet Rust</span>
+<span class="in">Crée un projet Rust "mon-api" avec Axum, un endpoint /health et des tests</span>
+
+<span class="out">DADOU crée la structure dans ~/OpenHuman/projects/mon-api/
+├── Cargo.toml
+├── src/
+│   └── main.rs       ← serveur Axum avec /health
+└── tests/
+    └── health_test.rs</span></code></pre>
+</div>
+</div>
+
+<div class="example">
+<div class="example-title">Modifier un fichier existant</div>
+<div class="example-body">
+<pre><code><span class="in">Dans src/main.rs, remplace tous les unwrap() par du error handling
+avec anyhow et thiserror</span>
+
+<span class="cm"># DADOU lit le fichier, applique les changements, et crée
+# une sauvegarde de rollback automatiquement.</span></code></pre>
+</div>
+</div>
+
+<div class="example">
+<div class="example-title">Annuler une modification (rollback)</div>
+<div class="example-body">
+<pre><code><span class="cm"># Annuler la dernière modification</span>
+<span class="in">cargo run --release -- undo --last</span>
+
+<span class="cm"># Restaurer un fichier à un état antérieur</span>
+<span class="in">cargo run --release -- undo --before "2026-06-18T09:00:00"</span></code></pre>
+</div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────── -->
+<h2>4. Exemples — Mémoire persistante</h2>
+
+<div class="example">
+<div class="example-title">DADOU se souvient entre les sessions</div>
+<div class="example-body">
+<pre><code><span class="cm"># Session 1</span>
+<span class="in">Je travaille sur le projet "migration-db", branche feat/postgres.
+Mon fichier de config est à config/database.toml</span>
+
+<span class="out">DADOU: Compris. J'enregistre ces préférences.</span>
+
+<span class="cm"># ... fermeture de l'app, redémarrage ...</span>
+
+<span class="cm"># Session 2</span>
+<span class="in">Reprenons le travail</span>
+
+<span class="out">DADOU: Tu travaillais sur "migration-db" (feat/postgres).
+Le fichier config/database.toml est-il toujours celui à utiliser ?</span></code></pre>
+</div>
+</div>
+
+<div class="example">
+<div class="example-title">Recherche sémantique dans la mémoire</div>
+<div class="example-body">
+<pre><code><span class="in">Qu'est-ce qu'on a décidé pour le schéma de la table users ?</span>
+
+<span class="out">DADOU: Le 15 juin, vous avez décidé d'utiliser UUID comme clé
+primaire et d'ajouter une colonne "deleted_at" pour le soft-delete.
+Source : conversation du 2026-06-15, projet migration-db.</span></code></pre>
+</div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────── -->
+<h2>5. Exemples — JSON-RPC (intégration externe)</h2>
+
+<div class="example">
+<div class="example-title">Appel RPC via curl</div>
+<div class="example-body">
+<pre><code><span class="cm"># Récupérer le token d'authentification</span>
+<span class="in">TOKEN=$(cat ~/.openhuman/core.token)</span>
+
+<span class="cm"># Appeler une méthode RPC</span>
+<span class="in">curl -X POST http://127.0.0.1:7788/rpc \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "openhuman.health_snapshot",
+    "params": {}
+  }'</span>
+
+<span class="out">{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "status": "ok",
+    "version": "0.56.0",
+    "uptime_secs": 3600,
+    "memory_mb": 128
+  }
+}</span></code></pre>
+</div>
+</div>
+
+<div class="example">
+<div class="example-title">Script Python qui dialogue avec DADOU</div>
+<div class="example-body">
+<pre><code><span class="cm">#!/usr/bin/env python3</span>
+<span class="cm"># client.py — Envoyer un message et lire la réponse</span>
+import requests, json, os
+
+TOKEN = open(os.path.expanduser("~/.openhuman/core.token")).read().strip()
+RPC = "http://127.0.0.1:7788/rpc"
+HEADERS = {"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"}
+
+<span class="cm"># Envoyer un message</span>
+resp = requests.post(RPC, json={
+    "jsonrpc": "2.0", "id": 1,
+    "method": "openhuman.channel_web_chat",
+    "params": {"message": "Quelle est la capital du Burkina Faso ?"}
+}, headers=HEADERS).json()
+
+print(json.dumps(resp, indent=2, ensure_ascii=False))</code></pre>
+</div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────── -->
+<h2>6. Maintenance</h2>
+
+<h3>Sauvegarde</h3>
+<pre><code><span class="cm"># Sauvegarder tout le workspace DADOU</span>
+<span class="in">tar -czf dadou-backup-$(date +%Y%m%d).tar.gz ~/.openhuman</span></code></pre>
+
+<h3>Mise à jour</h3>
+<pre><code><span class="in">cd ~/dadou</span>
+<span class="in">git pull origin master</span>
+<span class="in">pnpm install</span>
+<span class="in">cargo build --release --bin openhuman-core</span>
+<span class="in">pnpm build</span></code></pre>
+
+<h3>Nettoyage</h3>
+<pre><code><span class="cm"># Nettoyer les artefacts de build Rust (libère 2-10 Go)</span>
+<span class="in">cargo clean</span>
+
+<span class="cm"># Nettoyer le cache pnpm</span>
+<span class="in">pnpm store prune</span></code></pre>
+
+<div class="ok"><strong>Astuce :</strong> La mémoire de DADOU s'améliore avec l'usage. Plus vous l'utilisez, plus il comprend vos préférences et votre contexte de travail.</div>
+
+</body>
+</html>

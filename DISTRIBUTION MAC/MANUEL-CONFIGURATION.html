@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DADOU — Manuel de configuration</title>
+<style>
+  :root { --bg:#faf9f7; --fg:#1a1a1a; --accent:#4A83DD; --code-bg:#f0efed; --border:#e5e3e0; --warn-bg:#fffbeb; --warn-border:#fcd34d; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--fg); max-width:900px; margin:0 auto; padding:2rem 1.5rem; }
+  h1 { font-size:2.2rem; color:var(--accent); margin-bottom:.3rem; }
+  h2 { font-size:1.5rem; margin:2.5rem 0 .8rem; padding-bottom:.4rem; border-bottom:2px solid var(--border); }
+  h3 { font-size:1.15rem; margin:1.5rem 0 .5rem; }
+  code { font:.9em "SF Mono","JetBrains Mono","Fira Code",monospace; background:var(--code-bg); padding:.15em .4em; border-radius:4px; border:1px solid var(--border); }
+  pre { background:var(--code-bg); border:1px solid var(--border); border-radius:8px; padding:1rem 1.2rem; overflow-x:auto; margin:1rem 0; font-size:.85em; line-height:1.5; }
+  pre .cm { color:#6b7280; }
+  table { border-collapse:collapse; width:100%; margin:1rem 0; }
+  th,td { border:1px solid var(--border); padding:.5rem .8rem; text-align:left; }
+  th { background:var(--code-bg); font-weight:600; }
+  .warn { background:var(--warn-bg); border:1px solid var(--warn-border); border-radius:6px; padding:.8rem 1rem; margin:1rem 0; }
+  a { color:var(--accent); }
+</style>
+</head>
+<body>
+
+<h1>⚙️ DADOU — Manuel de configuration</h1>
+<p>Configuration complète du core Rust, du shell Tauri, et du frontend React.</p>
+
+<!-- ─────────────────────────────────────────────────────── -->
+<h2>1. Fichiers de configuration</h2>
+<table>
+  <tr><th>Fichier</th><th>Portée</th><th>Rôle</th></tr>
+  <tr><td><code>.env</code></td><td>Racine</td><td>Variables du core Rust + Tauri shell</td></tr>
+  <tr><td><code>app/.env.local</code></td><td>Frontend</td><td>Variables Vite (préfixées <code>VITE_</code>)</td></tr>
+  <tr><td><code>~/.openhuman/config.toml</code></td><td>Runtime</td><td>Configuration utilisateur persistée</td></tr>
+  <tr><td><code>app/knip.json</code></td><td>Dev</td><td>Détection de code mort</td></tr>
+  <tr><td><code>app/eslint.config.js</code></td><td>Dev</td><td>Règles ESLint</td></tr>
+</table>
+
+<!-- ─────────────────────────────────────────────────────── -->
+<h2>2. Modes de déploiement</h2>
+
+<h3>Mode connecté (cloud backend)</h3>
+<pre><code><span class="cm"># .env</span>
+OPENHUMAN_OFFLINE_MODE=false
+BACKEND_URL=https://api.tinyhumans.ai</code></pre>
+<p>Nécessite un compte et un jeton JWT. Les appels LLM passent par le backend.</p>
+
+<h3>Mode hors-ligne (local uniquement)</h3>
+<pre><code><span class="cm"># .env</span>
+OPENHUMAN_OFFLINE_MODE=true
+OPENHUMAN_MODEL=llama3.2
+OPENHUMAN_OLLAMA_BASE_URL=http://127.0.0.1:11434</code></pre>
+<p>Aucun backend cloud requis. Ollama doit être installé et un modèle téléchargé :</p>
+<pre><code>ollama pull llama3.2
+ollama pull nomic-embed-text  <span class="cm"># Embeddings pour la mémoire</span></code></pre>
+
+<h3>Mode staging (développement)</h3>
+<pre><code><span class="cm"># .env</span>
+OPENHUMAN_APP_ENV=staging
+BACKEND_URL=https://staging-api.tinyhumans.ai
+
+<span class="cm"># app/.env.local</span>
+VITE_OPENHUMAN_APP_ENV=staging</code></pre>
+
+<!-- ─────────────────────────────────────────────────────── -->
+<h2>3. Modèles IA</h2>
+
+<h3>Ollama (local, recommandé)</h3>
+<pre><code><span class="cm"># Télécharger un modèle</span>
+ollama pull llama3.2          <span class="cm"># 3.8 Go — bon équilibre qualité/performance</span>
+ollama pull qwen2.5:7b        <span class="cm"># 4.7 Go — alternative performante</span>
+ollama pull nomic-embed-text  <span class="cm"># 274 Mo — nécessaire pour la mémoire sémantique</span>
+
+<span class="cm"># Utiliser dans .env</span>
+OPENHUMAN_MODEL=llama3.2
+OPENHUMAN_OLLAMA_BASE_URL=http://127.0.0.1:11434</code></pre>
+
+<h3>LM Studio (local, interface graphique)</h3>
+<pre><code><span class="cm"># .env</span>
+OPENHUMAN_LM_STUDIO_BASE_URL=http://127.0.0.1:1234/v1
+OPENHUMAN_MODEL=<span class="cm"># détecté automatiquement</span></code></pre>
+
+<h3>BYOK (Bring Your Own Key)</h3>
+<pre><code><span class="cm"># .env — exemple avec OpenAI</span>
+OPENHUMAN_MODEL=gpt-4o
+<span class="cm"># La clé API est gérée via l'interface utilisateur (Settings → AI)</span></code></pre>
+
+<!-- ─────────────────────────────────────────────────────── -->
+<h2>4. Sécurité — Guardian N1-N3</h2>
+
+<table>
+  <tr><th>Niveau</th><th>Latence</th><th>Rôle</th></tr>
+  <tr><td>N1 — Règles</td><td>&lt;1ms</td><td>Bloque les patterns dangereux connus (paths, commandes)</td></tr>
+  <tr><td>N2 — Heuristique</td><td>&lt;10ms</td><td>Détecte exfiltration, entropie, payloads cachés</td></tr>
+  <tr><td>N3 — LLM</td><td>&lt;500ms</td><td>Valide les plans ambigus via un modèle léger</td></tr>
+</table>
+
+<p>Configurer l'accès agent dans <code>config.toml</code> ou via l'interface <em>Settings → Agent access</em> :</p>
+<pre><code><span class="cm"># ~/.openhuman/config.toml</span>
+[autonomy]
+level = "supervised"    <span class="cm"># readonly | supervised | full</span>
+workspace_only = true
+allow_tool_install = false</code></pre>
+
+<!-- ─────────────────────────────────────────────────────── -->
+<h2>5. Mémoire et stockage</h2>
+
+<p>DADOU stocke toutes les données localement dans <code>~/.openhuman/</code> :</p>
+<pre><code>~/.openhuman/
+├── workspace/          <span class="cm"># Espace de travail de l'agent</span>
+│   ├── memory_tree/    <span class="cm"># Base SQLite de la mémoire</span>
+│   └── projects/       <span class="cm"># Projets créés par l'agent</span>
+├── config.toml         <span class="cm"># Configuration persistée</span>
+├── skills/             <span class="cm"># Skills WASM installés</span>
+└── core.token          <span class="cm"># Jeton d'authentification RPC</span></code></pre>
+
+<div class="warn"><strong>Attention :</strong> Ne pas supprimer <code>~/.openhuman/</code> sans avoir sauvegardé les données importantes. La mémoire, les préférences et l'historique y sont stockés.</div>
+
+<!-- ─────────────────────────────────────────────────────── -->
+<h2>6. Ports et réseau</h2>
+
+<table>
+  <tr><th>Service</th><th>Port</th><th>Variable</th></tr>
+  <tr><td>Core JSON-RPC</td><td>7788</td><td><code>OPENHUMAN_CORE_PORT</code></td></tr>
+  <tr><td>Vite dev server</td><td>1420</td><td><code>OPENHUMAN_DEV_PORT</code></td></tr>
+  <tr><td>Ollama API</td><td>11434</td><td><code>OPENHUMAN_OLLAMA_BASE_URL</code></td></tr>
+  <tr><td>LM Studio API</td><td>1234</td><td><code>OPENHUMAN_LM_STUDIO_BASE_URL</code></td></tr>
+</table>
+
+</body>
+</html>

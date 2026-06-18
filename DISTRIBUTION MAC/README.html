@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DADOU — Distribution macOS v0.56.0</title>
+<style>
+  :root { --bg:#faf9f7; --fg:#1a1a1a; --accent:#4A83DD; --code-bg:#f0efed; --border:#e5e3e0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--fg); max-width:860px; margin:0 auto; padding:3rem 1.5rem; text-align:center; }
+  .hero { margin-bottom:2.5rem; }
+  .hero h1 { font-size:3rem; color:var(--accent); }
+  .hero p { font-size:1.2rem; color:#6b7280; margin:.5rem 0; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:1.2rem; margin:2rem 0; text-align:left; }
+  .card { background:#fff; border:1px solid var(--border); border-radius:10px; padding:1.5rem; }
+  .card h3 { font-size:1.1rem; margin-bottom:.5rem; }
+  .card p { color:#6b7280; font-size:.9rem; margin-bottom:1rem; }
+  .card a { display:inline-block; background:var(--accent); color:#fff; padding:.5rem 1.2rem; border-radius:6px; text-decoration:none; font-weight:600; font-size:.9rem; }
+  .card a:hover { opacity:.9; }
+  pre { background:var(--code-bg); border:1px solid var(--border); border-radius:8px; padding:1rem; text-align:left; margin:2rem 0; font-size:.85em; }
+  code { font:.9em "SF Mono","JetBrains Mono","Fira Code",monospace; background:var(--code-bg); padding:.15em .4em; border-radius:4px; border:1px solid var(--border); }
+  .footer { margin-top:3rem; color:#9ca3af; font-size:.85rem; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>🧠 DADOU</h1>
+  <p>Assistant IA personnel et autonome — macOS</p>
+  <p><strong>Version 0.56.0</strong> · GNU GPL 3.0</p>
+</div>
+
+<div class="cards">
+  <div class="card">
+    <h3>🚀 Installation rapide</h3>
+    <p>Vérification des prérequis, compilation et déploiement en 15 minutes.</p>
+    <a href="MANUEL-INSTALLATION.html">→ Guide d'installation</a>
+  </div>
+  <div class="card">
+    <h3>⚙️ Configuration</h3>
+    <p>Modes hors-ligne/cloud, modèles IA, sécurité Guardian, stockage.</p>
+    <a href="MANUEL-CONFIGURATION.html">→ Guide de configuration</a>
+  </div>
+  <div class="card">
+    <h3>📖 Utilisation</h3>
+    <p>Exemples concrets : desktop, CLI, JSON-RPC, mémoire persistante.</p>
+    <a href="MANUEL-UTILISATION.html">→ Guide d'utilisation</a>
+  </div>
+</div>
+
+<h2 style="text-align:left;margin-top:2.5rem;">Installation express</h2>
+<pre><code><span style="color:#6b7280"># 1. Vérifier les prérequis (macOS 14+)</span>
+bash prerequis-mac.sh --install
+
+<span style="color:#6b7280"># 2. Installer DADOU (mode hors-ligne avec Ollama)</span>
+bash install.sh --offline
+
+<span style="color:#6b7280"># 3. Lancer l'interface desktop</span>
+cd ~/dadou
+pnpm dev:app</code></pre>
+
+<h2 style="text-align:left;margin-top:2.5rem;">Contenu du dossier</h2>
+<table style="text-align:left;margin:1rem 0;">
+  <tr><th>Fichier</th><th>Description</th></tr>
+  <tr><td><code>prerequis-mac.sh</code></td><td>Vérification et installation des prérequis</td></tr>
+  <tr><td><code>install.sh</code></td><td>Installation automatisée complète</td></tr>
+  <tr><td><code>MANUEL-INSTALLATION.html</code></td><td>Guide d'installation détaillé</td></tr>
+  <tr><td><code>MANUEL-CONFIGURATION.html</code></td><td>Référence de configuration</td></tr>
+  <tr><td><code>MANUEL-UTILISATION.html</code></td><td>Exemples d'utilisation</td></tr>
+</table>
+
+<div class="footer">
+  <p>DADOU v0.56.0 — Fork OpenHuman · Licence GPL 3.0</p>
+  <p>Fonctionne localement. Aucune donnée ne quitte votre machine en mode hors-ligne.</p>
+</div>
+
+</body>
+</html>
