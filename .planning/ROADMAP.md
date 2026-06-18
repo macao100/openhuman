@@ -39,12 +39,12 @@
 **Plans**: 6 plans in 2 waves
 
 Plans:
-- [ ] 01-01-PLAN.md — Guardian N1 domain: types, rules engine, YAML loader, pipeline wrapper, controllers (GRD-01)
-- [ ] 01-02-PLAN.md — Windows sandbox: Restricted Tokens + Integrity Levels backend, AppContainer fix, NoopBackend fail-closed (GRD-04)
-- [ ] 01-03-PLAN.md — Rollback foundation: SQLite schema, diff capture, history storage, stubs controllers (UND-01)
-- [ ] 01-04-PLAN.md — Guardian N1 interception: tool pipeline integration, events, controller registration (GRD-01 wire)
-- [ ] 01-05-PLAN.md — Rollback interception: file_write.rs, edit_file.rs, apply_patch.rs hooks + validate_path audit (UND-01 wire)
-- [ ] 01-06-PLAN.md — CLI undo: undo_last, undo_before business logic, handlers, CLI integration (UND-02)
+- [x] 01-01-PLAN.md — Guardian N1 domain: types, rules engine, YAML loader, pipeline wrapper, controllers (GRD-01)
+- [x] 01-02-PLAN.md — Windows sandbox: Restricted Tokens + Integrity Levels backend, AppContainer fix, NoopBackend fail-closed (GRD-04)
+- [x] 01-03-PLAN.md — Rollback foundation: SQLite schema, diff capture, history storage, stubs controllers (UND-01)
+- [x] 01-04-PLAN.md — Guardian N1 interception: tool pipeline integration, events, controller registration (GRD-01 wire)
+- [x] 01-05-PLAN.md — Rollback interception: file_write.rs, edit_file.rs, apply_patch.rs hooks + validate_path audit (UND-01 wire)
+- [x] 01-06-PLAN.md — CLI undo: undo_last, undo_before business logic, handlers, CLI integration (UND-02)
 
 ### Phase 2: Memory & Continuity
 
@@ -64,10 +64,10 @@ Plans:
 **Plans**: 4 plans in 3 waves
 
 Plans:
-- [ ] 02-01-PLAN.md — Provenance & Confidence: Provenance enum, MemoryEntry extension, SQLite migration, decay scheduler (MEM-04)
-- [ ] 02-02-PLAN.md — Project Context & Preferences: project_context domain, agent prompt injection, correction tool, controllers (MEM-01, MEM-02)
-- [ ] 02-03-PLAN.md — Contradiction Detection: detection engine, event bus integration, resolver, preference write guard (MEM-03)
-- [ ] 02-04-PLAN.md — Cross-Session Continuity: session state store, shutdown/startup hooks, periodic saves, context restoration (CTX-01, CTX-02)
+- [x] 02-01-PLAN.md — Provenance & Confidence: Provenance enum, MemoryEntry extension, SQLite migration, decay scheduler (MEM-04)
+- [x] 02-02-PLAN.md — Project Context & Preferences: project_context domain, agent prompt injection, correction tool, controllers (MEM-01, MEM-02)
+- [x] 02-03-PLAN.md — Contradiction Detection: detection engine, event bus integration, resolver, preference write guard (MEM-03)
+- [x] 02-04-PLAN.md — Cross-Session Continuity: session state store, shutdown/startup hooks, periodic saves, context restoration (CTX-01, CTX-02)
 
 ### Phase 3: Guardian N2+N3
 
@@ -86,10 +86,10 @@ Plans:
 **Plans**: 4 plans in 2 waves
 
 Plans:
-- [ ] 03-01-PLAN.md — Guardian N2: types, detection engines (exfiltration, entropy, hidden payloads) (GRD-02)
-- [ ] 03-02-PLAN.md — Guardian N3: LLM validator wrapper, system prompt, LRU cache (GRD-03)
-- [ ] 03-03-PLAN.md — Extended pipeline: N1->N2->N3 integration, events, bus subscribers, tool loop wiring (GRD-02, GRD-03)
-- [ ] 03-04-PLAN.md — N2/N3 controllers, config schema, initialization wiring (GRD-02, GRD-03)
+- [x] 03-01-PLAN.md — Guardian N2: types, detection engines (exfiltration, entropy, hidden payloads) (GRD-02)
+- [x] 03-02-PLAN.md — Guardian N3: LLM validator wrapper, system prompt, LRU cache (GRD-03)
+- [x] 03-03-PLAN.md — Extended pipeline: N1->N2->N3 integration, events, bus subscribers, tool loop wiring (GRD-02, GRD-03)
+- [x] 03-04-PLAN.md — N2/N3 controllers, config schema, initialization wiring (GRD-02, GRD-03)
 
 ### Phase 4: Skills WASM
 
@@ -110,11 +110,11 @@ Plans:
 **Plans**: 5 plans in 2 waves
 
 Plans:
-- [ ] 04-01-PLAN.md — Manifest parsing (dadou-skill.yaml) + TOML skills store (SKL-01, SKL-06)
-- [ ] 04-02-PLAN.md — Wasmtime in-process runtime + WASI capability-gated sandbox (SKL-02)
-- [ ] 04-03-PLAN.md — GPG signature verification via sequoia-openpgp + trust store (SKL-04)
-- [ ] 04-04-PLAN.md — Static analysis: suspicious imports, filesystem writes, network detection (SKL-05)
-- [ ] 04-05-PLAN.md — CLI dadou skill commands + JSON-RPC controllers (SKL-07)
+- [x] 04-01-PLAN.md — Manifest parsing (dadou-skill.yaml) + TOML skills store (SKL-01, SKL-06)
+- [x] 04-02-PLAN.md — Wasmtime in-process runtime + WASI capability-gated sandbox (SKL-02)
+- [x] 04-03-PLAN.md — GPG signature verification via sequoia-openpgp + trust store (SKL-04)
+- [x] 04-04-PLAN.md — Static analysis: suspicious imports, filesystem writes, network detection (SKL-05)
+- [x] 04-05-PLAN.md — CLI dadou skill commands + JSON-RPC controllers (SKL-07)
 
 ### Phase 5: Anti-Injection
 
@@ -133,10 +133,10 @@ Plans:
 **Plans**: 4 plans in 2 waves
 
 Plans:
-- [ ] 05-01-PLAN.md — External data tagging `<external_data>` + AntiInjectionSection system prompt (INJ-01)
-- [ ] 05-02-PLAN.md — Structured JSON output envelope for skill results, never raw concat (INJ-02)
-- [ ] 05-03-PLAN.md — Semantic output validation: 15+ injection pattern rules + optional LLM check (INJ-03)
-- [ ] 05-04-PLAN.md — JSON plan validation by Guardian pipeline: StructuredPlan, evaluate_plan, ExecutionProtocolSection (INJ-04)
+- [x] 05-01-PLAN.md — External data tagging `<external_data>` + AntiInjectionSection system prompt (INJ-01)
+- [x] 05-02-PLAN.md — Structured JSON output envelope for skill results, never raw concat (INJ-02)
+- [x] 05-03-PLAN.md — Semantic output validation: 15+ injection pattern rules + optional LLM check (INJ-03)
+- [x] 05-04-PLAN.md — JSON plan validation by Guardian pipeline: StructuredPlan, evaluate_plan, ExecutionProtocolSection (INJ-04)
 
 ### Phase 6: Dashboard & Semantic Router
 
@@ -218,4 +218,4 @@ Plans:
 | CTX-02 | Phase 2 | ✅ |
 
 ---
-*Last updated: 2026-06-05*
+*Last updated: 2026-06-18 — audit completed, all phases archived as done. See `.planning/audit/07-remediation-plan.md` for P0-P2 follow-ups.*
