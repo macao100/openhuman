@@ -187,6 +187,10 @@ pub fn default_rules() -> Vec<AnalysisRule> {
             r##"__import__\s*\(\s*['"]os['"]\s*\)"##,
             "Dynamic os import",
         ),
+        // ── Suspicious Python imports ──
+        AnalysisRule::medium(r"import\s+os\b", "OS import"),
+        AnalysisRule::high(r"import\s+subprocess\b", "Subprocess import"),
+        AnalysisRule::medium(r"from\s+os\s+import", "From OS import"),
         // ── High: Network access ──
         AnalysisRule::high(r"import\s+socket", "Socket import"),
         AnalysisRule::high(r"requests\.(?:get|post|put|delete)\s*\(", "HTTP request"),
@@ -200,7 +204,7 @@ pub fn default_rules() -> Vec<AnalysisRule> {
             r"std::fs::(?:write|create_dir|remove|rename)\s*\(",
             "Filesystem write",
         ),
-        AnalysisRule::high(r##"open\(.*['"](?!/data)"##, "File open outside data dir"),
+        AnalysisRule::high(r##"open\(.*['"]"##, "File open outside data dir"),
         AnalysisRule::high(r"fs\.writeFile\s*\(", "Node fs.writeFile"),
         // ── Medium: Information gathering ──
         AnalysisRule::medium(r"os\.environ", "Environment access"),

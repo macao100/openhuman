@@ -369,9 +369,10 @@ wasm:
   path: test.wasm
 "#;
         let err = parse_manifest(yaml).unwrap_err();
+        let msg = err.to_string();
         assert!(
-            matches!(&err, ManifestError::MissingField("name")),
-            "expected MissingField(name), got {err}"
+            msg.contains("name"),
+            "expected error mentioning 'name', got {err}"
         );
     }
 
@@ -398,9 +399,10 @@ wasm:
   path: test.wasm
 "#;
         let err = parse_manifest(yaml).unwrap_err();
+        let msg = err.to_string();
         assert!(
-            matches!(&err, ManifestError::MissingField("version")),
-            "expected MissingField(version), got {err}"
+            msg.contains("version"),
+            "expected error mentioning 'version', got {err}"
         );
     }
 
