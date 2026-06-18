@@ -23,7 +23,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' data: blob: https: wss: ipc: http://ipc.localhost http://127.0.0.1:* http://localhost:*; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' ipc: http://ipc.localhost http://127.0.0.1:* http://localhost:* https: wss: data: blob:; frame-src 'self' https: data: blob:"
+      "csp": "default-src 'self' ipc: http://ipc.localhost http://127.0.0.1:* http://localhost:*; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' ipc: http://ipc.localhost http://127.0.0.1:* http://localhost:* https://api.tinyhumans.ai https://staging-api.tinyhumans.ai https://*.ingest.sentry.io https://openrouter.ai https: wss: data: blob:; frame-src 'self' https: data: blob:"
     },
     "macOSPrivateApi": true
   },
