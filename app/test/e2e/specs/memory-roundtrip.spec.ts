@@ -155,31 +155,36 @@ describe('Memory subsystem round-trip', () => {
     stepLog('clear response', forgetResult);
     expect(forgetResult.ok).toBe(true);
 
-    // Allow the clear to propagate — the memory index may update async.
-    await browser.pause(2_000);
-
-    stepLog('recalling after clear — must miss');
-    const recallAfterForget = await callOpenhumanRpc('openhuman.memory_recall_memories', {
-      namespace: TEST_NAMESPACE,
-      limit: 10,
-    });
-    stepLog('post-clear recall response', recallAfterForget);
-    expect(recallAfterForget.ok).toBe(true);
-    const recalled = JSON.stringify(recallAfterForget.result ?? {});
-    // The clear may not immediately purge the canary from all index paths.
-    // If the canary is still present, retry once after additional delay.
-    if (recalled.includes(TEST_KEY) || recalled.includes(TEST_CONTENT)) {
-      stepLog('canary still present after first recall — retrying');
-      await browser.pause(3_000);
-      const retry = await callOpenhumanRpc('openhuman.memory_recall_memories', {
+    // Poll until the canary is gone from recall (or deadline exceeded).
+    // Replaces fixed browser.pause() with condition wait — avoids race
+    // when the memory index propagation takes longer than expected.
+    const deadline = Date.now() + 15_000;
+    let canaryGone = false;
+    while (Date.now() < deadline) {
+      const recall = await callOpenhumanRpc('openhuman.memory_recall_memories', {
         namespace: TEST_NAMESPACE,
         limit: 10,
       });
-      stepLog('retry recall response', retry);
-      expect(retry.ok).toBe(true);
-      const retried = JSON.stringify(retry.result ?? {});
-      expect(retried.includes(TEST_KEY)).toBe(false);
-      expect(retried.includes(TEST_CONTENT)).toBe(false);
+      expect(recall.ok).toBe(true);
+      const body = JSON.stringify(recall.result ?? {});
+      if (!body.includes(TEST_KEY) && !body.includes(TEST_CONTENT)) {
+        stepLog(
+          `canary absent after ${((Date.now() + 15_000 - deadline) / 1000).toFixed(1)}s`
+        );
+        canaryGone = true;
+        break;
+      }
+      await browser.pause(500);
     }
+
+    if (!canaryGone) {
+      // One final recall to produce a clear failure message.
+      const final = await callOpenhumanRpc('openhuman.memory_recall_memories', {
+        namespace: TEST_NAMESPACE,
+        limit: 10,
+      });
+      stepLog('final recall after deadline', final);
+    }
+    expect(canaryGone).toBe(true);
   });
 });
