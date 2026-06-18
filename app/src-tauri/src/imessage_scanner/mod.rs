@@ -637,13 +637,11 @@ mod tests {
         assert!(transcript.contains("me:"));
     }
 
-    /// Real chat.db integration test. Gated with `#[ignore]` — run with
-    /// `cargo test --manifest-path app/src-tauri/Cargo.toml \
-    ///   imessage_scanner -- --ignored`. Requires Full Disk Access granted
-    /// to the test-runner binary. Asserts we can open chat.db read-only,
+    /// Real chat.db integration test — automatically skipped when chat.db
+    /// is not available. Requires Full Disk Access granted to the test-runner
+    /// binary on macOS. Asserts we can open chat.db read-only,
     /// run our JOIN query, and deserialize at least one row.
     #[test]
-    #[ignore]
     fn real_chat_db_opens_and_returns_messages() {
         let path = match chat_db_path() {
             Some(p) => p,
@@ -673,7 +671,6 @@ mod tests {
 
     /// Sanity: `read_since` with cursor past max rowid returns empty.
     #[test]
-    #[ignore]
     fn real_chat_db_empty_past_cursor() {
         let path = match chat_db_path() {
             Some(p) => p,

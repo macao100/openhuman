@@ -595,20 +595,54 @@ mod tests {
         assert_eq!(back.cleared, 42);
     }
 
-    // ── autocomplete_history (integration) ───────────────────────────────────
+    // ── autocomplete_history + clear_history (integration) ─────────────────
     //
-    // NOTE: These tests operate against the real on-disk KV store via
-    // MemoryClient::new_local() (resolves to default_root_openhuman_dir()).
-    // They are marked #[ignore] to prevent wiping a contributor's autocomplete
-    // history on every `cargo test` run and to avoid non-deterministic results.
-    // Run explicitly with: cargo test -- --ignored
+    // These tests were formerly #[ignore] because MemoryClient::new_local()
+    // resolved to ~/.openhuman/workspace, putting real user data at risk.
+    // Now that new_local() respects OPENHUMAN_WORKSPACE we isolate each test
+    // with a throwaway temp directory.
+
+    /// RAII guard that sets `OPENHUMAN_WORKSPACE` to a temp dir and reverts on drop.
+    struct TempWorkspaceGuard {
+        key: &'static str,
+        old: Option<String>,
+        _dir: tempfile::TempDir,
+    }
+
+    impl TempWorkspaceGuard {
+        fn new() -> Self {
+            let dir = tempfile::tempdir().expect("tempdir for autocomplete test workspace");
+            // SAFETY: test acquires TEST_LOCK before constructing this guard,
+            // serialising process-global env mutations.
+            let old = std::env::var("OPENHUMAN_WORKSPACE").ok();
+            unsafe { std::env::set_var("OPENHUMAN_WORKSPACE", dir.path().as_os_str()) };
+            Self {
+                key: "OPENHUMAN_WORKSPACE",
+                old,
+                _dir: dir,
+            }
+        }
+    }
+
+    impl Drop for TempWorkspaceGuard {
+        fn drop(&mut self) {
+            match &self.old {
+                // SAFETY: guarded by TEST_LOCK, same as set.
+                Some(v) => unsafe { std::env::set_var(self.key, v) },
+                // SAFETY: guarded by TEST_LOCK.
+                None => unsafe { std::env::remove_var(self.key) },
+            }
+        }
+    }
 
     /// `autocomplete_history` against a fresh (possibly empty) local KV store
     /// must succeed and produce exactly two log lines — one confirmation and
     /// one structured log.  The result entries count may be 0 or more.
     #[tokio::test]
-    #[ignore = "operates on real on-disk KV store; run with --ignored to opt in"]
     async fn history_returns_outcome_with_two_log_lines() {
+        let _lock = TEST_LOCK.lock().await;
+        let _guard = TempWorkspaceGuard::new();
+
         let payload = AutocompleteHistoryParams { limit: Some(5) };
         let outcome = autocomplete_history(payload)
             .await
@@ -636,8 +670,10 @@ mod tests {
 
     /// When `limit` is `None`, the default of 20 is applied and appears in the log.
     #[tokio::test]
-    #[ignore = "operates on real on-disk KV store; run with --ignored to opt in"]
     async fn history_default_limit_appears_in_log() {
+        let _lock = TEST_LOCK.lock().await;
+        let _guard = TempWorkspaceGuard::new();
+
         let payload = AutocompleteHistoryParams { limit: None };
         let outcome = autocomplete_history(payload)
             .await
@@ -655,8 +691,10 @@ mod tests {
     /// `autocomplete_clear_history` on an already-empty or populated store must
     /// succeed, return a non-negative cleared count, and emit exactly two log lines.
     #[tokio::test]
-    #[ignore = "operates on real on-disk KV store; run with --ignored to opt in"]
     async fn clear_history_returns_outcome_with_two_log_lines() {
+        let _lock = TEST_LOCK.lock().await;
+        let _guard = TempWorkspaceGuard::new();
+
         let outcome = autocomplete_clear_history()
             .await
             .expect("autocomplete_clear_history must not return Err");

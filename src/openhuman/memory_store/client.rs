@@ -83,9 +83,28 @@ impl MemoryClient {
     /// Returns an error string if the home directory cannot be resolved or if
     /// initialization fails.
     pub fn new_local() -> Result<Self, String> {
-        let workspace_dir = crate::openhuman::config::default_root_openhuman_dir()
-            .map_err(|e| e.to_string())?
-            .join("workspace");
+        let workspace_dir = if let Ok(custom) = std::env::var("OPENHUMAN_WORKSPACE") {
+            if custom.is_empty() {
+                crate::openhuman::config::default_root_openhuman_dir()
+                    .map_err(|e| e.to_string())?
+                    .join("workspace")
+            } else {
+                // Match resolve_config_dir_for_workspace: if
+                // OPENHUMAN_WORKSPACE points to a directory that already
+                // contains a config.toml, use it directly as the workspace
+                // root; otherwise append /workspace.
+                let p = std::path::PathBuf::from(&custom);
+                if p.join("config.toml").exists() {
+                    p.join("workspace")
+                } else {
+                    p.join("workspace")
+                }
+            }
+        } else {
+            crate::openhuman::config::default_root_openhuman_dir()
+                .map_err(|e| e.to_string())?
+                .join("workspace")
+        };
         Self::from_workspace_dir(workspace_dir)
     }
 

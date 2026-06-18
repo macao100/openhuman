@@ -229,7 +229,6 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore]
     async fn run_single_tick_ingests_groups_from_real_chatdb() {
         let Some(db) = chat_db() else {
             eprintln!("chat.db not available — skipping");
@@ -263,7 +262,6 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore]
     async fn run_single_tick_keeps_cursor_on_group_failure() {
         let Some(db) = chat_db() else {
             return;

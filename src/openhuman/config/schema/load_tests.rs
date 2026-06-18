@@ -43,10 +43,8 @@ fn user_openhuman_dir_builds_correct_path() {
 }
 
 #[tokio::test]
-// Races on `OPENHUMAN_WORKSPACE` env var with other tests holding
-// `TEST_ENV_LOCK` — passes in isolation, intermittently fails in parallel.
-// Runs reliably with `--ignored --test-threads=1`. See PR #1524.
-#[ignore = "flaky in parallel cargo test; OPENHUMAN_WORKSPACE env-var race — see PR #1524"]
+// Uses ProcessEnvWithoutWorkspace to avoid OPENHUMAN_WORKSPACE env-var race
+// with sibling tests. Previously #[ignore] for this reason (PR #1524).
 async fn resolve_dirs_uses_active_user_when_present() {
     let tmp = tempfile::tempdir().unwrap();
     let root = tmp.path();
@@ -54,9 +52,10 @@ async fn resolve_dirs_uses_active_user_when_present() {
 
     // No active user → falls back to the pre-login user directory so
     // memory/state/config are still encapsulated under users/.
-    let (oh_dir, ws_dir, source) = resolve_runtime_config_dirs(root, &default_workspace)
-        .await
-        .unwrap();
+    let (oh_dir, ws_dir, source) =
+        resolve_runtime_config_dirs_with(root, &default_workspace, &ProcessEnvWithoutWorkspace)
+            .await
+            .unwrap();
     let expected_pre_login_dir = root.join("users").join(PRE_LOGIN_USER_ID);
     assert_eq!(oh_dir, expected_pre_login_dir);
     assert_eq!(ws_dir, expected_pre_login_dir.join("workspace"));
@@ -64,9 +63,10 @@ async fn resolve_dirs_uses_active_user_when_present() {
 
     // With active user → scopes to user dir.
     write_active_user_id(root, "u-test").unwrap();
-    let (oh_dir, ws_dir, source) = resolve_runtime_config_dirs(root, &default_workspace)
-        .await
-        .unwrap();
+    let (oh_dir, ws_dir, source) =
+        resolve_runtime_config_dirs_with(root, &default_workspace, &ProcessEnvWithoutWorkspace)
+            .await
+            .unwrap();
     let expected_user_dir = root.join("users").join("u-test");
     assert_eq!(oh_dir, expected_user_dir);
     assert_eq!(ws_dir, expected_user_dir.join("workspace"));
