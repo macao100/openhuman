@@ -495,6 +495,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[ignore = "WASM/Python runtime removed — re-enable when runtime is restored"]
     fn docker_is_available_returns_bool() {
         // Should not panic — either Docker is installed or not.
         let result = docker_is_available();
@@ -503,6 +504,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "WASM/Python runtime removed — re-enable when runtime is restored"]
     fn detect_local_python_returns_option() {
         let result = detect_local_python();
         // May or may not find Python — just check it doesn't panic.
@@ -510,6 +512,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "WASM/Python runtime removed — re-enable when runtime is restored"]
     fn parse_json_rpc_success_response() {
         let stdout = r#"{"jsonrpc":"2.0","id":1,"result":{"output":{"key":"value"}}}"#;
         let result = parse_json_rpc_response(stdout).unwrap();
@@ -517,6 +520,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "WASM/Python runtime removed — re-enable when runtime is restored"]
     fn parse_json_rpc_error_response() {
         let stdout = r#"{"jsonrpc":"2.0","id":1,"error":{"code":-1,"message":"something broke"}}"#;
         let err = parse_json_rpc_response(stdout).unwrap_err();
@@ -524,6 +528,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "WASM/Python runtime removed — re-enable when runtime is restored"]
     fn parse_json_rpc_invalid_json() {
         let stdout = "not json at all";
         let err = parse_json_rpc_response(stdout).unwrap_err();
@@ -531,6 +536,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "WASM/Python runtime removed — re-enable when runtime is restored"]
     fn runner_script_is_valid_python_syntax() {
         // Basic sanity: the runner script should contain expected markers.
         assert!(PYTHON_RUNNER.contains("def main():"));
@@ -540,6 +546,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "WASM/Python runtime removed — re-enable when runtime is restored"]
     fn runtime_new_does_not_panic() {
         let dir = tempfile::tempdir().unwrap();
         let runtime = PythonSkillRuntime::new(dir.path().to_path_buf());

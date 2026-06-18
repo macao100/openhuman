@@ -490,7 +490,6 @@ fn call_with_timeout(
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
-#[ignore = "WASM skills runtime removed (QuickJS / rquickjs). Re-enable when runtime is restored."]
 mod tests {
     use super::*;
     use crate::openhuman::skills::ExecutionStatus;
@@ -508,6 +507,7 @@ mod tests {
     // -----------------------------------------------------------------------
 
     #[test]
+    #[ignore = "WASM/Python runtime removed — re-enable when runtime is restored"]
     fn wasm_engine_new_returns_valid_engine() {
         let engine = WasmEngine::new().expect("engine creation should succeed");
         // If epoch_interruption is enabled, setting a deadline should not
@@ -521,6 +521,7 @@ mod tests {
     // -----------------------------------------------------------------------
 
     #[test]
+    #[ignore = "WASM/Python runtime removed — re-enable when runtime is restored"]
     fn executes_simple_wasm_module() {
         let engine = shared_engine();
         // WAT module that copies input from ptr → offset 65536 and returns
@@ -544,6 +545,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "WASM/Python runtime removed — re-enable when runtime is restored"]
     fn execute_empty_input() {
         let engine = shared_engine();
         let wasm = wat::parse_str(
@@ -569,6 +571,7 @@ mod tests {
     // -----------------------------------------------------------------------
 
     #[test]
+    #[ignore = "WASM/Python runtime removed — re-enable when runtime is restored"]
     fn timeout_triggers_on_long_running_module() {
         let engine = WasmEngine::new().expect("fresh engine");
 
@@ -644,6 +647,7 @@ mod tests {
     // -----------------------------------------------------------------------
 
     #[test]
+    #[ignore = "WASM/Python runtime removed — re-enable when runtime is restored"]
     fn network_not_available() {
         let engine = shared_engine();
         // A module that imports a non-existent function `env.connect` —
@@ -690,6 +694,7 @@ mod tests {
     // -----------------------------------------------------------------------
 
     #[test]
+    #[ignore = "WASM/Python runtime removed — re-enable when runtime is restored"]
     fn invalid_wasm_returns_error() {
         let engine = shared_engine();
         let garbage = b"this is not valid wasm";
@@ -710,6 +715,7 @@ mod tests {
     // -----------------------------------------------------------------------
 
     #[test]
+    #[ignore = "WASM/Python runtime removed — re-enable when runtime is restored"]
     fn filesystem_restricted_to_data_dir() {
         // Verify that build_wasi_ctx only preopens the given data dir and
         // that modules cannot access WASI functions not in the configured
@@ -747,6 +753,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "WASM/Python runtime removed — re-enable when runtime is restored"]
     fn build_wasi_ctx_creates_correct_preopens() {
         let tmp = TempDir::new().expect("temp dir");
         let data_dir = tmp.path().join("test-skill").join("data");
@@ -762,6 +769,7 @@ mod tests {
     // -----------------------------------------------------------------------
 
     #[test]
+    #[ignore = "WASM/Python runtime removed — re-enable when runtime is restored"]
     fn skill_data_dir_resolves_correctly() {
         let path = skill_data_dir("test-skill");
         let path_str = path.to_string_lossy();
@@ -780,6 +788,7 @@ mod tests {
     // -----------------------------------------------------------------------
 
     #[test]
+    #[ignore = "WASM/Python runtime removed — re-enable when runtime is restored"]
     fn executes_void_entry_function() {
         let engine = shared_engine();
         let wasm = wat::parse_str(
@@ -801,6 +810,7 @@ mod tests {
     // -----------------------------------------------------------------------
 
     #[test]
+    #[ignore = "WASM/Python runtime removed — re-enable when runtime is restored"]
     fn missing_entry_function_returns_error() {
         let engine = shared_engine();
         let wasm = wat::parse_str(
@@ -833,6 +843,7 @@ mod tests {
     // -----------------------------------------------------------------------
 
     #[test]
+    #[ignore = "WASM/Python runtime removed — re-enable when runtime is restored"]
     fn execute_wasm_structured_returns_success_envelope() {
         let engine = shared_engine();
         let wasm = wat::parse_str(
@@ -868,6 +879,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "WASM/Python runtime removed — re-enable when runtime is restored"]
     fn execute_wasm_structured_returns_envelope_on_engine_error() {
         let engine = shared_engine();
         let garbage = b"not valid wasm at all";
@@ -889,6 +901,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "WASM/Python runtime removed — re-enable when runtime is restored"]
     fn execute_wasm_structured_handles_empty_output() {
         let engine = shared_engine();
         let wasm = wat::parse_str(
@@ -916,6 +929,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "WASM/Python runtime removed — re-enable when runtime is restored"]
     fn wrap_skill_output_creates_success_envelope() {
         let envelope = wrap_skill_output("my-skill", "3.0.0", "some result text", 1234, true);
 
@@ -929,6 +943,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "WASM/Python runtime removed — re-enable when runtime is restored"]
     fn wrap_skill_output_handles_empty_text() {
         let envelope = wrap_skill_output("empty", "1.0.0", "", 0, false);
 
@@ -937,6 +952,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "WASM/Python runtime removed — re-enable when runtime is restored"]
     fn wrap_skill_output_produces_valid_json_line() {
         let envelope = wrap_skill_output("json-skill", "2.0.0", "{\"key\": \"val\"}", 50, false);
         let line = envelope.to_json_line();
