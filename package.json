@@ -50,11 +50,11 @@
     "tauri:android:init": "bash scripts/android-init.sh",
     "tauri:android:dev": "pnpm --filter dadou-app tauri:android:dev",
     "tauri:android:build": "pnpm --filter dadou-app tauri:android:build",
-    "i18n:check": "tsx scripts/i18n-coverage.ts",
-    "i18n:react:check": "tsx scripts/i18n-react-audit.ts",
+    "i18n:check": "pnpm exec tsx scripts/i18n-coverage.ts",
+    "i18n:react:check": "pnpm exec tsx scripts/i18n-react-audit.ts",
     "i18n:bundle:check": "node scripts/verify-i18n-bundle.mjs",
-    "i18n:add-key": "tsx scripts/i18n-add-key.ts",
-    "i18n:dump": "tsx scripts/i18n-coverage.ts --no-unused --out tmp/i18n-coverage"
+    "i18n:add-key": "pnpm exec tsx scripts/i18n-add-key.ts",
+    "i18n:dump": "pnpm exec tsx scripts/i18n-coverage.ts --no-unused --out tmp/i18n-coverage"
   },
   "devDependencies": {
     "husky": "^9.1.7",
