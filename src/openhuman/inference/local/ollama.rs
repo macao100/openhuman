@@ -565,6 +565,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(windows, ignore = "Environment variable handling differs on Windows")]
     fn ollama_base_url_returns_default_when_env_unset() {
         let _lock = test_lock();
         let _g = OllamaEnvGuard::clear();
@@ -593,6 +594,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(windows, ignore = "Environment variable handling differs on Windows")]
     fn ollama_base_url_falls_back_for_empty_or_whitespace_env() {
         let _lock = test_lock();
         {

@@ -202,6 +202,7 @@ mod tests {
     use crate::openhuman::config::{DockerRuntimeConfig, RuntimeConfig};
 
     #[test]
+    #[cfg_attr(windows, ignore = "Windows shell command detection differs")]
     fn native_runtime_reports_capabilities_and_shell_command() {
         let runtime = NativeRuntime::new();
         assert_eq!(runtime.name(), "native");

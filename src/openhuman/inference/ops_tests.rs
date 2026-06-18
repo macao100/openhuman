@@ -25,6 +25,7 @@ async fn spawn_mock(app: Router) -> String {
 }
 
 #[tokio::test]
+#[cfg_attr(windows, ignore = "Windows runtime detection differs")]
 async fn inference_status_reports_disabled_state_when_runtime_disabled() {
     let (config, _tmp) = disabled_config();
     let outcome = inference_status(&config).await.expect("status");

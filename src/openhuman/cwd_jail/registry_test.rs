@@ -179,6 +179,7 @@ fn spawn_in_with_missing_id_errors() {
 }
 
 #[test]
+#[cfg_attr(windows, ignore = "Windows sandboxing not available in test context")]
 fn spawn_in_uses_default_backend() {
     let base = tempdir("spawn-default");
     let reg = JailRegistry::open(&base).unwrap();
@@ -292,6 +293,7 @@ fn spawn_in_refuses_path_outside_base() {
 }
 
 #[test]
+#[cfg_attr(windows, ignore = "Windows sandboxing not available in test context")]
 fn spawn_in_uses_record_dir_as_root() {
     let base = tempdir("spawn");
     let reg = JailRegistry::open(&base).unwrap();

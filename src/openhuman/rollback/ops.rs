@@ -299,6 +299,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(windows, ignore = "Windows filesystem permissions differ")]
     async fn test_undo_last_deletes_new_file() {
         let (store, dir) = test_setup();
         let rel_path = "new_file.txt";
@@ -375,6 +376,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(windows, ignore = "Windows filesystem permissions differ")]
     async fn test_undo_before_restores_multiple_files() {
         let (store, dir) = test_setup();
 

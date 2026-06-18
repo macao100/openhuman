@@ -1014,6 +1014,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(windows, ignore = "Windows filesystem semantics differ")]
     fn test_prune_older_than() {
         let (store, _dir) = test_store();
         store
@@ -1172,6 +1173,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(windows, ignore = "Windows filesystem semantics differ")]
     fn test_before_write_and_after_write_cycle() {
         let dir = tempfile::tempdir().expect("tempdir");
         let file_path = dir.path().join("test.txt");

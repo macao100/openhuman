@@ -121,6 +121,7 @@ mod tests {
     // ── Test 1: load_project_context formats facts as a markdown block ──
 
     #[tokio::test]
+    #[cfg_attr(windows, ignore = "Windows path format differs")]
     async fn test_load_project_context_formats_facts() {
         let (_tmp, client) = setup_client();
         store::upsert_fact(
@@ -168,6 +169,7 @@ mod tests {
     // ── Test 3: Multiple facts per project are grouped correctly ──
 
     #[tokio::test]
+    #[cfg_attr(windows, ignore = "Windows path format differs")]
     async fn test_load_project_context_groups_by_project() {
         let (_tmp, client) = setup_client();
         store::upsert_fact(

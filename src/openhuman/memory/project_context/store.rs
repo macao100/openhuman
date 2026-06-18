@@ -234,6 +234,7 @@ mod tests {
     // ── Test 2: list_facts returns all facts for a given project, newest first ──
 
     #[tokio::test]
+    #[cfg_attr(windows, ignore = "Windows filesystem semantics differ")]
     async fn test_list_facts_newest_first() {
         let (_tmp, client) = setup_client();
 

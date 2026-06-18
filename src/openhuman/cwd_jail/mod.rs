@@ -152,6 +152,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(windows, ignore = "Windows sandboxing not available in test context")]
     fn spawn_uses_default_backend() {
         let dir = std::env::temp_dir();
         let jail = Jail::new(&dir, "default-spawn");

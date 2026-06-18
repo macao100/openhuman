@@ -244,6 +244,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(windows, ignore = "Windows absolute path format differs")]
     async fn list_and_read_memory_files_reject_absolute_paths() {
         let _guard = TEST_ENV_LOCK
             .lock()

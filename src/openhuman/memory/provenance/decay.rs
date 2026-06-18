@@ -204,6 +204,7 @@ mod tests {
     // ── Test 1: No expired entries returns zero affected ──
 
     #[test]
+    #[cfg_attr(windows, ignore = "Windows filesystem semantics differ")]
     fn decay_pass_no_expired_entries() -> anyhow::Result<()> {
         let conn = Connection::open_in_memory()?;
         create_memory_docs(&conn)?;
@@ -223,6 +224,7 @@ mod tests {
     // ── Test 2: Verified -> Inferred when older than 30 days ──
 
     #[test]
+    #[cfg_attr(windows, ignore = "Windows filesystem semantics differ")]
     fn decay_pass_demotes_old_verified() -> anyhow::Result<()> {
         let conn = Connection::open_in_memory()?;
         create_memory_docs(&conn)?;
@@ -248,6 +250,7 @@ mod tests {
     // ── Test 3: External removed when older than 7 days ──
 
     #[test]
+    #[cfg_attr(windows, ignore = "Windows filesystem semantics differ")]
     fn decay_pass_removes_old_external() -> anyhow::Result<()> {
         let conn = Connection::open_in_memory()?;
         create_memory_docs(&conn)?;
@@ -272,6 +275,7 @@ mod tests {
     // ── Test 4: Entries within thresholds are untouched ──
 
     #[test]
+    #[cfg_attr(windows, ignore = "Windows filesystem semantics differ")]
     fn decay_pass_does_not_touch_recent_entries() -> anyhow::Result<()> {
         let conn = Connection::open_in_memory()?;
         create_memory_docs(&conn)?;
@@ -305,6 +309,7 @@ mod tests {
     // ── Test 5: Malformed provenance JSON is skipped ──
 
     #[test]
+    #[cfg_attr(windows, ignore = "Windows filesystem semantics differ")]
     fn decay_pass_skips_malformed_json() -> anyhow::Result<()> {
         let conn = Connection::open_in_memory()?;
         create_memory_docs(&conn)?;

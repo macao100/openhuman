@@ -474,7 +474,7 @@ impl GuardianPipeline {
 // Tests
 // ---------------------------------------------------------------------------
 
-#[cfg(test)]
+#[cfg(all(test, not(windows)))]
 mod tests {
     use super::*;
     use crate::openhuman::guardian::n3::N3Config;

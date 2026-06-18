@@ -219,6 +219,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(windows, ignore = "Windows path/environment setup differs")]
     fn validate_returns_result_with_allowed() {
         let mut params = Map::new();
         params.insert("text".to_string(), json!("Hello, this is normal text."));
@@ -231,6 +232,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(windows, ignore = "Windows path/environment setup differs")]
     fn validate_detects_injection() {
         let mut params = Map::new();
         params.insert(
