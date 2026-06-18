@@ -490,6 +490,7 @@ fn call_with_timeout(
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
+#[ignore = "WASM skills runtime removed (QuickJS / rquickjs). Re-enable when runtime is restored."]
 mod tests {
     use super::*;
     use crate::openhuman::skills::ExecutionStatus;

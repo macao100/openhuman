@@ -490,6 +490,7 @@ fn detect_local_python() -> Option<PathBuf> {
 // ── Tests ─────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
+#[ignore = "Python skills Docker sidecar runtime removed. Re-enable when runtime is restored."]
 mod tests {
     use super::*;
 
