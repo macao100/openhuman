@@ -21,8 +21,8 @@ use crate::openhuman::guardian::n2::GuardianN2;
 use crate::openhuman::guardian::n3::GuardianN3;
 use crate::openhuman::guardian::rules::RuleSet;
 use crate::openhuman::guardian::types::{
-    GuardianPipelineResult, N1Result, PlanValidationResult, RuleAction,
-    RuleContext, RuleResult, StructuredPlan,
+    GuardianPipelineResult, N1Result, PlanValidationResult, RuleAction, RuleContext, RuleResult,
+    StructuredPlan,
 };
 use crate::openhuman::security::policy::SecurityPolicy;
 

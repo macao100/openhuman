@@ -50,9 +50,7 @@ use super::cloud_transcribe::{transcribe_cloud, CloudTranscribeOptions, CloudTra
 use super::local_speech::{synthesize_piper, PiperOptions};
 use super::local_transcribe::{transcribe_whisper, WhisperTranscribeOptions};
 use super::reply_speech::{synthesize_reply, ReplySpeechOptions, ReplySpeechResult};
-use crate::openhuman::config::schema::voice_providers::{
-    SttApiStyle, TtsApiStyle,
-};
+use crate::openhuman::config::schema::voice_providers::{SttApiStyle, TtsApiStyle};
 use crate::openhuman::config::Config;
 use crate::rpc::RpcOutcome;
 

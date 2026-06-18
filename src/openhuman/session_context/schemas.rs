@@ -317,7 +317,9 @@ mod tests {
             .get("state")
             .expect("response should have 'state' key");
         assert_eq!(
-            state_obj.get("active_project").and_then(|v: &Value| v.as_str()),
+            state_obj
+                .get("active_project")
+                .and_then(|v: &Value| v.as_str()),
             Some("test-project")
         );
         assert_eq!(

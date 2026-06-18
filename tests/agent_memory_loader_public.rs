@@ -81,8 +81,8 @@ fn entry(key: &str, content: &str, score: Option<f64>) -> MemoryEntry {
         timestamp: "now".into(),
         session_id: None,
         score,
-            provenance: None,
-        }
+        provenance: None,
+    }
 }
 
 #[tokio::test]

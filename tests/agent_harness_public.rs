@@ -7,9 +7,7 @@ use openhuman_core::openhuman::agent::hooks::{
     fire_hooks, sanitize_tool_output, PostTurnHook, ToolCallRecord, TurnContext,
 };
 use openhuman_core::openhuman::config::AgentConfig;
-use openhuman_core::openhuman::inference::provider::{
-    ChatRequest, ChatResponse, Provider,
-};
+use openhuman_core::openhuman::inference::provider::{ChatRequest, ChatResponse, Provider};
 use openhuman_core::openhuman::memory::{Memory, MemoryCategory, MemoryEntry};
 use parking_lot::Mutex;
 use std::sync::atomic::Ordering;
