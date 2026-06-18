@@ -91,7 +91,7 @@ const AgentAccessPanel = () => {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   // Auto-apply: every change persists immediately (no separate Save button).

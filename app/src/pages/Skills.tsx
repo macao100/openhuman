@@ -595,7 +595,7 @@ export default function Skills() {
     }
 
     return items;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [channelIcons, configurableChannels, channelConnections, discoveredSkills]);
 
   const composioGridEntries = useMemo(() => {

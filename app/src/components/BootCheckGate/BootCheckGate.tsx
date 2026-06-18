@@ -634,7 +634,7 @@ export default function BootCheckGate({ children }: BootCheckGateProps) {
       }
     },
     // transport is stable (constructed inline but always same shape)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     []
   );
 
@@ -763,7 +763,7 @@ export default function BootCheckGate({ children }: BootCheckGateProps) {
       setActionBusy(false);
     }
     // transport is stable shape
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [result, actionBusy, coreMode, runCheck]);
 
   // ------------------------------------------------------------------

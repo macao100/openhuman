@@ -174,7 +174,7 @@ const PairPhoneModal = ({ onClose, onPaired }: PairPhoneModalProps) => {
   useEffect(() => {
     void createSession();
     return clearTimers;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   // ---------------------------------------------------------------------------

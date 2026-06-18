@@ -214,7 +214,7 @@ function MicComposer({
     // hoisted inside the component body — their identity is stable within
     // each render, so omitting them from the dep list is intentional, not
     // a stale-closure risk.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [state, disabled]);
 
   function stopStream() {

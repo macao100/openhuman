@@ -304,7 +304,7 @@ const ContextGatheringStep = ({
     }
 
     void runPipeline();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   // Staged "still working" trigger (#2156). After STILL_WORKING_THRESHOLD_MS

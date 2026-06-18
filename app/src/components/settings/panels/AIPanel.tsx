@@ -335,7 +335,7 @@ function useAISettings() {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     void reload();
   }, [reload]);
 
@@ -445,7 +445,7 @@ function useOllamaStatus() {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     void refresh();
     const id = window.setInterval(() => void refresh(), 5000);
     return () => window.clearInterval(id);
@@ -1007,7 +1007,7 @@ export const BackgroundLoopControls = ({
   }, [commitSettings]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     void refresh();
   }, [refresh]);
 
@@ -1849,7 +1849,7 @@ const CustomRoutingDialog = ({
   const selectedSlug = source?.kind === 'cloud' ? source.providerSlug : null;
   useEffect(() => {
     if (!selectedSlug) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setCloudModels([]);
       setCloudModelsError(null);
       return;
@@ -1884,7 +1884,7 @@ const CustomRoutingDialog = ({
     };
     // customCloud is stable for the dialog's lifetime (prop doesn't change mid-open)
     // modelsKey is the manual retry trigger
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [selectedSlug, modelsKey]);
 
   const canSave = source !== null && model.trim().length > 0;
@@ -2383,7 +2383,7 @@ const GlobalOwnModelSelector = ({
     return () => {
       active = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [selectedSlug]);
 
   useEffect(() => {

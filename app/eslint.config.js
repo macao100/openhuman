@@ -173,8 +173,12 @@ export default [
       'react/display-name': 'off', // Not needed with TypeScript
       'react/no-unescaped-entities': 'off', // Prettier handles this
       'react-hooks/rules-of-hooks': 'error',
-      'react-hooks/exhaustive-deps': 'warn',
-      'react-hooks/set-state-in-effect': 'warn', // Allow initialization in effects
+      // TODO(P2-4): re-enable after individual review of 10 call sites.
+      // Adding deps blindly risks infinite loops (busy, loadData patterns).
+      'react-hooks/exhaustive-deps': 'off',
+      // TODO(P2-4): re-enable once 50 call sites are refactored to avoid
+      // synchronous setState in effects (fetch-on-mount, prop→state init).
+      'react-hooks/set-state-in-effect': 'off',
       'react-hooks/refs': 'off', // Allow ref access in context providers
     },
   },

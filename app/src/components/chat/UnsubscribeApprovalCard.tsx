@@ -38,7 +38,7 @@ export const UnsubscribeApprovalCard: React.FC<Props> = ({ payload }) => {
         params: { link: payload.metadata.unsubscribe_link },
       });
       setStatus('approved');
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('Unsubscribe failed', e);
       setStatus('pending');
       setErrorMsg(e?.message || 'Missing permissions or network error');

@@ -59,7 +59,7 @@ export function BackendMascot({
     return injectViseme(state.svg, mascot, active);
     // We intentionally only re-inject on state change here; viseme effect
     // below handles in-place swaps.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [mascot, state]);
 
   // Apply CSS variables to the wrapper so the mascot's color tokens

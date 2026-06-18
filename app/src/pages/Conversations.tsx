@@ -402,7 +402,7 @@ const Conversations = ({
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [dispatch]);
 
   useEffect(() => {
@@ -504,7 +504,7 @@ const Conversations = ({
     armSilenceTimer(threadId);
     // armSilenceTimer is stable (refs + dispatch); depending on the
     // selector references is enough to rearm on every progress event.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [inferenceStatusByThread, streamingAssistantByThread]);
 
   useEffect(() => {
