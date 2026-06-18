@@ -14,14 +14,14 @@ export interface ApiError {
 }
 
 // User types based on backend ITgUser model
-export interface UserSubscription {
+interface UserSubscription {
   hasActiveSubscription: boolean;
   plan: 'FREE' | 'BASIC' | 'PRO';
   planExpiry?: string;
   stripeCustomerId?: string;
 }
 
-export interface IUserUsage {
+interface IUserUsage {
   promotionBalanceUsd?: number;
   cycleBudgetUsd: number;
   spentThisCycleUsd: number;
@@ -29,13 +29,13 @@ export interface IUserUsage {
   cycleStartDate: Date;
 }
 
-export interface UserReferral {
+interface UserReferral {
   invitedByCode?: string | null;
   inviteCodeUsedAt?: string;
   invitedBy?: string | null;
 }
 
-export interface UserSettings {
+interface UserSettings {
   dailySummariesEnabled: boolean;
   dailySummaryUtcTriggerHour?: number;
   dailySummaryChatIds: number[];
@@ -94,6 +94,3 @@ export interface CoinbaseChargeData {
   status: string;
   expiresAt: string;
 }
-
-// API Endpoints
-export type GetMeResponse = ApiResponse<User>;

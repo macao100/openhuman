@@ -14,7 +14,7 @@ export interface ChannelConnection {
   updatedAt: string;
 }
 
-export interface ChannelConnectionsByMode {
+interface ChannelConnectionsByMode {
   managed_dm?: ChannelConnection;
   oauth?: ChannelConnection;
   bot_token?: ChannelConnection;
@@ -26,11 +26,6 @@ export interface ChannelConnectionsState {
   migrationCompleted: boolean;
   defaultMessagingChannel: ChannelType;
   connections: Record<ChannelType, ChannelConnectionsByMode>;
-}
-
-export interface OutboundRoute {
-  channel: ChannelType;
-  authMode: ChannelAuthMode;
 }
 
 // --- Backend-driven definitions (from openhuman.channels_list) ---
@@ -50,7 +45,7 @@ export interface AuthModeSpec {
   auth_action?: string; // e.g. "telegram_managed_dm", "discord_oauth"
 }
 
-export type ChannelCapability =
+type ChannelCapability =
   | 'send_text'
   | 'send_rich_text'
   | 'receive_text'

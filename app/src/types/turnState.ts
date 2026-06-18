@@ -5,11 +5,11 @@
  * to surface interrupted turns left behind by a previous core process.
  */
 
-export type PersistedTurnLifecycle = 'started' | 'streaming' | 'interrupted';
+type PersistedTurnLifecycle = 'started' | 'streaming' | 'interrupted';
 
-export type PersistedTurnPhase = 'thinking' | 'tool_use' | 'subagent';
+type PersistedTurnPhase = 'thinking' | 'tool_use' | 'subagent';
 
-export type PersistedToolStatus = 'running' | 'success' | 'error';
+type PersistedToolStatus = 'running' | 'success' | 'error';
 
 export type TaskBoardCardStatus = 'todo' | 'in_progress' | 'blocked' | 'done';
 
